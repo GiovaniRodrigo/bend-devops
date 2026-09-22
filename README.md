@@ -1,13 +1,28 @@
 # 🛡️ Bend DevOps Guardian (`bend-devops`)
 
 > **High-Performance Architecture & Engineering Standards Quality Gate for DevOps CI/CD Pipelines.**
-> Built with the purely functional and massively parallel **[Bend](https://github.com/HigherOrderCO/Bend)** (HVM) engine and an interactive **Angular** web dashboard.
+> Built with the purely functional and massively parallel **[Bend](https://github.com/HigherOrderCO/Bend)** (HVM) engine and an interactive **Angular 19** web dashboard.
+
+---
+
+## 🧭 Documentation Portal & Sitemap
+
+The documentation for **Bend DevOps Guardian** is organized into specialized modular guides:
+
+| Document | Description |
+| :--- | :--- |
+| 🏛️ **[`ARCHITECTURE.md`](./ARCHITECTURE.md)** | **Clean Architecture**, runtime characteristics, parallel HVM reduction model, and C4/Mermaid topology diagrams. |
+| ⚡ **[`QUICKSTART.md`](./QUICKSTART.md)** | Step-by-step installation, prerequisites, CLI usage examples, and dashboard execution. |
+| 🔬 **[`PIPELINE.md`](./PIPELINE.md)** | 4-Tier Declarative Pipeline (`1_architectures`, `2_rules`, `3_languages`, `4_scanner`) and Token Taxonomy matrix. |
+| 🌐 **[`INTEGRATIONS.md`](./INTEGRATIONS.md)** | Multi-platform VCS setup for **GitHub Actions**, **GitLab CI/CD**, and **Bitbucket Pipelines**. |
+| 📜 **[`RULES.md`](./RULES.md)** | Complete rules catalog (`CULT01..05`, `ARCH-LAYER-01..04`), severities, and inline suppression pragmas (`@guardian-ignore`). |
+| 🤝 **[`CONTRIBUTING.md`](./CONTRIBUTING.md)** | Spec-Driven Development (SDD), Test-Driven Development (TDD) workflow, and commit standards. |
 
 ---
 
 ## 🎯 Overview & Philosophy
 
-In modern high-velocity continuous integration and delivery (CI/CD) environments, rapid code changes, architectural drift, incomplete stubs, missing automated tests, accidental credential leaks, and cross-tier boundary violations can silently compromise software reliability.
+In modern high-velocity continuous integration and delivery (CI/CD) environments, rapid code modifications, architectural drift, incomplete stubs, missing automated tests, accidental credential leaks, and cross-tier boundary violations can silently compromise software reliability.
 
 The **Bend DevOps Guardian** acts as an uncompromising automated quality gate embedded directly into DevOps workflows:
 - **Massively Parallel Reduction**: Analyzes dozens of files and hundreds of rules simultaneously using functional binary tree reductions on the Bend High-Order Virtual Machine (HVM).
@@ -18,44 +33,15 @@ The **Bend DevOps Guardian** acts as an uncompromising automated quality gate em
 
 ---
 
-## 🏗️ System Architecture
+## 🧅 Clean Architecture Summary
 
-```mermaid
-flowchart TD
-    subgraph Ingress ["1. Continuous Integration Triggers"]
-        PR["Pull Request / Merge Request (GitHub, GitLab, Bitbucket)"]
-        CLI_Runner["DevOps CLI / Pre-commit Hook"]
-        WebUI["🅰️ Angular DevOps Dashboard"]
-    end
+The system strictly adheres to Clean Architecture with concentric layer isolation:
+- **Layer 1 (Enterprise Core)**: Pure algebraic data types and functional rule evaluators in [`backend/src/guardian.bend`](./backend/src/guardian.bend) and [`backend/rules/layer_vocabulary.json`](./backend/rules/layer_vocabulary.json).
+- **Layer 2 (Application Use Cases)**: Parallel binary tree reduction, harness synthesis, and quality score calculation.
+- **Layer 3 (Interface Adapters)**: Multi-platform VCS adapters in [`scripts/vcs_adapters/`](./scripts/vcs_adapters/), syntactic token boundary filter in [`scripts/token_filter.py`](./scripts/token_filter.py), and SARIF exporters.
+- **Layer 4 (Frameworks & Drivers)**: CLI gate runner [`scripts/culture_guard.py`](./scripts/culture_guard.py), CI/CD pipelines, and Angular 19 dashboard in [`frontend/`](./frontend/).
 
-    subgraph Pipeline ["2. 4-Tier Evaluation Pipeline"]
-        S1["1_architectures/ (Topologies & Layer Hierarchies)"]
-        S2["2_rules/ (Layer Boundaries & Engineering Standards)"]
-        S3["3_languages/ & layer_vocabulary.json (Token Taxonomy)"]
-        S4["4_scanner/ & token_filter.py (Word Boundary & Scoping)"]
-    end
-
-    subgraph Engine ["3. Massively Parallel HVM Reduction"]
-        Tree["backend/src/guardian.bend (Binary FileTree Evaluator)"]
-        R1["Rule CULT01: Zero Incomplete Code (P0)"]
-        R2["Rule CULT02: Spec Traceability (P1)"]
-        R3["Rule CULT03: Mandatory Automated Tests (P0)"]
-        R4["Rule CULT04: Zero Hardcoded Secrets (P0)"]
-        R5["Rule CULT05: Strict Typing Contracts (P1)"]
-        R6["Rule ARCH-LAYER-01..04: Layer Boundaries (P0)"]
-    end
-
-    subgraph Egress ["4. DevOps Gate Artifacts & Telemetry"]
-        StatusCheck["Commit Status Check (Success / Failure)"]
-        PRNotes["PR / MR Inline Annotations & Discussion Summary"]
-        SARIF["SARIF v2.1.0 & GitLab CodeQuality JSON"]
-        DashboardTelemetry["DevOps Telemetry & Score (0-100)"]
-    end
-
-    Ingress --> Pipeline
-    Pipeline --> Engine
-    Engine --> Egress
-```
+*For detailed architectural flowcharts and interaction sequence diagrams, see [`ARCHITECTURE.md`](./ARCHITECTURE.md).*
 
 ---
 
@@ -102,34 +88,20 @@ bend-devops/
 
 ---
 
-## ⚡ Quickstart & Execution
+## ⚡ Quickstart Commands
 
-### 1. Prerequisites
-- [Bend](https://github.com/HigherOrderCO/Bend) (`cargo install bend-lang`)
-- Python 3.10+
-- Node.js 20+ & npm (for Angular Dashboard)
-
-### 2. Run End-to-End Quality Gate
 ```bash
+# 1. Run complete 8-stage validation suite
 ./scripts/validate.sh
-```
 
-### 3. CLI Audit in DevOps Pipelines
-```bash
-# Run audit on codebase
+# 2. Audit codebase via CLI
 python3 scripts/culture_guard.py src/
 
-# Run in CI/CD mode with automated VCS status reporting
+# 3. Run in CI/CD mode with automated PR/MR commenting
 python3 scripts/culture_guard.py --vcs github
 
-# Export JSON report
-python3 scripts/culture_guard.py src/ --format json
+# 4. Launch Angular 19 Dashboard
+cd frontend && npm install && npm start
 ```
 
-### 4. Launch Angular Dashboard
-```bash
-cd frontend
-npm install
-npm start
-# Open http://localhost:4200
-```
+*For more details on CLI options and environment variables, refer to [`QUICKSTART.md`](./QUICKSTART.md).*
