@@ -1,9 +1,9 @@
 """
-==============================================================================
+=============================================================================
 GitLab CI/CD & Code Quality Adapter
-==============================================================================
+=============================================================================
 @spec RF02 - GitLab Integration
-==============================================================================
+=============================================================================
 """
 
 import json
@@ -25,7 +25,7 @@ class GitLabAdapter(BaseVcsAdapter):
         return {
             "PRIVATE-TOKEN": self.token,
             "Content-Type": "application/json",
-            "User-Agent": "AI-Culture-Guardian-Gate"
+            "User-Agent": "Bend-DevOps-Guardian-Gate"
         }
 
     def publish_commit_status(self, state: str, description: str, score: int) -> bool:
@@ -37,7 +37,7 @@ class GitLabAdapter(BaseVcsAdapter):
         payload = {
             "state": gl_state,
             "description": description[:140],
-            "name": "guardian/architecture-culture-gate"
+            "name": "guardian/devops-architecture-gate"
         }
 
         url = f"{self.api_base}/projects/{self.project_id}/statuses/{self.commit_sha}"

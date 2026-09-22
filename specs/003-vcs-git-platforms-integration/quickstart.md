@@ -1,6 +1,6 @@
 # Quickstart: Multi-Platform VCS Integration
 
-Guide to configuring and executing the **AI Culture & Architecture Guardian** in GitHub Actions, GitLab CI/CD, and Bitbucket Pipelines.
+Guide to configuring and executing the **Bend DevOps Guardian** in GitHub Actions, GitLab CI/CD, and Bitbucket Pipelines.
 
 ---
 
@@ -19,7 +19,7 @@ Guide to configuring and executing the **AI Culture & Architecture Guardian** in
 ### 2.1. GitHub Actions (`.github/workflows/guardian.yml`)
 
 ```yaml
-name: Architecture & Culture Guardian Gate
+name: Bend DevOps Guardian Gate
 
 on:
   pull_request:
@@ -74,7 +74,7 @@ pipelines:
   pull-requests:
     '**':
       - step:
-          name: AI Culture & Architecture Guardian
+          name: Bend DevOps Guardian
           script:
             - python3 scripts/culture_guard.py --vcs bitbucket
 ```

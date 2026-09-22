@@ -37,7 +37,7 @@ class BaseVcsAdapter(ABC):
         """Constructs a clean markdown summary table with secret redaction."""
         status_badge = "✅ **PASSED**" if approved else "❌ **BLOCKED**"
         lines = [
-            "## 🛡️ AI Culture & Architecture Guardian Report",
+            "## 🛡️ Bend DevOps Guardian Report",
             "",
             f"**Quality Gate Status**: {status_badge} · **Compliance Score**: `{score}/100`",
             "",
@@ -63,5 +63,5 @@ class BaseVcsAdapter(ABC):
 
         lines.append("")
         lines.append("---")
-        lines.append("*Enforced automatically by AI Culture & Architecture Guardian (Bend HVM Engine)*")
+        lines.append("*Enforced automatically by Bend DevOps Guardian (Bend HVM Engine)*")
         return "\n".join(lines)

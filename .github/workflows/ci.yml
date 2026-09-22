@@ -1,4 +1,4 @@
-name: CI - AI Culture Guardian (Bend Engine & Angular Dashboard)
+name: CI - Bend DevOps Guardian (Bend Engine & Angular Dashboard)
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   validate-bend-and-culture:
-    name: Bend Engine, Angular Frontend & Culture Audit Gate
+    name: Bend Engine, Angular Frontend & Quality Gate
     runs-on: ubuntu-latest
 
     steps:
@@ -60,10 +60,10 @@ jobs:
 
       - name: Run Blocker Verification Test on Non-Compliant Code
         run: |
-          echo "Verificando se o Gate bloqueia código com violações P0..."
+          echo "Verifying that the Quality Gate blocks code with P0 violations..."
           if python3 scripts/culture_guard.py examples/non_compliant_agent_output.py; then
-            echo "Erro: Código não-conforme foi incorretamente aprovado!"
+            echo "Error: Non-compliant code was incorrectly approved!"
             exit 1
           else
-            echo "Sucesso: Código não-conforme foi bloqueado corretamente pelo guardião de cultura."
+            echo "Success: Non-compliant code was correctly blocked by the DevOps quality gate."
           fi

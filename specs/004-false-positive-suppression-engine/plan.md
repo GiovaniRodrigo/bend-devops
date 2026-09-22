@@ -1,10 +1,10 @@
 # Implementation Plan: False-Positive Elimination & Inline Exemption Engine
 
-This document outlines the technical strategy for implementing word boundary fencing, comment scoping, and inline suppression pragmas in the **AI Culture & Architecture Guardian**.
+This document outlines the technical strategy for implementing word boundary fencing, comment scoping, and inline suppression pragmas in the **Bend DevOps Guardian**.
 
 ---
 
-## 1. Files to Create and Modify
+## 1. Files and Components
 
 ### 1.1. Core Filtering & Lexical Scoping Engine (`scripts/token_filter.py`)
 * **`scripts/token_filter.py`**:

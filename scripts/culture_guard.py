@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-==============================================================================
-AI Culture & Architecture Guardian CLI (Bend Engine Orchestrator)
-==============================================================================
-Reads source files across any tech stack (C#, Python, TypeScript, PHP, Go,
-Java, Rust), classifies architectural layers, loads the Layer Vocabulary &
-Token Taxonomy from `backend/rules/`, extracts compliance features, and submits
-the AST/file-tree to the massively parallel Bend (HVM) engine for verification.
-==============================================================================
+# ==============================================================================
+# Bend DevOps Guardian CLI (Bend Parallel HVM Quality Gate)
+# ==============================================================================
+# Reads source files across any tech stack (C#, Python, TypeScript, PHP, Go,
+# Java, Rust), classifies architectural layers, loads the Layer Vocabulary &
+# Token Taxonomy from `backend/rules/`, extracts compliance features, and submits
+# the AST/file-tree to the massively parallel Bend (HVM) engine for verification.
+# ==============================================================================
 """
 
 import sys
@@ -289,7 +289,7 @@ class FileAuditResult:
 def generate_bend_harness(files: List[FileAuditResult]) -> str:
     """Generates dynamic Bend evaluation harness for parallel HVM reduction"""
     bend_code = [
-        '# Auto-generated Bend evaluation harness for AI Culture Guardian',
+        '# Auto-generated Bend evaluation harness for Bend DevOps Guardian',
         'type TargetFile:',
         '  TargetFile { name, lines_count, has_spec_tag, has_lazy_code, has_secrets, has_test_coverage, has_type_annotations }',
         '',
@@ -497,10 +497,10 @@ def print_report(files: List[FileAuditResult], bend_stats: tuple, format_type: s
         return is_ok
 
     # Terminal Text Output
-    status_badge = "✅ APPROVED IN CULTURE & ARCHITECTURE GATE" if is_ok else "❌ BLOCKED BY ARCHITECTURE GUARDIAN"
+    status_badge = "✅ APPROVED IN DEVOPS QUALITY GATE" if is_ok else "❌ BLOCKED BY DEVOPS GUARDIAN"
     
     print("\n" + "="*70)
-    print(" 🛡️  AI CULTURE & ARCHITECTURE GUARDIAN (BEND HVM ENGINE)")
+    print(" 🛡️  BEND DEVOPS GUARDIAN (BEND HVM ENGINE)")
     print("="*70)
     print(f" Status:              {status_badge}")
     print(f" Compliance Score:    {score}/100")
@@ -525,7 +525,7 @@ def print_report(files: List[FileAuditResult], bend_stats: tuple, format_type: s
     return is_ok
 
 def main():
-    parser = argparse.ArgumentParser(description="AI Culture & Architecture Guardian (Bend Engine)")
+    parser = argparse.ArgumentParser(description="Bend DevOps Guardian (Bend Parallel HVM Quality Gate)")
     parser.add_argument("paths", nargs="*", default=["."], help="Files or directories to audit")
     parser.add_argument("--architecture", choices=["layered_mvc", "clean_architecture", "microservices", "cqrs", "rest_api", "frontend_clean"], default="layered_mvc", help="Target architecture profile")
     parser.add_argument("--format", choices=["text", "json", "markdown"], default="text", help="Report output format")

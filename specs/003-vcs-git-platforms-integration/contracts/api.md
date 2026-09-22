@@ -20,7 +20,7 @@
       "ref": "main"
     },
     "user": {
-      "login": "ai-agent-developer"
+      "login": "devops-engineer"
     }
   },
   "repository": {

@@ -1,4 +1,4 @@
-# Interfaces: AI Agent Culture Validator
+# Interfaces: DevOps Standards & Architecture Quality Gate
 
 ---
 

@@ -1,20 +1,20 @@
-# 🛡️ AI Culture & Standards Guardian (`bend-devops`)
+# 🛡️ Bend DevOps Guardian (`bend-devops`)
 
-> **The automated right hand of technical leadership for engineering culture and architectural standards in AI Agent-generated code.**
+> **High-Performance Architecture & Engineering Standards Quality Gate for DevOps CI/CD Pipelines.**
 > Built with the purely functional and massively parallel **[Bend](https://github.com/HigherOrderCO/Bend)** (HVM) engine and an interactive **Angular** web dashboard.
 
 ---
 
-## 🎯 Overview & Purpose
+## 🎯 Overview & Philosophy
 
-When multiple AI Agents generate code concurrently, standard deviations, lazy code (`TODOs`, `pass`), missing tests, accidental API secret leaks, and lack of requirements traceability rapidly degrade software architecture.
+In modern high-velocity continuous integration and delivery (CI/CD) environments, rapid code changes, architectural drift, incomplete stubs, missing automated tests, accidental credential leaks, and cross-tier boundary violations can silently compromise software reliability.
 
-The **AI Culture Guardian** solves this problem at its root:
-- Acts as a **strict quality gate** in CI/CD pipelines and pre-commit hooks.
-- Evaluates artifacts and rules using **high-performance parallel binary trees** via Bend/HVM.
-- Provides an **Angular Web Dashboard** featuring a real-time Culture Score (0-100), live code auditor, culture rule catalog, and reduction tree simulator.
-- Blocks Pull Requests containing `P0_BLOCKING` infractions.
-- Operates 100% aligned with the **Spec-Driven Development (SDD)** paradigm.
+The **Bend DevOps Guardian** acts as an uncompromising automated quality gate embedded directly into DevOps workflows:
+- **Massively Parallel Reduction**: Analyzes dozens of files and hundreds of rules simultaneously using functional binary tree reductions on the Bend High-Order Virtual Machine (HVM).
+- **Multi-Platform CI/CD Gate**: Operates natively in **GitHub Actions**, **GitLab CI/CD**, and **Bitbucket Pipelines**, posting PR/MR comments, inline diff annotations, SARIF reports, and commit status checks.
+- **Universal Architecture Taxonomy**: Enforces declarative architectural profiles (Layered MVC, Clean Architecture, Microservices, CQRS, REST APIs, Frontend Clean Architecture) across any tech stack (.NET, Python, TypeScript, PHP, Go, Java, Rust).
+- **False-Positive Elimination**: Syntactic word boundary fencing, comment scoping, and inline documented suppression pragmas (`@guardian-ignore`).
+- **Interactive DevOps Dashboard**: Visualizes pipeline compliance metrics, rules catalog, and real-time pull request diff simulations.
 
 ---
 
@@ -22,39 +22,39 @@ The **AI Culture Guardian** solves this problem at its root:
 
 ```mermaid
 flowchart TD
-    subgraph Input ["1. Code Submission"]
-        Agent["🤖 AI Agent (Code / PR / Diff)"]
-        WebUI["🅰️ Angular Dashboard (Live Scanner)"]
+    subgraph Ingress ["1. Continuous Integration Triggers"]
+        PR["Pull Request / Merge Request (GitHub, GitLab, Bitbucket)"]
+        CLI_Runner["DevOps CLI / Pre-commit Hook"]
+        WebUI["🅰️ Angular DevOps Dashboard"]
     end
 
-    subgraph Orchestration ["2. Orchestration & Contracts"]
-        CLI["scripts/culture_guard.py (CLI / CI Gate)"]
-        Service["frontend/src/app/services/culture-guardian.service.ts"]
-        Manifesto["backend/rules/culture_manifesto.json"]
+    subgraph Pipeline ["2. 4-Tier Evaluation Pipeline"]
+        S1["1_architectures/ (Topologies & Layer Hierarchies)"]
+        S2["2_rules/ (Layer Boundaries & Engineering Standards)"]
+        S3["3_languages/ & layer_vocabulary.json (Token Taxonomy)"]
+        S4["4_scanner/ & token_filter.py (Word Boundary & Scoping)"]
     end
 
-    subgraph Engine ["3. Evaluation Engine in Bend (Parallel HVM)"]
-        Tree["backend/src/guardian.bend (FileTree / Divide-and-Conquer)"]
-        R1["Rule CULT01: Zero Lazy Code (P0)"]
+    subgraph Engine ["3. Massively Parallel HVM Reduction"]
+        Tree["backend/src/guardian.bend (Binary FileTree Evaluator)"]
+        R1["Rule CULT01: Zero Incomplete Code (P0)"]
         R2["Rule CULT02: Spec Traceability (P1)"]
-        R3["Rule CULT03: Test Coverage (P0)"]
+        R3["Rule CULT03: Mandatory Automated Tests (P0)"]
         R4["Rule CULT04: Zero Hardcoded Secrets (P0)"]
-        R5["Rule CULT05: Strict Typing (P1)"]
+        R5["Rule CULT05: Strict Typing Contracts (P1)"]
+        R6["Rule ARCH-LAYER-01..04: Layer Boundaries (P0)"]
     end
 
-    subgraph Output ["4. Reports & Gates"]
-        Report["📊 Audit Report + Score (0-100)"]
-        GatePass["✅ Approved (Score >= 80, 0 P0s)"]
-        GateFail["❌ Blocked in CI (Detailed P0 Violations)"]
+    subgraph Egress ["4. DevOps Gate Artifacts & Telemetry"]
+        StatusCheck["Commit Status Check (Success / Failure)"]
+        PRNotes["PR / MR Inline Annotations & Discussion Summary"]
+        SARIF["SARIF v2.1.0 & GitLab CodeQuality JSON"]
+        DashboardTelemetry["DevOps Telemetry & Score (0-100)"]
     end
 
-    Agent --> CLI
-    WebUI --> Service
-    Manifesto --> CLI & Service
-    CLI --> Tree
-    Tree --> R1 & R2 & R3 & R4 & R5
-    R1 & R2 & R3 & R4 & R5 --> Report
-    Report --> GatePass & GateFail
+    Ingress --> Pipeline
+    Pipeline --> Engine
+    Engine --> Egress
 ```
 
 ---
@@ -63,96 +63,73 @@ flowchart TD
 
 ```
 bend-devops/
-├── frontend/                          # 🅰️ Angular Web Dashboard
+├── backend/
+│   ├── rules/                         # 🏛️ 4-Tier Declarative Catalog & Vocabulary
+│   │   ├── 1_architectures/           # Architecture Profiles (MVC, Clean, Microservices, CQRS)
+│   │   ├── 2_rules/                   # Abstract Boundary & Culture Rules
+│   │   ├── 3_languages/               # Language Syntax & AST Adapters (C#, Py, TS, PHP, Go, Java, Rust)
+│   │   ├── 4_scanner/                 # Scanner & Engine Configurations
+│   │   ├── layer_vocabulary.json      # Complete Word, Tag & Token Taxonomy
+│   │   ├── layer_vocabulary.md        # Comprehensive Layer Taxonomy Guide
+│   │   └── rules_schema.json          # JSON Schema validating all manifests
 │   ├── src/
-│   │   ├── app/
-│   │   │   ├── models/                # TypeScript models for manifesto & reports
-│   │   │   ├── services/              # Audit service and HVM tree builder
-│   │   │   ├── app.ts                 # Standalone Component with reactive Signals
-│   │   │   ├── app.html               # Dashboard Template
-│   │   │   ├── app.css                # Dark theme & styling
-│   │   │   └── app.spec.ts            # Unit tests with Vitest
-│   │   ├── index.html
-│   │   ├── main.ts
-│   │   └── styles.css
-│   ├── angular.json
-│   └── package.json
-├── backend/                           # ⚡ Bend Functional Engine & Rules
-│   ├── src/
-│   │   └── guardian.bend              # Parallel engine in Bend (HVM)
-│   ├── tests/
-│   │   ├── test_rules.bend            # Rule unit tests in Bend
-│   │   └── test_engine.bend           # Parallel engine integration tests
-│   └── rules/                         # 🏛️ Architecture & Culture Rule Catalog
-│       ├── rules_schema.json          # Meta-Schema for rules
-│       ├── culture_manifesto.json     # Core culture rules
-│       ├── culture_manifesto.md       # Culture manifesto documentation
-│       ├── architecture_laravel_mvc.json # Laravel MVC layer rules
-│       ├── architecture_laravel_mvc.md
-│       ├── architecture_clean_arch.json # Clean architecture rules
-│       ├── architecture_clean_arch.md
-│       ├── architecture_microservices.json # Microservices rules
-│       ├── architecture_microservices.md
-│       ├── architecture_rest_api.json # REST API rules
-│       ├── architecture_rest_api.md
-│       ├── architecture_frontend_clean.json # Frontend architecture rules
-│       ├── architecture_frontend_clean.md
-│       ├── architecture_security_zerotrust.json # Zero Trust security rules
-│       ├── architecture_security_zerotrust.md
-│       ├── architecture_cqrs_event_sourcing.json # CQRS & Event-Driven rules
-│       ├── architecture_cqrs_event_sourcing.md
-│       └── README.md
-├── specs/                             # 📜 Spec-Driven Development (SDD)
-│   ├── 001-ai-agent-culture-validator/
-│   └── 002-layered-architecture-auditor/
+│   │   └── guardian.bend              # Pure functional parallel AST tree evaluator
+│   └── tests/
+│       ├── test_rules.bend            # Rule engine functional unit tests
+│       └── test_engine.bend           # Parallel tree reduction integration tests
 ├── scripts/
-│   ├── culture_guard.py               # CLI scanner, harness builder, report printer
-│   └── validate.sh                    # Universal CI/CD validation script
-├── examples/                          # Example codebases (compliant & non-compliant)
-│   ├── compliant_agent_output.py
-│   ├── test_compliant_agent_output.py
-│   └── non_compliant_agent_output.py
-├── .github/
-│   └── workflows/
-│       └── ci.yml                     # Automated GitHub Actions workflow
-├── CLAUDE.md                          # Guidelines for AI Coding Agents
-└── README.md                          # Main documentation
+│   ├── culture_guard.py               # Universal CLI auditor & CI/CD gate orchestrator
+│   ├── token_filter.py                # Syntactic boundary filter & pragma parser
+│   ├── validate.sh                    # 8-stage end-to-end quality gate script
+│   └── vcs_adapters/                  # GitHub, GitLab, and Bitbucket platform adapters
+├── specs/                             # 📋 Spec-Driven Development (SDD) Specifications
+│   ├── 001-devops-standards-validator/# Core Parallel HVM Engine Spec
+│   ├── 002-layered-architecture-auditor/# 4-Tier Pipeline & Layer Vocabulary Spec
+│   ├── 003-vcs-git-platforms-integration/# GitHub, GitLab, Bitbucket Integration Spec
+│   └── 004-false-positive-suppression-engine/# False-Positive Elimination & Pragmas Spec
+├── tests/                             # 🧪 Automated Python TDD Test Suite
+│   ├── test_token_filter.py           # Token boundary tests
+│   ├── test_suppressions.py           # Inline pragma tests
+│   ├── test_false_positives.py        # False-positive scenario integration tests
+│   └── vcs/                           # Multi-platform VCS adapter unit tests
+├── frontend/                          # 🅰️ Angular 19 DevOps Quality Dashboard
+│   ├── src/app/                       # Standalone Components, Models & Reactive Signals
+│   └── package.json                   # Angular and Tailwind CSS dependencies
+├── .github/workflows/guardian.yml     # GitHub Actions Quality Gate Workflow
+├── .gitlab-ci.yml                     # GitLab CI/CD Quality Gate Pipeline
+└── bitbucket-pipelines.yml            # Bitbucket Pipelines Quality Gate Configuration
 ```
 
 ---
 
-## 🚀 Quickstart & Execution
+## ⚡ Quickstart & Execution
 
-### 1. Universal Validation (Bend + Angular + CLI Gate)
+### 1. Prerequisites
+- [Bend](https://github.com/HigherOrderCO/Bend) (`cargo install bend-lang`)
+- Python 3.10+
+- Node.js 20+ & npm (for Angular Dashboard)
+
+### 2. Run End-to-End Quality Gate
 ```bash
 ./scripts/validate.sh
 ```
 
-### 2. Run the Angular Dashboard Locally
+### 3. CLI Audit in DevOps Pipelines
 ```bash
-# From workspace root:
-npm run dev
+# Run audit on codebase
+python3 scripts/culture_guard.py src/
 
-# Or within frontend folder:
+# Run in CI/CD mode with automated VCS status reporting
+python3 scripts/culture_guard.py --vcs github
+
+# Export JSON report
+python3 scripts/culture_guard.py src/ --format json
+```
+
+### 4. Launch Angular Dashboard
+```bash
 cd frontend
-npm run dev
-# Open http://localhost:4200 in your browser
-```
-
-### 3. Run Bend Engine Tests
-```bash
-# Unit tests
-bend run-rs backend/tests/test_rules.bend
-
-# Integration tests
-bend run-rs backend/tests/test_engine.bend
-```
-
-### 4. Audit Files via CLI
-```bash
-# Audit compliant code (Approved with score 100)
-python3 scripts/culture_guard.py examples/compliant_agent_output.py examples/test_compliant_agent_output.py
-
-# Audit non-compliant code (Blocked with exit code 1)
-python3 scripts/culture_guard.py examples/non_compliant_agent_output.py
+npm install
+npm start
+# Open http://localhost:4200
 ```

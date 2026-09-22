@@ -1,6 +1,6 @@
 # Specification: False-Positive Elimination, Contextual AST Filtering & Inline Exemption Engine
 
-This specification defines the architecture, algorithms, and rules for eliminating false positives ("false true" non-conformances) in the **AI Culture & Architecture Guardian**, including syntactic word boundary fences, comment/docstring scoping, and formal inline suppression pragmas (`@guardian-ignore`).
+This specification defines the architecture, algorithms, and rules for eliminating false positives ("false true" non-conformances) in the **Bend DevOps Guardian**, including syntactic word boundary fences, comment/docstring scoping, and formal inline suppression pragmas (`@guardian-ignore`).
 
 ---
 

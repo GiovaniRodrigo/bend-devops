@@ -1,12 +1,12 @@
 # Specification: Multi-Platform VCS Integration (GitHub, GitLab, Bitbucket)
 
-This specification defines the requirements and architecture for integrating the **AI Culture & Architecture Guardian** directly into **GitHub**, **GitLab**, and **Bitbucket** CI/CD pipelines, pull requests, merge requests, and automated webhook workflows.
+This specification defines the requirements and architecture for integrating the **Bend DevOps Guardian** directly into **GitHub**, **GitLab**, and **Bitbucket** CI/CD pipelines, pull requests, merge requests, and automated webhook workflows.
 
 ---
 
 ## 1. Objective
 
-Provide an enterprise-grade, multi-platform VCS adapter suite that automatically audits Pull Requests (GitHub), Merge Requests (GitLab), and PRs (Bitbucket). The system executes the 4-tier Guardian scanner, generates native inline annotations, posts consolidated audit summaries to PR discussions, produces SARIF and Code Climate JSON artifacts, and sets commit statuses to enforce quality gates.
+Provide an enterprise-grade, multi-platform VCS adapter suite that automatically audits Pull Requests (GitHub), Merge Requests (GitLab), and PRs (Bitbucket). The system executes the 4-tier Guardian scanner, generates native inline annotations, posts consolidated audit summaries to PR discussions, produces SARIF and Code Climate JSON artifacts, and sets commit statuses to enforce DevOps quality gates.
 
 ---
 
@@ -17,7 +17,7 @@ Provide an enterprise-grade, multi-platform VCS adapter suite that automatically
 | **RF01** | **GitHub Integration**: Parse GitHub PR events, post check runs via GitHub REST/GraphQL API, emit inline diff annotations, and export SARIF reports. | GitHub Adapter | High |
 | **RF02** | **GitLab Integration**: Run in GitLab CI/CD jobs, publish GitLab Code Quality JSON (`gl-code-quality-report.json`), post MR review discussions, and set commit statuses. | GitLab Adapter | High |
 | **RF03** | **Bitbucket Integration**: Process Bitbucket Pipelines builds, publish Bitbucket Code Insights reports with line-level annotations, and update build commit statuses. | Bitbucket Adapter | High |
-| **RF04** | **Incremental Diff Scanning**: Extract only modified files and changed line numbers from `git diff` / PR patch metadata to focus audits exclusively on MR deltas. | Diff Engine | High |
+| **RF04** | **Incremental Diff Scanning**: Extract only modified files and changed line numbers from `git diff` / PR patch metadata to focus audits exclusively on PR/MR deltas. | Diff Engine | High |
 | **RF05** | **Unified Webhook Gateway**: Provide a lightweight HTTP receiver capable of ingesting webhook payloads from GitHub, GitLab, and Bitbucket for event-driven reviews. | Webhook Gateway | Medium |
 | **RF06** | **Configurable Gate Policies**: Allow repository maintainers to define branch-level gating rules (e.g. `main` requires score >= 90 with 0 P0 violations, feature branches require score >= 80). | Policy Engine | High |
 | **RF07** | **Interactive Comment Templates**: Post rich markdown tables with violation breakdown, severity badges, and remediation advice into PR/MR discussion threads. | Notifier | High |
@@ -51,23 +51,23 @@ Provide an enterprise-grade, multi-platform VCS adapter suite that automatically
 
 ### Scenario 1: GitHub Pull Request with Architecture Violation
 * **Given that** a developer opens a GitHub PR modifying `src/Domain/Order.cs` with an embedded `<img>` tag
-* **When** the GitHub Action triggers `scripts/vcs_adapters/github.py`
+* **When** the GitHub Action triggers `scripts/vcs_adapters/github_adapter.py`
 * **Then** the scanner detects `ARCH-LAYER-01` on line 12
 * **And** creates an inline Check Annotation pointing to `src/Domain/Order.cs#L12`
 * **And** sets the commit status to `failure` (`Architecture Gate Failed: 1 P0 Violation`)
 * **And** posts a markdown breakdown in the PR discussion.
 
 ### Scenario 2: GitLab Merge Request with Full Compliance
-* **Given that** an AI agent submits a GitLab MR with full `@spec` tags and complete unit tests
-* **When** the GitLab CI pipeline runs `scripts/vcs_adapters/gitlab.py`
-* **Then** the scanner verifies 0 violations and calculates a Culture Score of 100
+* **Given that** a developer submits a GitLab MR with full `@spec` tags and complete unit tests
+* **When** the GitLab CI pipeline runs `scripts/vcs_adapters/gitlab_adapter.py`
+* **Then** the scanner verifies 0 violations and calculates a DevOps Quality Score of 100
 * **And** outputs `gl-code-quality-report.json` with 0 issues
 * **And** sets the GitLab pipeline status to `success` (Green Quality Gate).
 
 ### Scenario 3: Bitbucket Pipeline with Code Insights
 * **Given that** a commit is pushed to a Bitbucket branch
-* **When** Bitbucket Pipelines executes `scripts/vcs_adapters/bitbucket.py`
-* **Then** the adapter creates a Code Insights report named `AI Culture & Architecture Guardian`
+* **When** Bitbucket Pipelines executes `scripts/vcs_adapters/bitbucket_adapter.py`
+* **Then** the adapter creates a Code Insights report named `Bend DevOps Guardian`
 * **And** posts annotations for any P1 warnings without blocking the build.
 
 ---
@@ -87,12 +87,12 @@ Provide an enterprise-grade, multi-platform VCS adapter suite that automatically
 
 ```mermaid
 flowchart LR
-    Dev["Developer / AI Agent"]
+    Dev["Developer / CI Pipeline"]
     GH["GitHub PR"]
     GL["GitLab MR"]
     BB["Bitbucket PR"]
 
-    subgraph GuardianEngine ["AI Culture & Architecture Guardian"]
+    subgraph GuardianEngine ["Bend DevOps Guardian"]
         DiffParser["1. Git Diff Parser"]
         CoreScanner["2. 4-Tier Scanner & Bend Engine"]
         VCSDispatcher["3. VCS Event & Comment Dispatcher"]
@@ -122,13 +122,13 @@ sequenceDiagram
     actor CI as CI Runner (GitHub / GitLab / Bitbucket)
     participant Adapter as VCS Platform Adapter
     participant Diff as Git Diff Analyzer
-    participant Engine as Culture & Layer Engine
+    participant Engine as DevOps & Layer Engine
     participant API as VCS Platform REST API
 
     CI->>Adapter: Execute with environment tokens
     Adapter->>Diff: Extract modified files & changed lines
     Diff-->>Adapter: List of changed artifacts & hunks
-    Adapter->>Engine: Run layer & culture audit on delta
+    Adapter->>Engine: Run layer & standards audit on delta
     Engine-->>Adapter: Return violations, score & verdict
     Adapter->>API: Post Commit Status (Success / Failure)
     Adapter->>API: Post / Update PR Discussion Comment

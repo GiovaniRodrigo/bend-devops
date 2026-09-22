@@ -5,7 +5,7 @@
 ## 1. GitHub Actions (`.github/workflows/guardian.yml`)
 
 ```yaml
-name: Architecture & Culture Guardian Gate
+name: Bend DevOps Guardian Gate
 
 on:
   pull_request:
@@ -15,7 +15,7 @@ on:
 
 jobs:
   guardian-gate:
-    name: Culture & Layer Quality Gate
+    name: DevOps Standards & Architecture Quality Gate
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -86,7 +86,7 @@ pipelines:
   pull-requests:
     '**':
       - step:
-          name: AI Culture & Architecture Guardian
+          name: Bend DevOps Guardian
           script:
             - python3 scripts/culture_guard.py --vcs bitbucket
 ```

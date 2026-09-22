@@ -1,7 +1,7 @@
 {
   "name": "bend-devops",
   "version": "1.0.0",
-  "description": "AI Culture & Standards Guardian (Bend Engine + Angular Dashboard)",
+  "description": "Bend DevOps Guardian: Architecture & Engineering Standards Quality Gate (Bend Engine + Angular Dashboard)",
   "scripts": {
     "dev": "npm --prefix frontend run dev",
     "start": "npm --prefix frontend start",
@@ -14,9 +14,11 @@
     "bend",
     "hvm",
     "angular",
-    "ai-agents",
-    "culture-guardian",
-    "spec-driven-development"
+    "devops",
+    "ci-cd",
+    "quality-gate",
+    "spec-driven-development",
+    "architecture-auditor"
   ],
   "author": "",
   "license": "ISC"

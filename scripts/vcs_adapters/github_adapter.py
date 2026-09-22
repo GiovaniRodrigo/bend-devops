@@ -23,7 +23,7 @@ class GitHubAdapter(BaseVcsAdapter):
         return {
             "Authorization": f"Bearer {self.token}",
             "Accept": "application/vnd.github.v3+json",
-            "User-Agent": "AI-Culture-Guardian-Gate"
+            "User-Agent": "Bend-DevOps-Guardian-Gate"
         }
 
     def publish_commit_status(self, state: str, description: str, score: int) -> bool:
@@ -35,7 +35,7 @@ class GitHubAdapter(BaseVcsAdapter):
         payload = {
             "state": gh_state,
             "description": description[:140],
-            "context": "guardian/architecture-culture-gate"
+            "context": "guardian/devops-architecture-gate"
         }
 
         url = f"{self.api_base}/repos/{self.repo}/statuses/{self.commit_sha}"
@@ -101,7 +101,7 @@ class GitHubAdapter(BaseVcsAdapter):
                 {
                     "tool": {
                         "driver": {
-                            "name": "AI Culture & Architecture Guardian",
+                            "name": "Bend DevOps Guardian",
                             "version": "1.0.0",
                             "informationUri": "https://github.com/oasis-tcs/sarif-spec",
                             "rules": [

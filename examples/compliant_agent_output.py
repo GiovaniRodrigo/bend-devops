@@ -1,6 +1,6 @@
 """
 ==============================================================================
-Compliant AI Agent Code Example - 100% Engineering Standards Compliant
+Compliant Source Code Example - 100% Engineering Standards Compliant
 ==============================================================================
 @spec RF01 - Token Bucket Rate Limiter Implementation
 ==============================================================================

@@ -16,7 +16,7 @@ Represents an incoming PR or MR review request.
 | `pr_number` | integer | Yes | Pull Request or Merge Request numeric ID |
 | `commit_sha` | string | Yes | Full Git SHA of the head commit under review |
 | `base_sha` | string | Yes | Base branch target commit SHA |
-| `author` | string | Yes | Username or handle of the author / AI agent |
+| `author` | string | Yes | Username or handle of the author / contributor |
 | `title` | string | Yes | Title of the Pull/Merge Request |
 
 ---
@@ -43,7 +43,7 @@ Status badge attached to the Git commit / PR build.
 | `state` | string (`success` \| `failure` \| `pending`) | Yes | Build gate verdict |
 | `target_url` | string | No | URL to detailed report dashboard or CI job |
 | `description` | string | Yes | Short summary text (e.g. `Score: 95/100 · 0 Blocking Issues`) |
-| `context` | string | Yes | Status context label (e.g. `guardian/culture-architecture`) |
+| `context` | string | Yes | Status context label (e.g. `guardian/devops-architecture`) |
 
 ---
 

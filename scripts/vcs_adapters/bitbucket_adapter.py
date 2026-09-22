@@ -23,7 +23,7 @@ class BitbucketAdapter(BaseVcsAdapter):
         return {
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json",
-            "User-Agent": "AI-Culture-Guardian-Gate"
+            "User-Agent": "Bend-DevOps-Guardian-Gate"
         }
 
     def publish_commit_status(self, state: str, description: str, score: int) -> bool:
@@ -33,7 +33,7 @@ class BitbucketAdapter(BaseVcsAdapter):
 
         bb_state = "SUCCESSFUL" if state.upper() in ["SUCCESS", "SUCCESSFUL"] else "FAILED"
         payload = {
-            "key": "guardian-culture-gate",
+            "key": "guardian-devops-gate",
             "state": bb_state,
             "description": description[:255],
             "url": "https://github.com/oasis-tcs/sarif-spec"
@@ -78,14 +78,14 @@ class BitbucketAdapter(BaseVcsAdapter):
     def generate_report_artifact(self, violations: List[Dict[str, Any]], score: int, approved: bool) -> str:
         """Generates Bitbucket Code Insights Report payload."""
         payload = {
-            "title": "AI Culture & Architecture Guardian",
+            "title": "Bend DevOps Guardian",
             "details": f"Quality Gate Compliance Score: {score}/100. Total violations: {len(violations)}.",
             "report_type": "SECURITY",
             "reporter": "Guardian HVM Engine",
             "result": "PASSED" if approved else "FAILED",
             "data": [
                 {
-                    "title": "Culture & Architecture Score",
+                    "title": "DevOps Quality Score",
                     "type": "NUMBER",
                     "value": score
                 },

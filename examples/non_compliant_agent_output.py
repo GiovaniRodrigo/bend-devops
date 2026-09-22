@@ -1,4 +1,4 @@
-# Non-compliant AI agent generated code example
+# Non-compliant code example (violating engineering standards)
 # Missing @spec requirement tag (CULT02)
 # Contains hardcoded secret (CULT04)
 # Contains lazy code TODO and pass (CULT01)

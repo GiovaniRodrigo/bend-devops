@@ -44,7 +44,7 @@ class BaseVcsAdapter(ABC):
     {
       "tool": {
         "driver": {
-          "name": "AI Culture & Architecture Guardian",
+          "name": "Bend DevOps Guardian",
           "version": "1.0.0",
           "rules": [
             {

@@ -36,7 +36,7 @@ class TestGitHubAdapter(unittest.TestCase):
         
         self.assertEqual(sarif_data["version"], "2.1.0")
         self.assertEqual(len(sarif_data["runs"]), 1)
-        self.assertEqual(sarif_data["runs"][0]["tool"]["driver"]["name"], "AI Culture & Architecture Guardian")
+        self.assertEqual(sarif_data["runs"][0]["tool"]["driver"]["name"], "Bend DevOps Guardian")
         self.assertEqual(len(sarif_data["runs"][0]["results"]), 1)
         self.assertEqual(sarif_data["runs"][0]["results"][0]["ruleId"], "ARCH-LAYER-01")
 

@@ -34,7 +34,7 @@ class TestBitbucketAdapter(unittest.TestCase):
         report_str = self.adapter.generate_report_artifact(violations, score=70, approved=False)
         report = json.loads(report_str)
 
-        self.assertEqual(report["title"], "AI Culture & Architecture Guardian")
+        self.assertEqual(report["title"], "Bend DevOps Guardian")
         self.assertEqual(report["result"], "FAILED")
         self.assertEqual(report["report_type"], "SECURITY")
         self.assertEqual(len(report["data"]), 2)

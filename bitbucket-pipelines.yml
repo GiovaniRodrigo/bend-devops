@@ -4,6 +4,6 @@ pipelines:
   pull-requests:
     '**':
       - step:
-          name: AI Culture & Architecture Guardian
+          name: Bend DevOps Guardian
           script:
             - python3 scripts/culture_guard.py --vcs bitbucket
