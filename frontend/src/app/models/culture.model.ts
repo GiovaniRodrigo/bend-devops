@@ -1,41 +1,62 @@
 export type ArchitecturalLayer = 
+  | 'Domain'
+  | 'Application'
+  | 'Infrastructure'
+  | 'Presentation'
+  | 'Core'
   | 'Model'
   | 'Controller'
   | 'View'
   | 'Service'
-  | 'DomainEntity'
-  | 'RequestValidator'
-  | 'Infrastructure'
-  | 'PresentationalUI'
   | 'Unknown';
 
 export type SeverityLevel = 'P0_BLOCKING' | 'P1_WARNING' | 'P2_INFO';
 
+export type VcsPlatform = 'github' | 'gitlab' | 'bitbucket' | 'local';
+
+export type ArchitectureProfileId = 
+  | 'clean_architecture'
+  | 'layered_mvc'
+  | 'domain_driven_design'
+  | 'hexagonal'
+  | 'microservices'
+  | 'cqrs_event_sourcing'
+  | 'rest_api'
+  | 'frontend_clean';
+
+export interface ArchitectureProfile {
+  id: ArchitectureProfileId;
+  name: string;
+  category: string;
+  description: string;
+  tiers: {
+    name: string;
+    description: string;
+    allowedDependencies: string[];
+    forbiddenDependencies: string[];
+  }[];
+}
+
 export interface CultureRule {
   id: string;
   name: string;
-  category: string;
+  category: 'Culture & Quality' | 'Architecture - Layer Boundaries' | 'Language Adapter' | 'Security';
   severity: SeverityLevel;
   penaltyPoints: number;
   description: string;
   rationale: string;
   remediation: string;
+  layer?: string;
   languages: string[];
   status: 'active' | 'inactive';
 }
 
-export interface LayerRule {
-  id: string;
-  name: string;
-  category: string;
-  layer?: string;
-  severity: SeverityLevel;
-  penaltyPoints: number;
+export interface LayerVocabularyItem {
+  layer: ArchitecturalLayer;
   description: string;
-  rationale: string;
-  remediation: string;
-  detectionPatterns?: string[];
-  forbiddenTargets?: string[];
+  keywords: string[];
+  forbiddenInOtherLayers: string[];
+  languages: Record<string, string[]>;
 }
 
 export interface CodeViolation {
@@ -48,29 +69,23 @@ export interface CodeViolation {
   author?: string;
   astNode?: string;
   snippet?: string;
-}
-
-export interface LayerViolation {
-  ruleId: string;
-  fileName: string;
-  identifiedLayer: ArchitecturalLayer;
-  severity: SeverityLevel;
-  penalty: number;
-  line?: number;
-  snippet?: string;
-  message: string;
   remediation?: string;
+  isSuppressed?: boolean;
+  suppressionReason?: string;
 }
 
 export interface FileAuditInfo {
   name: string;
   linesCount: number;
+  language: string;
+  identifiedLayer: ArchitecturalLayer;
   hasSpecTag: boolean;
   hasLazyCode: boolean;
   hasSecrets: boolean;
   hasTestCoverage: boolean;
   hasTypeAnnotations: boolean;
   violations: CodeViolation[];
+  activeSuppressions: number;
 }
 
 export interface AuditReport {
@@ -80,21 +95,11 @@ export interface AuditReport {
   p1Count: number;
   p2Count: number;
   totalPenalty: number;
+  activeSuppressionsCount: number;
   score: number;
   isApproved: boolean;
   files: FileAuditInfo[];
-}
-
-export interface ConsolidatedArchitectureReport {
-  totalFiles: number;
-  totalViolations: number;
-  p0Count: number;
-  p1Count: number;
-  p2Count: number;
-  penaltyTotal: number;
-  architectureScore: number;
-  isApproved: boolean;
-  auditedFiles: LayerViolation[];
+  timestamp: string;
 }
 
 export interface AnalysisRun {
@@ -104,9 +109,33 @@ export interface AnalysisRun {
   mrTitle: string;
   author: string;
   targetBranch: string;
+  platform: VcsPlatform;
   issues: number;
-  status: 'Completed' | 'Full compliance' | 'Blocked';
+  p0Count: number;
+  p1Count: number;
+  status: 'Full compliance' | 'Completed' | 'Blocked';
   duration: string;
   violations: CodeViolation[];
   score: number;
+  suppressionsCount: number;
+}
+
+export interface WebhookEventPayload {
+  platform: VcsPlatform;
+  eventType: string;
+  repo: string;
+  branch: string;
+  commitSha: string;
+  prId?: string;
+  prTitle?: string;
+  author: string;
+  diffSummary?: string;
+}
+
+export interface BranchPolicy {
+  branchPattern: string;
+  minScore: number;
+  allowP0: boolean;
+  allowP1: boolean;
+  description: string;
 }
