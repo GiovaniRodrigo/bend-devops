@@ -1,4 +1,4 @@
-# 🛡️ AI Culture & Standards Guardian (`ai-bend-devops`)
+# 🛡️ AI Culture & Standards Guardian (`bend-devops`)
 
 > **The automated right hand of technical leadership for engineering culture and architectural standards in AI Agent-generated code.**
 > Built with the purely functional and massively parallel **[Bend](https://github.com/HigherOrderCO/Bend)** (HVM) engine and an interactive **Angular** web dashboard.
@@ -62,7 +62,7 @@ flowchart TD
 ## 📁 Repository Structure
 
 ```
-ai-bend-devops/
+bend-devops/
 ├── frontend/                          # 🅰️ Angular Web Dashboard
 │   ├── src/
 │   │   ├── app/
