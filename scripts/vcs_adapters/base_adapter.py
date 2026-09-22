@@ -2,10 +2,11 @@
 ==============================================================================
 Base Abstract VCS Adapter Contract
 ==============================================================================
-@spec RF01, RF02, RF03 - Platform Adapters
+@spec RF01, RF02, RF03, RF04, RF05, RF06 - Platform Adapters
 ==============================================================================
 """
 
+import subprocess
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
 
@@ -19,6 +20,11 @@ class BaseVcsAdapter(ABC):
         self.commit_sha = commit_sha
 
     @abstractmethod
+    def get_changed_files(self) -> List[str]:
+        """Returns list of modified or added file paths in the PR/MR."""
+        pass
+
+    @abstractmethod
     def publish_commit_status(self, state: str, description: str, score: int) -> bool:
         """Sets commit status check on the HEAD SHA (e.g. success, failure, pending)."""
         pass
@@ -29,9 +35,22 @@ class BaseVcsAdapter(ABC):
         pass
 
     @abstractmethod
-    def generate_report_artifact(self, violations: List[Dict[str, Any]], score: int, approved: bool) -> str:
-        """Generates platform-specific report format (SARIF / CodeQuality JSON)."""
+    def publish_annotations(self, violations: List[Dict[str, Any]]) -> bool:
+        """Publishes line-level inline annotations (GitHub Check Runs, Bitbucket Insights)."""
         pass
+
+    @abstractmethod
+    def generate_report_artifact(self, violations: List[Dict[str, Any]], score: int, approved: bool) -> str:
+        """Generates platform-specific report format (SARIF / CodeQuality JSON / Insights)."""
+        pass
+
+    def _get_git_diff_files(self, base_ref: str = "HEAD~1") -> List[str]:
+        """Fallback helper to extract changed files from local git diff."""
+        try:
+            res = subprocess.run(["git", "diff", "--name-only", base_ref], capture_output=True, text=True, check=True)
+            return [f.strip() for f in res.stdout.splitlines() if f.strip()]
+        except Exception:
+            return []
 
     def build_markdown_summary(self, violations: List[Dict[str, Any]], score: int, approved: bool) -> str:
         """Constructs a clean markdown summary table with secret redaction."""

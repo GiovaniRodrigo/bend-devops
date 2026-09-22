@@ -64,5 +64,35 @@ class TestGitHubAdapter(unittest.TestCase):
         success = self.adapter.publish_commit_status("success", "Score: 100/100 · 0 Infractions", 100)
         self.assertTrue(success)
 
+    @patch("urllib.request.urlopen")
+    def test_publish_annotations_creates_check_run(self, mock_urlopen):
+        mock_response = MagicMock()
+        mock_response.getcode.return_value = 201
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        violations = [{
+            "path": "src/Domain/Order.cs",
+            "line": 12,
+            "rule_id": "ARCH-LAYER-01",
+            "severity": "P0_BLOCKING",
+            "message": "Forbidden HTML in model"
+        }]
+        success = self.adapter.publish_annotations(violations)
+        self.assertTrue(success)
+
+    @patch("urllib.request.urlopen")
+    def test_get_changed_files_from_github_api(self, mock_urlopen):
+        mock_response = MagicMock()
+        mock_response.getcode.return_value = 200
+        mock_response.read.return_value = json.dumps([
+            {"filename": "src/Domain/Order.cs"},
+            {"filename": "src/Views/Order.cshtml"}
+        ]).encode("utf-8")
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        files = self.adapter.get_changed_files()
+        self.assertEqual(len(files), 2)
+        self.assertIn("src/Domain/Order.cs", files)
+
 if __name__ == "__main__":
     unittest.main()

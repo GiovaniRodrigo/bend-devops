@@ -48,5 +48,37 @@ class TestBitbucketAdapter(unittest.TestCase):
         success = self.adapter.publish_commit_status("SUCCESSFUL", "Score: 90/100 · Gate Passed", 90)
         self.assertTrue(success)
 
+    @patch("urllib.request.urlopen")
+    def test_publish_annotations_puts_insight_annotation(self, mock_urlopen):
+        mock_response = MagicMock()
+        mock_response.getcode.return_value = 200
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        violations = [{
+            "path": "src/Domain/Account.py",
+            "line": 8,
+            "rule_id": "ARCH-LAYER-03",
+            "severity": "P0_BLOCKING",
+            "message": "Forbidden transport in domain"
+        }]
+        success = self.adapter.publish_annotations(violations)
+        self.assertTrue(success)
+
+    @patch("urllib.request.urlopen")
+    def test_get_changed_files_from_bitbucket_api(self, mock_urlopen):
+        mock_response = MagicMock()
+        mock_response.getcode.return_value = 200
+        mock_response.read.return_value = json.dumps({
+            "values": [
+                {"new": {"path": "src/Domain/Account.py"}},
+                {"old": {"path": "src/Legacy/Account.py"}}
+            ]
+        }).encode("utf-8")
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        files = self.adapter.get_changed_files()
+        self.assertEqual(len(files), 2)
+        self.assertIn("src/Domain/Account.py", files)
+
 if __name__ == "__main__":
     unittest.main()

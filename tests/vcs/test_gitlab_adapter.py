@@ -49,5 +49,36 @@ class TestGitLabAdapter(unittest.TestCase):
         success = self.adapter.post_pr_comment("## Merge Request Quality Summary")
         self.assertTrue(success)
 
+    @patch("urllib.request.urlopen")
+    def test_publish_annotations_posts_note(self, mock_urlopen):
+        mock_response = MagicMock()
+        mock_response.getcode.return_value = 201
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        violations = [{
+            "path": "src/Views/ProductList.cshtml",
+            "line": 6,
+            "rule_id": "ARCH-LAYER-02",
+            "severity": "P0_BLOCKING",
+            "message": "Direct DB in view"
+        }]
+        success = self.adapter.publish_annotations(violations)
+        self.assertTrue(success)
+
+    @patch("urllib.request.urlopen")
+    def test_get_changed_files_from_gitlab_api(self, mock_urlopen):
+        mock_response = MagicMock()
+        mock_response.getcode.return_value = 200
+        mock_response.read.return_value = json.dumps({
+            "changes": [
+                {"new_path": "src/Services/PaymentService.cs", "old_path": "src/Services/PaymentService.cs"}
+            ]
+        }).encode("utf-8")
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        files = self.adapter.get_changed_files()
+        self.assertEqual(len(files), 1)
+        self.assertEqual(files[0], "src/Services/PaymentService.cs")
+
 if __name__ == "__main__":
     unittest.main()

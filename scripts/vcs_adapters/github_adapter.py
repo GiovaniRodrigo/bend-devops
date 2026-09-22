@@ -26,6 +26,22 @@ class GitHubAdapter(BaseVcsAdapter):
             "User-Agent": "Bend-DevOps-Guardian-Gate"
         }
 
+    def get_changed_files(self) -> List[str]:
+        """Returns list of modified or added files in the GitHub PR."""
+        if not self.pr_number or not self.repo:
+            return self._get_git_diff_files()
+
+        url = f"{self.api_base}/repos/{self.repo}/pulls/{self.pr_number}/files"
+        req = urllib.request.Request(url, headers=self._get_headers(), method="GET")
+        try:
+            with urllib.request.urlopen(req) as resp:
+                if resp.getcode() == 200:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    return [item.get("filename") for item in data if "filename" in item]
+        except Exception:
+            pass
+        return self._get_git_diff_files()
+
     def publish_commit_status(self, state: str, description: str, score: int) -> bool:
         """Sets commit status check via GitHub Statuses API."""
         if not self.commit_sha or not self.repo:
@@ -58,6 +74,53 @@ class GitHubAdapter(BaseVcsAdapter):
 
         url = f"{self.api_base}/repos/{self.repo}/issues/{self.pr_number}/comments"
         payload = {"body": markdown_body}
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers=self._get_headers(),
+            method="POST"
+        )
+        try:
+            with urllib.request.urlopen(req) as resp:
+                return resp.getcode() in [200, 201]
+        except Exception:
+            return False
+
+    def publish_annotations(self, violations: List[Dict[str, Any]]) -> bool:
+        """Publishes inline Check Run annotations to GitHub."""
+        if not self.commit_sha or not self.repo:
+            return False
+
+        annotations = []
+        for v in violations:
+            path = v.get("path", v.get("fileName", "unknown"))
+            line = v.get("line", 1)
+            msg = v.get("message", "Violation detected")
+            rule_id = v.get("rule_id", "ARCH-RULE")
+            sev_level = "failure" if v.get("severity") == "P0_BLOCKING" else "warning"
+
+            annotations.append({
+                "path": path,
+                "start_line": line,
+                "end_line": line,
+                "annotation_level": sev_level,
+                "message": msg,
+                "title": f"DevOps Guardian: {rule_id}"
+            })
+
+        payload = {
+            "name": "Bend DevOps Guardian",
+            "head_sha": self.commit_sha,
+            "status": "completed",
+            "conclusion": "failure" if any(v.get("severity") == "P0_BLOCKING" for v in violations) else "success",
+            "output": {
+                "title": "Architecture & Engineering Standards Audit",
+                "summary": f"Audited {len(violations)} infractions.",
+                "annotations": annotations[:50]  # GitHub Check API limit: 50 per call
+            }
+        }
+
+        url = f"{self.api_base}/repos/{self.repo}/check-runs"
         req = urllib.request.Request(
             url,
             data=json.dumps(payload).encode("utf-8"),

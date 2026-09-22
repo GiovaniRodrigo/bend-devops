@@ -28,6 +28,23 @@ class GitLabAdapter(BaseVcsAdapter):
             "User-Agent": "Bend-DevOps-Guardian-Gate"
         }
 
+    def get_changed_files(self) -> List[str]:
+        """Returns list of changed files in the GitLab MR."""
+        if not self.pr_number or not self.project_id:
+            return self._get_git_diff_files()
+
+        url = f"{self.api_base}/projects/{self.project_id}/merge_requests/{self.pr_number}/changes"
+        req = urllib.request.Request(url, headers=self._get_headers(), method="GET")
+        try:
+            with urllib.request.urlopen(req) as resp:
+                if resp.getcode() == 200:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    changes = data.get("changes", [])
+                    return [c.get("new_path", c.get("old_path")) for c in changes if "new_path" in c or "old_path" in c]
+        except Exception:
+            pass
+        return self._get_git_diff_files()
+
     def publish_commit_status(self, state: str, description: str, score: int) -> bool:
         """Sets commit build status via GitLab Statuses API."""
         if not self.commit_sha or not self.project_id:
@@ -71,6 +88,14 @@ class GitLabAdapter(BaseVcsAdapter):
                 return resp.getcode() in [200, 201]
         except Exception:
             return False
+
+    def publish_annotations(self, violations: List[Dict[str, Any]]) -> bool:
+        """Publishes MR discussions / notes for infractions in GitLab."""
+        if not self.pr_number or not self.project_id or not violations:
+            return False
+
+        summary_note = self.build_markdown_summary(violations, score=0, approved=False)
+        return self.post_pr_comment(summary_note)
 
     def generate_report_artifact(self, violations: List[Dict[str, Any]], score: int, approved: bool) -> str:
         """Generates standard GitLab Code Quality JSON (gl-code-quality-report.json)."""

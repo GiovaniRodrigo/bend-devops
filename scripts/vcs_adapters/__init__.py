@@ -11,6 +11,8 @@ from scripts.vcs_adapters.github_adapter import GitHubAdapter
 from scripts.vcs_adapters.gitlab_adapter import GitLabAdapter
 from scripts.vcs_adapters.bitbucket_adapter import BitbucketAdapter
 from scripts.vcs_adapters.diff_parser import parse_unified_diff, extract_changed_lines
+from scripts.vcs_adapters.webhook_gateway import WebhookGateway, VcsPullRequestEvent
+from scripts.vcs_adapters.policy_engine import BranchPolicyEngine
 
 def detect_vcs_environment() -> Optional[str]:
     """Auto-detects the running CI/CD platform from standard environment variables."""
@@ -70,5 +72,8 @@ __all__ = [
     "parse_unified_diff",
     "extract_changed_lines",
     "detect_vcs_environment",
-    "get_vcs_adapter"
+    "get_vcs_adapter",
+    "WebhookGateway",
+    "VcsPullRequestEvent",
+    "BranchPolicyEngine"
 ]

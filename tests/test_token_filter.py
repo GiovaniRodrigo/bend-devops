@@ -7,7 +7,7 @@ TDD Unit Tests: Token Boundary Filtering & Comment Stripping
 """
 
 import unittest
-from scripts.token_filter import strip_comments, matches_exact_token
+from scripts.token_filter import strip_comments, matches_exact_token, TokenFilter
 
 class TestTokenFilter(unittest.TestCase):
     def test_strip_single_line_slash_comment(self):
@@ -19,6 +19,14 @@ class TestTokenFilter(unittest.TestCase):
         line = 'def process(): # <img src="bad.png">'
         stripped = strip_comments(line, ".py")
         self.assertEqual(stripped, 'def process():')
+
+    def test_strip_comments_multi_languages(self):
+        self.assertEqual(TokenFilter.strip_comments('const a = 1; // comment', '.ts'), 'const a = 1;')
+        self.assertEqual(TokenFilter.strip_comments('$val = 2; // comment', '.php'), '$val = 2;')
+        self.assertEqual(TokenFilter.strip_comments('let mut x = 3; // comment', '.rs'), 'let mut x = 3;')
+        self.assertEqual(TokenFilter.strip_comments('fmt.Println("hi") // comment', '.go'), 'fmt.Println("hi")')
+        self.assertEqual(TokenFilter.strip_comments('echo "hi" # comment', '.sh'), 'echo "hi"')
+        self.assertEqual(TokenFilter.strip_comments('key: value # yaml comment', '.yaml'), 'key: value')
 
     def test_matches_exact_token_ignores_method_and_variable_substrings(self):
         # Method get_image_url should NOT match <img
@@ -49,6 +57,10 @@ class TestTokenFilter(unittest.TestCase):
         # Genuine HttpContext usage
         line3 = 'public void Handle(HttpContext context)'
         self.assertTrue(matches_exact_token("HttpContext", line3))
+
+    def test_token_filter_class_static_methods(self):
+        self.assertTrue(TokenFilter.matches_exact_token("<button", '<button type="submit">Save</button>'))
+        self.assertFalse(TokenFilter.matches_exact_token("<button", 'const button_handler = () => {};'))
 
 if __name__ == "__main__":
     unittest.main()

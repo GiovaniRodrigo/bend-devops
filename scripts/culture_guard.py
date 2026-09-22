@@ -24,6 +24,16 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from scripts.token_filter import (
+    TokenFilter,
+    parse_inline_pragmas,
+    strip_comments,
+    matches_exact_token,
+    load_guardianignore,
+    is_file_or_rule_exempt
+)
+from scripts.vcs_adapters import get_vcs_adapter, BranchPolicyEngine
+
 # Base path for rules catalog
 RULES_BASE_DIR = REPO_ROOT / "backend" / "rules"
 
@@ -152,7 +162,7 @@ def classify_file_layer(path: Path) -> str:
     return "Generic"
 
 class FileAuditResult:
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, project_exemptions: Optional[List[Any]] = None):
         self.path = str(path)
         self.name = path.name
         self.layer = classify_file_layer(path)
@@ -162,10 +172,11 @@ class FileAuditResult:
         self.has_secrets = 0
         self.has_test_coverage = 0
         self.has_type_annotations = 1
+        self.suppressed_count = 0
         self.violations: List[Dict[str, Any]] = []
-        self._analyze(path)
+        self._analyze(path, project_exemptions or [])
 
-    def _analyze(self, path: Path):
+    def _analyze(self, path: Path, project_exemptions: List[Any]):
         try:
             content = path.read_text(encoding="utf-8", errors="ignore")
         except Exception:
@@ -174,96 +185,124 @@ class FileAuditResult:
         lines = content.splitlines()
         self.lines_count = len(lines)
 
+        # Check project-level exemptions (.guardianignore)
+        if is_file_or_rule_exempt(self.path, "ALL", project_exemptions):
+            self.has_spec_tag = 1
+            self.has_test_coverage = 1
+            self.suppressed_count += 1
+            return
+
         # 1. Spec tag check (CULT02)
-        for pattern in SPEC_PATTERNS:
-            if re.search(pattern, content):
-                self.has_spec_tag = 1
-                break
-        if not self.has_spec_tag:
-            self.violations.append({
-                "rule_id": "CULT02",
-                "severity": "P1_WARNING",
-                "penalty": 15,
-                "message": "Missing requirement traceability tag (@spec RFxx)"
-            })
+        if is_file_or_rule_exempt(self.path, "CULT02", project_exemptions):
+            self.has_spec_tag = 1
+            self.suppressed_count += 1
+        else:
+            for pattern in SPEC_PATTERNS:
+                if re.search(pattern, content):
+                    self.has_spec_tag = 1
+                    break
+            if not self.has_spec_tag:
+                self.violations.append({
+                    "rule_id": "CULT02",
+                    "severity": "P1_WARNING",
+                    "penalty": 15,
+                    "message": "Missing requirement traceability tag (@spec RFxx)"
+                })
 
         # 2. Lazy code check (CULT01)
-        for idx, line in enumerate(lines, 1):
-            for pattern in LAZY_PATTERNS:
-                if re.search(pattern, line):
-                    self.has_lazy_code = 1
-                    self.violations.append({
-                        "rule_id": "CULT01",
-                        "severity": "P0_BLOCKING",
-                        "penalty": 35,
-                        "line": idx,
-                        "snippet": line.strip(),
-                        "message": f"Incomplete or lazy code detected: '{line.strip()}'"
-                    })
-                    break
+        if is_file_or_rule_exempt(self.path, "CULT01", project_exemptions):
+            self.suppressed_count += 1
+        else:
+            for idx, line in enumerate(lines, 1):
+                for pattern in LAZY_PATTERNS:
+                    if re.search(pattern, line):
+                        self.has_lazy_code = 1
+                        self.violations.append({
+                            "rule_id": "CULT01",
+                            "severity": "P0_BLOCKING",
+                            "penalty": 35,
+                            "line": idx,
+                            "snippet": line.strip(),
+                            "message": f"Incomplete or lazy code detected: '{line.strip()}'"
+                        })
+                        break
 
         # 3. Secret scan (CULT04)
-        for idx, line in enumerate(lines, 1):
-            for pattern in SECRET_PATTERNS:
-                if re.search(pattern, line):
-                    self.has_secrets = 1
-                    self.violations.append({
-                        "rule_id": "CULT04",
-                        "severity": "P0_BLOCKING",
-                        "penalty": 40,
-                        "line": idx,
-                        "snippet": line.strip(),
-                        "message": "Hardcoded API secret or sensitive token detected"
-                    })
-                    break
+        if is_file_or_rule_exempt(self.path, "CULT04", project_exemptions):
+            self.suppressed_count += 1
+        else:
+            for idx, line in enumerate(lines, 1):
+                for pattern in SECRET_PATTERNS:
+                    if re.search(pattern, line):
+                        self.has_secrets = 1
+                        self.violations.append({
+                            "rule_id": "CULT04",
+                            "severity": "P0_BLOCKING",
+                            "penalty": 40,
+                            "line": idx,
+                            "snippet": line.strip(),
+                            "message": "Hardcoded API secret or sensitive token detected"
+                        })
+                        break
 
         # 4. Test coverage presence check (CULT03)
-        test_candidates = [
-            path.parent / f"test_{path.name}",
-            path.parent / f"{path.stem}.test{path.suffix}",
-            path.parent / f"{path.stem}.spec{path.suffix}",
-            path.parent.parent / "tests" / f"test_{path.name}",
-            Path("tests") / f"test_{path.name}"
-        ]
-        is_test_file = "test" in path.name.lower() or "spec" in path.name.lower()
-        if is_test_file:
+        if is_file_or_rule_exempt(self.path, "CULT03", project_exemptions):
             self.has_test_coverage = 1
+            self.suppressed_count += 1
         else:
-            self.has_test_coverage = 1 if any(c.exists() for c in test_candidates) else 0
-            if not self.has_test_coverage:
-                self.violations.append({
-                    "rule_id": "CULT03",
-                    "severity": "P0_BLOCKING",
-                    "penalty": 35,
-                    "message": "Missing automated test file associated with this production artifact"
-                })
+            test_candidates = [
+                path.parent / f"test_{path.name}",
+                path.parent / f"{path.stem}.test{path.suffix}",
+                path.parent / f"{path.stem}.spec{path.suffix}",
+                path.parent.parent / "tests" / f"test_{path.name}",
+                Path("tests") / f"test_{path.name}"
+            ]
+            is_test_file = "test" in path.name.lower() or "spec" in path.name.lower()
+            if is_test_file:
+                self.has_test_coverage = 1
+            else:
+                self.has_test_coverage = 1 if any(c.exists() for c in test_candidates) else 0
+                if not self.has_test_coverage:
+                    self.violations.append({
+                        "rule_id": "CULT03",
+                        "severity": "P0_BLOCKING",
+                        "penalty": 35,
+                        "message": "Missing automated test file associated with this production artifact"
+                    })
 
         # 5. Strict typing check (CULT05)
-        if path.suffix == ".py":
-            has_defs = bool(re.search(r"def\s+\w+\s*\(", content))
-            has_hints = bool(re.search(r"->\s*[\w\[\], ]+:", content) or re.search(r":\s*(str|int|float|bool|list|dict|Any|Optional)", content))
-            if has_defs and not has_hints:
-                self.has_type_annotations = 0
-                self.violations.append({
-                    "rule_id": "CULT05",
-                    "severity": "P1_WARNING",
-                    "penalty": 10,
-                    "message": "Functions detected without explicit parameter or return type annotations"
-                })
+        if is_file_or_rule_exempt(self.path, "CULT05", project_exemptions):
+            self.suppressed_count += 1
+        else:
+            if path.suffix == ".py":
+                has_defs = bool(re.search(r"def\s+\w+\s*\(", content))
+                has_hints = bool(re.search(r"->\s*[\w\[\], ]+:", content) or re.search(r":\s*(str|int|float|bool|list|dict|Any|Optional)", content))
+                if has_defs and not has_hints:
+                    self.has_type_annotations = 0
+                    self.violations.append({
+                        "rule_id": "CULT05",
+                        "severity": "P1_WARNING",
+                        "penalty": 10,
+                        "message": "Functions detected without explicit parameter or return type annotations"
+                    })
 
         # 6. Layer-Specific Architecture & Token Inspections (with False-Positive and Pragma Filtering)
-        from scripts.token_filter import parse_inline_pragmas, strip_comments, matches_exact_token
         suppressed_map, pragma_warnings = parse_inline_pragmas(lines)
         self.violations.extend(pragma_warnings)
 
         if self.layer in FORBIDDEN_LAYER_PATTERNS:
             for pattern, rule_id, severity, penalty, msg in FORBIDDEN_LAYER_PATTERNS[self.layer]:
+                if is_file_or_rule_exempt(self.path, rule_id, project_exemptions):
+                    self.suppressed_count += 1
+                    continue
+
                 for idx, line in enumerate(lines, 1):
                     # Check if line is suppressed via inline pragma
                     is_suppressed = False
                     if idx in suppressed_map:
                         if rule_id in suppressed_map[idx] or "ALL" in suppressed_map[idx]:
                             is_suppressed = True
+                            self.suppressed_count += 1
 
                     if is_suppressed:
                         continue
@@ -274,8 +313,6 @@ class FileAuditResult:
                         continue
 
                     if re.search(pattern, code_only):
-                        # Use exact token / tag boundary check
-                        # Ensure we don't flag function names or variable identifiers
                         self.violations.append({
                             "rule_id": rule_id,
                             "severity": severity,
@@ -467,21 +504,31 @@ def run_bend_engine(harness_code: str) -> tuple:
         if tmp_path.exists():
             tmp_path.unlink()
 
-def print_report(files: List[FileAuditResult], bend_stats: tuple, format_type: str = "text") -> bool:
+def print_report(
+    files: List[FileAuditResult],
+    bend_stats: tuple,
+    format_type: str = "text",
+    branch_policy_verdict: Optional[Tuple[bool, str]] = None
+) -> bool:
     tot_files, tot_viol, p0, p1, pen, score, approved = bend_stats
     
     extra_violations = sum(len(f.violations) for f in files)
+    total_suppressed = sum(f.suppressed_count for f in files)
     has_blocking_violations = any(
         any(v.get("severity") == "P0_BLOCKING" for v in f.violations) 
         for f in files
     )
     
     is_ok = (not has_blocking_violations) and score >= 80 and approved == 1
+    if branch_policy_verdict is not None:
+        policy_ok, _ = branch_policy_verdict
+        is_ok = is_ok and policy_ok
 
     if format_type == "json":
         data = {
             "total_files": tot_files,
             "total_violations": extra_violations,
+            "total_suppressed": total_suppressed,
             "has_blocking_violations": has_blocking_violations,
             "culture_score": score,
             "approved": bool(is_ok),
@@ -489,6 +536,7 @@ def print_report(files: List[FileAuditResult], bend_stats: tuple, format_type: s
                 {
                     "path": f.path,
                     "layer": f.layer,
+                    "suppressed_count": f.suppressed_count,
                     "violations": f.violations
                 } for f in files
             ]
@@ -506,7 +554,11 @@ def print_report(files: List[FileAuditResult], bend_stats: tuple, format_type: s
     print(f" Compliance Score:    {score}/100")
     print(f" Files Audited:       {tot_files}")
     print(f" Total Violations:    {extra_violations} (Blocking P0: {p0}, Warnings P1: {p1})")
+    print(f" Active Suppressions: {total_suppressed} exemptions")
     print(f" Total Penalty:       {pen} pts")
+    if branch_policy_verdict is not None:
+        _, branch_reason = branch_policy_verdict
+        print(f" Branch Policy:       {branch_reason}")
     print("="*70)
 
     if extra_violations > 0:
@@ -528,10 +580,13 @@ def main():
     parser = argparse.ArgumentParser(description="Bend DevOps Guardian (Bend Parallel HVM Quality Gate)")
     parser.add_argument("paths", nargs="*", default=["."], help="Files or directories to audit")
     parser.add_argument("--architecture", choices=["layered_mvc", "clean_architecture", "microservices", "cqrs", "rest_api", "frontend_clean"], default="layered_mvc", help="Target architecture profile")
+    parser.add_argument("--branch", help="Target git branch to evaluate branch-specific gating policies (e.g. main, develop, feature/xyz)")
     parser.add_argument("--format", choices=["text", "json", "markdown"], default="text", help="Report output format")
     parser.add_argument("--min-score", type=int, default=80, help="Minimum score for approval (default: 80)")
     parser.add_argument("--vcs", choices=["github", "gitlab", "bitbucket"], help="Target VCS hosting platform for CI/CD status posting and reports")
     args = parser.parse_args()
+
+    project_exemptions = load_guardianignore()
 
     all_files = []
     for p_str in args.paths:
@@ -548,18 +603,25 @@ def main():
         if not str(f).startswith(("./.git", "./build", "/tmp", "./specs", "./frontend/node_modules", "./dist"))
     ]
 
-    audit_results = [FileAuditResult(f) for f in filtered_files]
+    audit_results = [FileAuditResult(f, project_exemptions) for f in filtered_files]
     harness = generate_bend_harness(audit_results)
     bend_stats = run_bend_engine(harness)
+    score = bend_stats[5]
+    p0_count = bend_stats[2]
+    p1_count = bend_stats[3]
 
-    approved = print_report(audit_results, bend_stats, format_type=args.format)
+    branch_verdict = None
+    if args.branch:
+        policy_engine = BranchPolicyEngine()
+        policy_ok, policy_reason, _ = policy_engine.evaluate_gate(args.branch, score=score, p0_count=p0_count, p1_count=p1_count)
+        branch_verdict = (policy_ok, policy_reason)
+
+    approved = print_report(audit_results, bend_stats, format_type=args.format, branch_policy_verdict=branch_verdict)
 
     # VCS Platform CI/CD Integration
     try:
-        from scripts.vcs_adapters import get_vcs_adapter
         adapter = get_vcs_adapter(args.vcs)
         if adapter:
-            score = bend_stats[5]
             all_violations = []
             for f in audit_results:
                 all_violations.extend(f.violations)
@@ -580,8 +642,10 @@ def main():
             # 3. Post PR / MR Comment
             summary_md = adapter.build_markdown_summary(all_violations, score=score, approved=approved)
             adapter.post_pr_comment(summary_md)
+
+            # 4. Publish Annotations
+            adapter.publish_annotations(all_violations)
     except Exception as e:
-        # Graceful degradation if running outside CI
         pass
 
     sys.exit(0 if approved else 1)
