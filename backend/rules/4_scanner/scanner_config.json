@@ -1,0 +1,31 @@
+{
+  "$schema": "../rules_schema.json",
+  "version": "1.0.0",
+  "scanner_engine": "Bend HVM Parallel Reducer",
+  "stages": [
+    {
+      "step": 1,
+      "name": "Identify Architecture",
+      "description": "Loads the active architecture profile (e.g. Layered MVC, Clean Arch) and identifies directory layers."
+    },
+    {
+      "step": 2,
+      "name": "Load Rules",
+      "description": "Loads abstract constraints, severities, and penalty deductions."
+    },
+    {
+      "step": 3,
+      "name": "Apply Language Adapter",
+      "description": "Applies language-specific regex, AST patterns, and syntax tokens for each file extension."
+    },
+    {
+      "step": 4,
+      "name": "Execute Scan & Parallel Reduction",
+      "description": "Builds the FileTree and evaluates rules concurrently on the HVM runtime."
+    }
+  ],
+  "gate_thresholds": {
+    "min_compliance_score": 80,
+    "max_allowed_p0_blocking": 0
+  }
+}

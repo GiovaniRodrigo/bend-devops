@@ -1,0 +1,27 @@
+{
+  "$schema": "../rules_schema.json",
+  "version": "1.0.0",
+  "architecture_id": "ARCH_PROFILE_REST_API",
+  "name": "REST API & Microservice Service Interfaces Profile",
+  "description": "Defines canonical standards for RESTful APIs, standard error shapes, status codes, and DTO validations.",
+  "layers": [
+    {
+      "name": "RoutingAndControllers",
+      "aliases": ["controllers", "endpoints", "routes", "handlers"],
+      "allowed_dependencies": ["RequestDTO", "ResponseDTO", "ApplicationServices"],
+      "description": "Translates HTTP payloads, manages status codes, and delegates to application services."
+    },
+    {
+      "name": "ValidationAndDTOs",
+      "aliases": ["dtos", "requests", "responses", "validators"],
+      "allowed_dependencies": [],
+      "description": "Strongly typed schemas and input payload validators."
+    },
+    {
+      "name": "ApplicationServices",
+      "aliases": ["services", "usecases"],
+      "allowed_dependencies": ["DomainEntities", "Repositories"],
+      "description": "Business workflows and transaction boundaries."
+    }
+  ]
+}

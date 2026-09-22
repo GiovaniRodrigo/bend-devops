@@ -1,0 +1,59 @@
+{
+  "$schema": "./rules_schema.json",
+  "version": "1.0.0",
+  "manifesto_name": "REST API Architecture & Contract Standards",
+  "category": "Architecture - REST API",
+  "description": "Standardized rules for RESTful API design, versioning, pagination, HTTP status semantics, and error envelopes.",
+  "rules": [
+    {
+      "id": "ARCH-API-01",
+      "name": "Mandatory Collection Pagination",
+      "layer": "Controller / API Endpoint",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 35,
+      "description": "All collection endpoints returning arrays of resources (e.g. GET /api/v1/users) must enforce pagination with page/limit or cursor parameters and a maximum page size cap.",
+      "rationale": "Unbounded queries lead to out-of-memory errors, database starvation, high latency, and Denial of Service (DoS) vulnerabilities.",
+      "remediation": "Apply pagination middleware or query builder limiters (e.g., max 100 items per request)."
+    },
+    {
+      "id": "ARCH-API-02",
+      "name": "Explicit API Versioning",
+      "layer": "Router / Controller",
+      "severity": "P1_WARNING",
+      "penalty_points": 20,
+      "description": "Public and internal REST endpoints must include an explicit version identifier in the URI path (e.g., `/api/v1/orders`) or via a version header.",
+      "rationale": "Enables non-breaking contract evolution, backward compatibility, and structured deprecation lifecycles for mobile and web clients.",
+      "remediation": "Prefix route groups with `/v1/`, `/v2/` or configure header-based API versioning."
+    },
+    {
+      "id": "ARCH-API-03",
+      "name": "Standardized Error Envelope (RFC 7807 Problem Details)",
+      "layer": "Exception Handler / Middleware",
+      "severity": "P1_WARNING",
+      "penalty_points": 15,
+      "description": "Error responses (HTTP 4xx and 5xx) must follow the RFC 7807 Problem Details format containing `type`, `title`, `status`, `detail`, and `instance`.",
+      "rationale": "Uniform error structures simplify client-side error handling, logging, and automated API consumption.",
+      "remediation": "Centralize global exception handling to serialize errors into RFC 7807 compliant payloads."
+    },
+    {
+      "id": "ARCH-API-04",
+      "name": "Strict HTTP Status Code Semantics",
+      "layer": "Controller / API Endpoint",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 30,
+      "description": "Prohibits returning HTTP 200 OK for operational errors or exceptions (e.g., returning `{ status: 'error', code: 500 }` with HTTP 200).",
+      "rationale": "Misleading HTTP statuses break reverse proxy caching, API gateways, health checks, and automated monitoring systems.",
+      "remediation": "Return standard HTTP status codes: 201 for Created, 204 for No Content, 400 for Bad Request, 401/403 for Auth, 404 for Not Found, 422 for Unprocessable Entity, and 500 for Internal Errors."
+    },
+    {
+      "id": "ARCH-API-05",
+      "name": "Idempotent Mutation Verbs (PUT & DELETE)",
+      "layer": "Controller / Service",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 25,
+      "description": "HTTP PUT and DELETE handlers must guarantee idempotency: executing the same request multiple times must result in the same server state as a single execution.",
+      "rationale": "Clients frequently retry network requests on transient timeouts; non-idempotent updates cause duplicate mutations.",
+      "remediation": "Ensure PUT performs total replacement or upsert by resource ID, and DELETE gracefully handles already-deleted resources."
+    }
+  ]
+}

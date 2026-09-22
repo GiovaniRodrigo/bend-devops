@@ -1,0 +1,34 @@
+{
+  "$schema": "../rules_schema.json",
+  "version": "1.0.0",
+  "language": "PHP (Laravel / Symfony)",
+  "file_extensions": [".php", ".blade.php"],
+  "layer_detection": {
+    "Domain": ["/Models/", "/Domain/", "/Entities/"],
+    "Application": ["/Services/", "/Actions/", "/UseCases/"],
+    "Interface": ["/Controllers/", "/Http/", "/Api/"],
+    "Presentation": ["/views/", "/resources/views/"],
+    "Infrastructure": ["/Repositories/", "/Database/"]
+  },
+  "forbidden_patterns": {
+    "Domain": [
+      {
+        "pattern": "<html|<div|<span|<p>|<script>|<style>|echo\\s*\"<|print\\(\"<",
+        "maps_to_rule": "ARCH-LAYER-01",
+        "message": "HTML presentation markup detected inside PHP Model/Domain class"
+      },
+      {
+        "pattern": "request\\(\\)|Request::|\\$_POST|\\$_GET|\\$_REQUEST|Illuminate\\\\Http\\\\Request",
+        "maps_to_rule": "ARCH-LAYER-03",
+        "message": "HTTP transport helper or superglobal coupled inside PHP Model"
+      }
+    ],
+    "Presentation": [
+      {
+        "pattern": "DB::|::where\\(|::find\\(|::all\\(\\)|::query\\(|::select\\(",
+        "maps_to_rule": "ARCH-LAYER-02",
+        "message": "Direct database query or Eloquent call inside Blade template"
+      }
+    ]
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "$schema": "./rules_schema.json",
+  "version": "1.0.0",
+  "manifesto_name": "Microservices & Distributed Systems Architecture Standards",
+  "category": "Architecture - Microservices",
+  "description": "Architectural rules for distributed services, service boundaries, resilient communication, and event-driven data consistency.",
+  "rules": [
+    {
+      "id": "ARCH-MS-01",
+      "name": "Database-per-Service Isolation",
+      "layer": "Infrastructure / Data Store",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 40,
+      "description": "Prohibits microservices from directly accessing, querying, or mutating the database or schema belonging to another microservice.",
+      "rationale": "Direct database sharing creates tight coupling, breaks service autonomy, prevents independent deployments, and introduces distributed schema lock-in.",
+      "remediation": "Communicate exclusively via well-defined public APIs (gRPC / REST) or asynchronous domain events over message brokers (Kafka / RabbitMQ).",
+      "forbidden_targets": [
+        "src/infrastructure/external_db_access/**/*",
+        "services/*/db/shared_models/**/*"
+      ]
+    },
+    {
+      "id": "ARCH-MS-02",
+      "name": "Mandatory Distributed Tracing & Correlation ID Propagation",
+      "layer": "HTTP / Messaging Middleware",
+      "severity": "P1_WARNING",
+      "penalty_points": 20,
+      "description": "All inbound and outbound HTTP requests, gRPC calls, and messaging events must extract and propagate a standard Correlation ID / Trace Context header (e.g., X-Correlation-ID or traceparent).",
+      "rationale": "Distributed tracing is essential for troubleshooting cross-service latency, cascaded failures, and debugging production workflows.",
+      "remediation": "Inject correlation ID middleware to attach trace context to loggers and all outbound HTTP/gRPC/event clients."
+    },
+    {
+      "id": "ARCH-MS-03",
+      "name": "Resilient Inter-Service Calls (Timeout & Circuit Breaker)",
+      "layer": "Client / Gateway",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 35,
+      "description": "Synchronous HTTP/gRPC inter-service clients must configure explicit connection/read timeouts and circuit breaker/fallback mechanisms.",
+      "rationale": "Prevents thread pool exhaustion, cascading outages, and catastrophic backpressure when a downstream dependency is degraded or unreachable.",
+      "remediation": "Wrap external HTTP/gRPC calls with resilience policies (e.g., Polly, Resilience4j, or custom timeout/retry wrappers)."
+    },
+    {
+      "id": "ARCH-MS-04",
+      "name": "Transactional Outbox Pattern for State-Event Consistency",
+      "layer": "Domain / Event Publisher",
+      "severity": "P1_WARNING",
+      "penalty_points": 25,
+      "description": "Prohibits publishing message broker events directly inside an uncommitted database transaction or without dual-write transactional consistency.",
+      "rationale": "Avoids phantom event publication if the database transaction rolls back, or lost events if the message broker is unreachable.",
+      "remediation": "Persist the domain event to an Outbox table within the same ACID transaction and publish asynchronously via an Outbox worker/relay."
+    },
+    {
+      "id": "ARCH-MS-05",
+      "name": "Idempotent Event Consumers",
+      "layer": "Event Consumer",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 30,
+      "description": "Event handlers and message consumers must implement idempotency checks to safely handle duplicate message delivery.",
+      "rationale": "Distributed message brokers guarantee at-least-once delivery; consumers must remain robust against redeliveries and rebalancing.",
+      "remediation": "Track processed message IDs in a deduplication store or design state transitions to be naturally idempotent."
+    }
+  ]
+}

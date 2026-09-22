@@ -1,0 +1,128 @@
+{
+  "$schema": "./rules_schema.json",
+  "version": "1.0.0",
+  "manifesto_name": "Universal Layered & MVC Architecture Standards",
+  "category": "Architecture - Layered & MVC",
+  "description": "Framework-agnostic architectural layer boundary and separation-of-concerns rules for multi-tier and MVC applications.",
+  "rules": [
+    {
+      "id": "ARCH-LAYER-01",
+      "name": "Zero Presentation & Frontend Code in Domain, Models & Controllers",
+      "layer": "Domain, Model, Controller, Service",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 40,
+      "description": "Strictly prohibits embedding raw presentation markup (HTML tags, JSX, CSS styles, client-side script tags, DOM manipulations) inside Domain, Model, Service, or Controller classes.",
+      "rationale": "Enforces strict Separation of Concerns (SoC). Models manage domain state and persistence; Controllers orchestrate application flow; Presentation belongs exclusively to dedicated Views, Templates, or Client-side components.",
+      "remediation": "Move presentation markup into dedicated View templates (e.g. Razor, Blade, Jinja, JSX/TSX components) or return structured DTOs / ViewModels.",
+      "detection_patterns": [
+        "<html",
+        "<div",
+        "<span",
+        "<p>",
+        "<script>",
+        "<style>",
+        "document.getElement",
+        "window.location",
+        "echo \"<",
+        "print(\"<",
+        "Response.Write(\"<"
+      ],
+      "forbidden_targets": [
+        "**/models/**/*.cs",
+        "**/models/**/*.py",
+        "**/models/**/*.ts",
+        "**/models/**/*.php",
+        "**/domain/**/*.cs",
+        "**/domain/**/*.py",
+        "**/domain/**/*.ts",
+        "**/controllers/**/*.cs",
+        "**/controllers/**/*.py",
+        "**/controllers/**/*.ts",
+        "**/controllers/**/*.php"
+      ]
+    },
+    {
+      "id": "ARCH-LAYER-02",
+      "name": "Zero Direct Database Queries in Presentation & Views",
+      "layer": "View, Template, Presentation",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 35,
+      "description": "Prohibits executing raw database queries, direct ORM invocations, or data-access commands inside presentation templates and views.",
+      "rationale": "Presentation templates must not handle data retrieval or query logic. Direct querying in templates causes severe performance degradation (N+1 queries) and architectural coupling.",
+      "remediation": "Fetch data within the Controller, Use Case, or Application Service and inject prepared ViewModels/DTOs into the presentation layer.",
+      "detection_patterns": [
+        "DB::",
+        "::where(",
+        "::query(",
+        "SELECT * FROM",
+        "DbContext.",
+        "objects.filter(",
+        "objects.all(",
+        "db.query("
+      ],
+      "forbidden_targets": [
+        "**/views/**/*.cshtml",
+        "**/views/**/*.blade.php",
+        "**/templates/**/*.html",
+        "**/templates/**/*.jinja2",
+        "**/views/**/*.erb"
+      ]
+    },
+    {
+      "id": "ARCH-LAYER-03",
+      "name": "Zero Transport Protocol Coupling in Domain Models",
+      "layer": "Domain, Model, Entity",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 30,
+      "description": "Prohibits binding HTTP request objects, superglobals, headers, or web transport context inside Domain Entities and Models.",
+      "rationale": "Domain models must remain transport-agnostic to enable safe execution across CLI tools, background workers, asynchronous queues, and unit tests without HTTP mocking.",
+      "remediation": "Pass primitive types, Value Objects, or domain DTOs to Model methods instead of HTTP Request objects.",
+      "detection_patterns": [
+        "HttpContext",
+        "HttpRequest",
+        "request()",
+        "Request::",
+        "$_POST",
+        "$_GET",
+        "$_REQUEST",
+        "express.Request",
+        "fastapi.Request"
+      ],
+      "forbidden_targets": [
+        "**/domain/**/*.cs",
+        "**/domain/**/*.py",
+        "**/domain/**/*.ts",
+        "**/models/**/*.cs",
+        "**/models/**/*.py",
+        "**/models/**/*.ts",
+        "**/models/**/*.php"
+      ]
+    },
+    {
+      "id": "ARCH-LAYER-04",
+      "name": "Thin Controllers (Delegation to Application / Domain Services)",
+      "layer": "Controller, Endpoint, Handler",
+      "severity": "P1_WARNING",
+      "penalty_points": 20,
+      "description": "Controllers and HTTP handlers must act strictly as thin entry-point coordinators and must not contain heavy domain calculations or complex algorithmic workflows.",
+      "rationale": "Fat Controllers hinder unit testability, duplicate business logic across entry points, and violate the Single Responsibility Principle (SRP).",
+      "remediation": "Extract business logic into Use Cases, Application Services, or Domain Services.",
+      "forbidden_targets": [
+        "**/controllers/**/*.cs",
+        "**/controllers/**/*.py",
+        "**/controllers/**/*.ts",
+        "**/controllers/**/*.php"
+      ]
+    },
+    {
+      "id": "ARCH-LAYER-05",
+      "name": "Explicit Input Validation & Boundary DTOs",
+      "layer": "Controller, Endpoint",
+      "severity": "P1_WARNING",
+      "penalty_points": 15,
+      "description": "Mutation endpoints must validate input payloads using strongly-typed Request DTOs, Validators, or Schemas before delegating to application services.",
+      "rationale": "Prevents malformed data from polluting domain handlers and centralizes validation and authorization rules.",
+      "remediation": "Declare explicit validation schemas (e.g. FluentValidation, FormRequest, Zod, Pydantic, Bean Validation) on endpoint inputs."
+    }
+  ]
+}

@@ -1,0 +1,624 @@
+<div class="min-h-screen bg-background text-foreground antialiased selection:bg-primary/20">
+  <!-- Header (shadcn/ui style) -->
+  <header class="border-b border-border/80 bg-card/95 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <!-- Code2 Icon -->
+        <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="16 18 22 12 16 6"></polyline>
+            <polyline points="8 6 2 12 8 18"></polyline>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base font-semibold tracking-tight">CodeConform</h1>
+            <span class="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+              Bend HVM Engine
+            </span>
+          </div>
+          <p class="text-xs text-muted-foreground">AI Culture & Standards Guardian • Spec-Driven Development</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button class="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-input bg-background/50 hover:bg-accent hover:text-accent-foreground text-xs font-medium transition-colors shadow-sm">
+          <!-- GitBranch Icon -->
+          <svg class="w-3.5 h-3.5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="6" y1="3" x2="6" y2="15"></line>
+            <circle cx="18" cy="6" r="3"></circle>
+            <circle cx="6" cy="18" r="3"></circle>
+            <path d="M18 9a9 9 0 0 1-9 9"></path>
+          </svg>
+          <span>{{ selectedRepo() }}</span>
+        </button>
+
+        <button class="inline-flex items-center justify-center h-9 w-9 rounded-md border border-input bg-background/50 hover:bg-accent hover:text-accent-foreground transition-colors shadow-sm" aria-label="Settings">
+          <!-- Settings Icon -->
+          <svg class="w-4 h-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs (shadcn tabs style) -->
+  <div class="border-b border-border bg-card/40 sticky top-[61px] z-40 backdrop-blur">
+    <div class="max-w-7xl mx-auto px-6">
+      <nav class="flex gap-2">
+        <button
+          (click)="activeTab.set('dashboard')"
+          [class]="'inline-flex items-center gap-2 px-3 py-3 border-b-2 text-sm font-medium transition-all ' + (activeTab() === 'dashboard' ? 'border-primary text-primary font-semibold' : 'border-transparent text-muted-foreground hover:text-foreground')"
+        >
+          <!-- BarChart3 -->
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg>
+          <span>Dashboard</span>
+        </button>
+
+        <button
+          (click)="activeTab.set('analyze')"
+          [class]="'inline-flex items-center gap-2 px-3 py-3 border-b-2 text-sm font-medium transition-all ' + (activeTab() === 'analyze' ? 'border-primary text-primary font-semibold' : 'border-transparent text-muted-foreground hover:text-foreground')"
+        >
+          <!-- GitPullRequest -->
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="18" cy="18" r="3"></circle>
+            <circle cx="6" cy="6" r="3"></circle>
+            <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
+            <line x1="6" y1="9" x2="6" y2="21"></line>
+          </svg>
+          <span>Analyze MR/PR</span>
+        </button>
+
+        <button
+          (click)="activeTab.set('results')"
+          [class]="'inline-flex items-center gap-2 px-3 py-3 border-b-2 text-sm font-medium transition-all ' + (activeTab() === 'results' ? 'border-primary text-primary font-semibold' : 'border-transparent text-muted-foreground hover:text-foreground')"
+        >
+          <!-- AlertCircle -->
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span>Results</span>
+          @if (filteredViolations().length > 0) {
+            <span class="ml-1 rounded-full bg-destructive/20 text-destructive text-[10px] font-bold px-1.5 py-0.2">
+              {{ filteredViolations().length }}
+            </span>
+          }
+        </button>
+
+        <button
+          (click)="activeTab.set('history')"
+          [class]="'inline-flex items-center gap-2 px-3 py-3 border-b-2 text-sm font-medium transition-all ' + (activeTab() === 'history' ? 'border-primary text-primary font-semibold' : 'border-transparent text-muted-foreground hover:text-foreground')"
+        >
+          <!-- History -->
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <path d="M3 3v5h5"></path>
+            <polyline points="12 7 12 12 15 15"></polyline>
+          </svg>
+          <span>History</span>
+        </button>
+
+        <button
+          (click)="activeTab.set('rules')"
+          [class]="'inline-flex items-center gap-2 px-3 py-3 border-b-2 text-sm font-medium transition-all ' + (activeTab() === 'rules' ? 'border-primary text-primary font-semibold' : 'border-transparent text-muted-foreground hover:text-foreground')"
+        >
+          <!-- Settings -->
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span>Rules</span>
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <main class="max-w-7xl mx-auto px-6 py-8">
+    <!-- 1. DASHBOARD TAB -->
+    @if (activeTab() === 'dashboard') {
+      <div class="space-y-8">
+        <!-- Stats Grid (shadcn Cards) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="rounded-xl border bg-card p-6 shadow-sm">
+            <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Audited MRs/PRs</p>
+            <p class="text-3xl font-bold tracking-tight">{{ totalMRsAnalyzed() }}</p>
+            <p class="text-xs text-muted-foreground mt-2">Batch evaluated</p>
+          </div>
+
+          <div class="rounded-xl border bg-card p-6 shadow-sm">
+            <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Non-Compliances</p>
+            <p class="text-3xl font-bold tracking-tight text-destructive">{{ totalIssuesCount() }}</p>
+            <p class="text-xs text-muted-foreground mt-2">Blocked violations</p>
+          </div>
+
+          <div class="rounded-xl border bg-card p-6 shadow-sm">
+            <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Compliance Rate</p>
+            <div class="flex items-baseline gap-2">
+              <p class="text-3xl font-bold tracking-tight text-emerald-500">{{ averageScore() }}%</p>
+              <span class="text-xs text-muted-foreground">Average Score</span>
+            </div>
+            <div class="w-full bg-secondary h-1.5 rounded-full mt-3 overflow-hidden">
+              <div class="bg-emerald-500 h-full rounded-full" [style.width.%]="averageScore()"></div>
+            </div>
+          </div>
+
+          <div class="rounded-xl border bg-card p-6 shadow-sm">
+            <p class="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Monitored Standards</p>
+            <p class="text-3xl font-bold tracking-tight">{{ totalRulesMonitored() }}</p>
+            <p class="text-xs text-muted-foreground mt-2">Active engine rules</p>
+          </div>
+        </div>
+
+        <!-- Recent Analyses (shadcn Card) -->
+        <div class="rounded-xl border bg-card shadow-sm p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-base font-semibold tracking-tight">Recent Analyses</h2>
+              <p class="text-xs text-muted-foreground">Latest audits processed by Bend HVM engine</p>
+            </div>
+            <button (click)="activeTab.set('analyze')" class="btn-shadcn btn-shadcn-outline h-8 px-3 text-xs">
+              New Analysis
+            </button>
+          </div>
+
+          <div class="space-y-2.5">
+            @for (item of history(); track item.id) {
+              <div
+                (click)="activeTab.set('history')"
+                class="flex items-center justify-between p-3.5 rounded-lg border border-border/60 bg-muted/20 hover:bg-muted/50 cursor-pointer transition-colors"
+              >
+                <div class="flex items-center gap-3.5">
+                  <div class="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                    <!-- FileText -->
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                      <line x1="16" y1="13" x2="8" y2="13"></line>
+                      <line x1="16" y1="17" x2="8" y2="17"></line>
+                      <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="text-sm font-medium leading-none mb-1">{{ item.project }} · {{ item.mrTitle }}</p>
+                    <p class="text-xs text-muted-foreground">{{ item.date }} · Author: {{ item.author }}</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                  @if (item.issues === 0) {
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-500 border border-emerald-500/20">
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      0 issues
+                    </span>
+                  } @else if (item.status === 'Blocked') {
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-medium text-destructive border border-destructive/20">
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                      {{ item.issues }} issues
+                    </span>
+                  } @else {
+                    <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-500 border border-amber-500/20">
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                      {{ item.issues }} warnings
+                    </span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- 2. ANALYZE TAB -->
+    @if (activeTab() === 'analyze') {
+      <div class="space-y-6">
+        <!-- New MR/PR Header Card -->
+        <div class="rounded-xl border bg-card p-6 shadow-sm">
+          <div class="flex items-start gap-4">
+            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
+              <!-- GitPullRequest -->
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="18" cy="18" r="3"></circle>
+                <circle cx="6" cy="6" r="3"></circle>
+                <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
+                <line x1="6" y1="9" x2="6" y2="21"></line>
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h2 class="text-base font-semibold tracking-tight">New Merge Request / Pull Request Analysis</h2>
+              <p class="text-xs text-muted-foreground mt-0.5">Compares source branch with target branch and audits compliance via Bend HVM engine.</p>
+              
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-5">
+                <label class="space-y-1.5 block">
+                  <span class="text-xs font-medium text-muted-foreground">Repository</span>
+                  <select
+                    [ngModel]="selectedMRIndex()"
+                    (ngModelChange)="selectMR($event)"
+                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    @for (preset of mrPresets; track $index) {
+                      <option [value]="$index">{{ preset.repo }}</option>
+                    }
+                  </select>
+                </label>
+
+                <label class="space-y-1.5 block">
+                  <span class="text-xs font-medium text-muted-foreground">MR/PR</span>
+                  <select
+                    [ngModel]="selectedMRIndex()"
+                    (ngModelChange)="selectMR($event)"
+                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    @for (preset of mrPresets; track $index) {
+                      <option [value]="$index">{{ preset.mrTitle }}</option>
+                    }
+                  </select>
+                </label>
+
+                <label class="space-y-1.5 block">
+                  <span class="text-xs font-medium text-muted-foreground">Target Branch</span>
+                  <select
+                    [ngModel]="selectedDestBranch()"
+                    (ngModelChange)="selectedDestBranch.set($event)"
+                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  >
+                    <option value="main">main</option>
+                    <option value="develop">develop</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Side-by-Side Diff + AST Card -->
+        <div class="rounded-xl border bg-card overflow-hidden shadow-sm">
+          <div class="px-5 py-3.5 border-b border-border bg-muted/20 flex items-center justify-between">
+            <div>
+              <div class="flex items-center gap-2">
+                <!-- GitCompare -->
+                <svg class="w-4 h-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="18" cy="18" r="3"></circle>
+                  <circle cx="6" cy="6" r="3"></circle>
+                  <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
+                  <line x1="6" y1="9" x2="6" y2="21"></line>
+                </svg>
+                <h3 class="text-sm font-semibold">Modified Code Diff in MR/PR</h3>
+              </div>
+              <p class="text-xs text-muted-foreground mt-0.5">
+                {{ mrPresets[selectedMRIndex()].fileName }} · author: {{ mrPresets[selectedMRIndex()].author }}
+              </p>
+            </div>
+            <span class="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary border border-primary/20">
+              Diff + AST (Bend HVM)
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
+            <div class="min-w-0">
+              <div class="px-4 py-2 bg-muted/40 text-xs font-medium text-muted-foreground flex items-center justify-between">
+                <span>Base Version · {{ selectedDestBranch() }}</span>
+                <span>Prior AST</span>
+              </div>
+              <pre class="p-4 text-xs font-mono leading-relaxed text-muted-foreground bg-background/50 overflow-x-auto"><code>{{ mrPresets[selectedMRIndex()].baseCode }}</code></pre>
+            </div>
+            <div class="min-w-0">
+              <div class="px-4 py-2 bg-primary/10 text-xs font-medium text-primary flex items-center justify-between border-b md:border-b-0 border-border">
+                <span>Proposed · MR #{{ mrPresets[selectedMRIndex()].mrId }}</span>
+                <span>Current AST</span>
+              </div>
+              <pre class="p-4 text-xs font-mono leading-relaxed bg-primary/5 text-foreground overflow-x-auto"><code>{{ mrPresets[selectedMRIndex()].proposalCode }}</code></pre>
+            </div>
+          </div>
+
+          <div class="px-5 py-3 border-t border-border bg-muted/20 flex flex-wrap items-center gap-5 text-xs text-muted-foreground">
+            <span class="inline-flex items-center gap-1.5">
+              <!-- Users -->
+              <svg class="w-3.5 h-3.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+              Modified by <strong class="text-foreground">{{ mrPresets[selectedMRIndex()].author }}</strong>
+            </span>
+            <span class="inline-flex items-center gap-1.5">
+              <!-- Braces -->
+              <svg class="w-3.5 h-3.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1"></path><path d="M16 21h1a2 2 0 0 0 2-2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"></path></svg>
+              AST Node: {{ mrPresets[selectedMRIndex()].astNode }}
+            </span>
+            <span class="inline-flex items-center gap-1.5">
+              <!-- GitCompare -->
+              <svg class="w-3.5 h-3.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle></svg>
+              Side-by-side comparison
+            </span>
+          </div>
+        </div>
+
+        <!-- Options Cards (shadcn) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="rounded-xl border bg-card p-6 shadow-sm">
+            <h3 class="text-sm font-semibold tracking-tight mb-4">Standards to Verify</h3>
+            <div class="space-y-3">
+              <label class="flex items-center gap-3 cursor-pointer text-xs">
+                <input type="checkbox" [ngModel]="checkNaming()" (ngModelChange)="checkNaming.set($event)" class="rounded border-input text-primary shadow-sm" />
+                <span>Naming & Spec Traceability (@spec RFxx)</span>
+              </label>
+
+              <label class="flex items-center gap-3 cursor-pointer text-xs">
+                <input type="checkbox" [ngModel]="checkIndentation()" (ngModelChange)="checkIndentation.set($event)" class="rounded border-input text-primary shadow-sm" />
+                <span>Strict Indentation & Formatting</span>
+              </label>
+
+              <label class="flex items-center gap-3 cursor-pointer text-xs">
+                <input type="checkbox" [ngModel]="checkOOP()" (ngModelChange)="checkOOP.set($event)" class="rounded border-input text-primary shadow-sm" />
+                <span>Strict Typing & Contract Signatures</span>
+              </label>
+
+              <label class="flex items-center gap-3 cursor-pointer text-xs">
+                <input type="checkbox" [ngModel]="checkLazyCode()" (ngModelChange)="checkLazyCode.set($event)" class="rounded border-input text-primary shadow-sm" />
+                <span>Zero Tolerance for Lazy Code (TODO/pass/stubs)</span>
+              </label>
+
+              <label class="flex items-center gap-3 cursor-pointer text-xs">
+                <input type="checkbox" [ngModel]="checkSecrets()" (ngModelChange)="checkSecrets.set($event)" class="rounded border-input text-primary shadow-sm" />
+                <span>Security: Hardcoded Secret & Token Scan</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="rounded-xl border bg-card p-6 shadow-sm">
+            <h3 class="text-sm font-semibold tracking-tight mb-4">Languages & Engines</h3>
+            <div class="space-y-3">
+              <label class="flex items-center gap-3 cursor-pointer text-xs">
+                <input type="checkbox" [ngModel]="langBend()" (ngModelChange)="langBend.set($event)" class="rounded border-input text-primary shadow-sm" />
+                <span>Bend (HVM Massively Parallel)</span>
+              </label>
+
+              <label class="flex items-center gap-3 cursor-pointer text-xs">
+                <input type="checkbox" [ngModel]="langPython()" (ngModelChange)="langPython.set($event)" class="rounded border-input text-primary shadow-sm" />
+                <span>Python (3.10+)</span>
+              </label>
+
+              <label class="flex items-center gap-3 cursor-pointer text-xs">
+                <input type="checkbox" [ngModel]="langCpp()" (ngModelChange)="langCpp.set($event)" class="rounded border-input text-primary shadow-sm" />
+                <span>C / C++</span>
+              </label>
+
+              <label class="flex items-center gap-3 cursor-pointer text-xs">
+                <input type="checkbox" [ngModel]="langCSharp()" (ngModelChange)="langCSharp.set($event)" class="rounded border-input text-primary shadow-sm" />
+                <span>C# (.NET 8)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons (shadcn buttons) -->
+        <div class="flex gap-3">
+          <button (click)="runMRAnalysis()" class="btn-shadcn btn-shadcn-default h-10 px-6 gap-2 shadow font-medium">
+            <!-- Play -->
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Audit MR/PR with Bend Engine
+          </button>
+          <button (click)="activeTab.set('dashboard')" class="btn-shadcn btn-shadcn-outline h-10 px-6">
+            Cancel
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- 3. RESULTS TAB -->
+    @if (activeTab() === 'results') {
+      <div class="space-y-6">
+        <!-- Search & Filter Controls -->
+        <div class="flex gap-3">
+          <div class="flex-1 relative">
+            <svg class="w-4 h-4 absolute left-3 top-2.5 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input
+              type="text"
+              [ngModel]="searchQuery()"
+              (ngModelChange)="searchQuery.set($event)"
+              placeholder="Search issues, files, or authors..."
+              class="w-full h-9 pl-9 pr-4 rounded-md border border-input bg-card text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+          </div>
+          <select
+            [ngModel]="selectedSeverityFilter()"
+            (ngModelChange)="selectedSeverityFilter.set($event)"
+            class="h-9 px-3 rounded-md border border-input bg-card text-xs shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="all">All Severities</option>
+            <option value="P0_BLOCKING">Blocking (P0)</option>
+            <option value="P1_WARNING">Warnings (P1)</option>
+          </select>
+        </div>
+
+        <!-- Results List -->
+        @if (filteredViolations().length === 0) {
+          <div class="rounded-xl border bg-card p-12 text-center shadow-sm space-y-3">
+            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500 mx-auto">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <h3 class="text-base font-semibold tracking-tight">Zero Non-Compliances Found</h3>
+            <p class="text-xs text-muted-foreground max-w-md mx-auto">The analyzed codebase fully adheres to engineering culture standards and specification requirements.</p>
+          </div>
+        } @else {
+          <div class="space-y-3.5">
+            @for (result of filteredViolations(); track $index) {
+              <div
+                [class]="'rounded-xl border p-4 shadow-sm transition-all ' + (result.severity === 'P0_BLOCKING' ? 'bg-destructive/5 border-destructive/30' : 'bg-amber-500/5 border-amber-500/30')"
+              >
+                <div class="flex items-start gap-3">
+                  <div [class]="'flex h-8 w-8 shrink-0 items-center justify-center rounded-md ' + (result.severity === 'P0_BLOCKING' ? 'bg-destructive/15 text-destructive' : 'bg-amber-500/15 text-amber-500')">
+                    <!-- AlertCircle -->
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                  </div>
+
+                  <div class="flex-1">
+                    <div class="flex items-center justify-between mb-1.5">
+                      <div class="flex items-center gap-2">
+                        <span class="font-mono text-xs font-semibold">{{ result.fileName }}</span>
+                        @if (result.line) {
+                          <span class="text-[11px] text-muted-foreground">line {{ result.line }}</span>
+                        }
+                      </div>
+                      <span class="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-medium bg-muted text-muted-foreground">
+                        {{ result.ruleId }}
+                      </span>
+                    </div>
+
+                    <p class="text-xs font-medium text-foreground leading-relaxed">{{ result.message }}</p>
+
+                    <div class="flex flex-wrap gap-x-5 gap-y-2 mt-3 pt-3 border-t border-border/40 text-[11px] text-muted-foreground">
+                      <span class="inline-flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="5"></circle><path d="M20 21a8 8 0 1 0-16 0"></path></svg>
+                        Snippet by <strong class="text-foreground">{{ result.author || 'AI Agent' }}</strong>
+                      </span>
+                      <span class="inline-flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1"></path></svg>
+                        AST: {{ result.astNode || 'Identified Node' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- 4. HISTORY TAB -->
+    @if (activeTab() === 'history') {
+      <div class="space-y-6">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <p class="text-xs font-medium text-primary uppercase tracking-wider mb-0.5">Traceability & Auditing</p>
+            <h2 class="text-xl font-bold tracking-tight">Audit History</h2>
+            <p class="text-xs text-muted-foreground mt-0.5">Review previous executions, compare results, and export compliance reports.</p>
+          </div>
+          <button (click)="exportHistory()" class="btn-shadcn btn-shadcn-outline h-9 px-3.5 gap-2 text-xs">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Export History
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="rounded-xl border bg-card p-5 shadow-sm">
+            <p class="text-xs text-muted-foreground">MRs/PRs Audited</p>
+            <p class="text-2xl font-bold mt-1 tracking-tight">{{ totalMRsAnalyzed() }}</p>
+          </div>
+          <div class="rounded-xl border bg-card p-5 shadow-sm">
+            <p class="text-xs text-muted-foreground">Files Analyzed</p>
+            <p class="text-2xl font-bold mt-1 tracking-tight">186</p>
+          </div>
+          <div class="rounded-xl border bg-card p-5 shadow-sm">
+            <p class="text-xs text-muted-foreground">Last Execution</p>
+            <p class="text-2xl font-bold mt-1 tracking-tight">Today, 14:32</p>
+          </div>
+        </div>
+
+        <div class="rounded-xl border bg-card overflow-hidden shadow-sm">
+          <div class="px-5 py-3.5 border-b border-border bg-muted/20 flex items-center justify-between">
+            <h3 class="text-sm font-semibold">Previous Runs</h3>
+            <select class="h-8 px-2.5 rounded-md border border-input bg-background text-xs shadow-sm" aria-label="Filter timeframe">
+              <option value="all">All timeframes</option>
+              <option value="today">Today</option>
+              <option value="week">Last 7 days</option>
+              <option value="month">This month</option>
+            </select>
+          </div>
+
+          <div class="divide-y divide-border">
+            @for (run of history(); track run.id) {
+              <div class="px-5 py-3.5 flex items-center gap-4 hover:bg-muted/30 transition-colors">
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="12 7 12 12 15 15"></polyline></svg>
+                </div>
+                <div class="min-w-0 flex-1 grid grid-cols-1 sm:grid-cols-[1.1fr_1.4fr_1fr_0.8fr] gap-4 items-center">
+                  <div>
+                    <p class="text-xs font-semibold">{{ run.date }}</p>
+                    <p class="text-[11px] text-muted-foreground mt-0.5">Duration: {{ run.duration }}</p>
+                  </div>
+                  <div class="min-w-0">
+                    <p class="text-xs font-mono font-medium truncate">{{ run.project }}</p>
+                    <p class="text-[11px] text-muted-foreground truncate mt-0.5">{{ run.mrTitle }} → {{ run.targetBranch }}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs font-medium">{{ run.issues }} issues</p>
+                    <span [class]="'text-[11px] font-medium ' + (run.status === 'Full compliance' ? 'text-emerald-500' : run.status === 'Blocked' ? 'text-destructive' : 'text-amber-500')">
+                      {{ run.status }}
+                    </span>
+                  </div>
+                  <div class="flex justify-end">
+                    <button (click)="activeTab.set('results')" class="text-xs text-primary hover:underline font-medium">View details</button>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="px-5 py-3.5 border-t border-border bg-muted/20 flex items-center justify-between text-xs text-muted-foreground">
+            <span>Showing {{ history().length }} of {{ totalMRsAnalyzed() }} runs</span>
+            <div class="flex gap-2">
+              <button class="btn-shadcn btn-shadcn-outline h-7 px-2.5 text-xs">Previous</button>
+              <button class="btn-shadcn btn-shadcn-outline h-7 px-2.5 text-xs">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- 5. RULES TAB -->
+    @if (activeTab() === 'rules') {
+      <div class="space-y-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xl font-bold tracking-tight">Engineering & Culture Rules Catalog</h2>
+            <p class="text-xs text-muted-foreground mt-0.5">Rules audited automatically by the Bend engine in CI/CD quality gates.</p>
+          </div>
+          <button class="btn-shadcn btn-shadcn-default h-9 px-3.5 gap-2 text-xs">
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            New Rule
+          </button>
+        </div>
+
+        <div class="space-y-3">
+          @for (rule of rules(); track rule.id) {
+            <div class="rounded-xl border bg-card p-4 shadow-sm hover:bg-muted/20 transition-colors">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="font-mono text-[11px] font-semibold px-2 py-0.5 rounded bg-muted text-muted-foreground border border-border">{{ rule.id }}</span>
+                    <h3 class="text-sm font-semibold tracking-tight">{{ rule.name }}</h3>
+                  </div>
+                  <p class="text-xs text-muted-foreground mb-3 leading-relaxed">{{ rule.description }}</p>
+                  <div class="flex items-center gap-2.5">
+                    <span class="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary border border-primary/20">
+                      {{ rule.category }}
+                    </span>
+                    <span class="text-[11px] text-muted-foreground">
+                      {{ rule.languages.join(', ') }}
+                    </span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-3">
+                  <button
+                    (click)="toggleRuleStatus(rule.id)"
+                    [class]="'text-xs font-semibold px-3 py-1 rounded-full cursor-pointer transition-colors border ' + (rule.status === 'active' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' : 'bg-muted text-muted-foreground border-border')"
+                  >
+                    {{ rule.status === 'active' ? 'Active' : 'Inactive' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </main>
+</div>

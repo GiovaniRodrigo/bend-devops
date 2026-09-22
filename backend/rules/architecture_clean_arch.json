@@ -1,0 +1,45 @@
+{
+  "$schema": "./rules_schema.json",
+  "version": "1.0.0",
+  "manifesto_name": "Clean Architecture & Domain Boundary Standards",
+  "category": "Architecture - Clean Arch",
+  "description": "Architectural rules ensuring domain isolation, dependency inversion, and strict boundary separation.",
+  "rules": [
+    {
+      "id": "ARCH-CLEAN-01",
+      "name": "Domain Independence from Frameworks & Infra",
+      "layer": "Domain",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 40,
+      "description": "The Domain layer (Entities and Use Cases) must not import or depend on infrastructure libraries, ORMs, web frameworks, or third-party SDKs.",
+      "rationale": "The business core must remain framework-agnostic, ensuring longevity, maintainability, and effortless unit testing without heavy mocks.",
+      "remediation": "Invert dependencies by declaring interfaces (Ports/Contracts) in the Domain layer and implementing them in Infrastructure (Adapters).",
+      "forbidden_targets": [
+        "domain/**/*.ts",
+        "domain/**/*.cs",
+        "src/domain/**/*.py",
+        "App/Domain/**/*.php"
+      ]
+    },
+    {
+      "id": "ARCH-CLEAN-02",
+      "name": "Strict Inward Dependency Rule",
+      "layer": "All",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 35,
+      "description": "Code dependencies must point exclusively inward towards higher-level business rules.",
+      "rationale": "Inner layers must have zero awareness of outer layers (e.g., Entities do not know UseCases, UseCases do not know Controllers).",
+      "remediation": "Remove direct outer layer imports and apply dependency injection using interfaces."
+    },
+    {
+      "id": "ARCH-CLEAN-03",
+      "name": "Boundary DTOs and Data Transfer Isolation",
+      "layer": "Application / Presentation",
+      "severity": "P1_WARNING",
+      "penalty_points": 20,
+      "description": "Do not expose raw ORM/database entities directly in HTTP responses or external API contracts.",
+      "rationale": "Prevents database schema leaks and unintended tight coupling between API consumers and internal entity implementations.",
+      "remediation": "Map domain entities to dedicated DTOs or ViewModels before returning them to consumers."
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "../rules_schema.json",
+  "version": "1.0.0",
+  "architecture_id": "ARCH_PROFILE_LAYERED_MVC",
+  "name": "Layered & MVC Architecture Profile",
+  "description": "Defines canonical tiers, responsibilities, and directional constraints for multi-tier and MVC software systems.",
+  "layers": [
+    {
+      "name": "Domain",
+      "aliases": ["models", "entities", "domain", "core"],
+      "allowed_dependencies": [],
+      "description": "Pure business models and state. Zero presentation or transport awareness."
+    },
+    {
+      "name": "Application",
+      "aliases": ["services", "usecases", "handlers", "actions"],
+      "allowed_dependencies": ["Domain"],
+      "description": "Business orchestration and use cases."
+    },
+    {
+      "name": "Interface",
+      "aliases": ["controllers", "endpoints", "api", "routes"],
+      "allowed_dependencies": ["Application", "Domain"],
+      "description": "HTTP, gRPC, and CLI adapters and coordinators."
+    },
+    {
+      "name": "Presentation",
+      "aliases": ["views", "templates", "components/ui", "pages"],
+      "allowed_dependencies": ["Interface"],
+      "description": "UI rendering and templates. Zero direct database queries."
+    },
+    {
+      "name": "Infrastructure",
+      "aliases": ["repositories", "db", "infra", "adapters"],
+      "allowed_dependencies": ["Domain"],
+      "description": "Data persistence and third-party integrations."
+    }
+  ]
+}

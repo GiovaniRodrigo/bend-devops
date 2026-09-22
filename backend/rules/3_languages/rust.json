@@ -1,0 +1,29 @@
+{
+  "$schema": "../rules_schema.json",
+  "version": "1.0.0",
+  "language": "Rust (Actix / Axum / Diesel / SQLx)",
+  "file_extensions": [".rs", ".html"],
+  "layer_detection": {
+    "Domain": ["/domain/", "/models/", "/entities/"],
+    "Application": ["/services/", "/usecases/"],
+    "Interface": ["/handlers/", "/routes/", "/controllers/"],
+    "Presentation": ["/templates/", "/ui/"],
+    "Infrastructure": ["/db/", "/repositories/", "/infra/"]
+  },
+  "forbidden_patterns": {
+    "Domain": [
+      {
+        "pattern": "<html|<div|<span|<p>|<script>|HttpRequest|axum::extract",
+        "maps_to_rule": "ARCH-LAYER-01",
+        "message": "Presentation markup or HTTP extractor detected in Rust Domain model"
+      }
+    ],
+    "Presentation": [
+      {
+        "pattern": "sqlx::query|diesel::|SELECT\\s+\\*\\s+FROM",
+        "maps_to_rule": "ARCH-LAYER-02",
+        "message": "Direct SQLx/Diesel query execution inside template"
+      }
+    ]
+  }
+}

@@ -1,0 +1,202 @@
+{
+  "$schema": "./rules_schema.json",
+  "version": "1.0.0",
+  "title": "Layer Vocabulary & Token Taxonomy",
+  "description": "Exhaustive taxonomy of keywords, tokens, HTML tags, and API primitives mapped to their canonical architectural layers.",
+  "layers": {
+    "Presentation": {
+      "layer_id": "LAYER_PRESENTATION",
+      "description": "User interface, client-side rendering, HTML templates, CSS styling, and DOM manipulation.",
+      "tokens": {
+        "html_tags": [
+          "<img>", "</img>", "<img",
+          "<div>", "</div>", "<div",
+          "<span>", "</span>", "<span",
+          "<p>", "</p>", "<p",
+          "<a>", "</a>", "<a",
+          "<form>", "</form>", "<form",
+          "<input>", "<input",
+          "<button>", "</button>", "<button",
+          "<select>", "</select>", "<select",
+          "<option>", "</option>", "<option",
+          "<table>", "</table>", "<table",
+          "<tr>", "</tr>", "<tr",
+          "<td>", "</td>", "<td",
+          "<th>", "</th>", "<th",
+          "<header>", "</header>", "<header",
+          "<footer>", "</footer>", "<footer",
+          "<nav>", "</nav>", "<nav",
+          "<main>", "</main>", "<main",
+          "<section>", "</section>", "<section",
+          "<article>", "</article>", "<article",
+          "<aside>", "</aside>", "<aside",
+          "<h1>", "<h2>", "<h3>", "<h4>", "<h5>", "<h6>",
+          "<ul>", "<li>", "<ol>",
+          "<script>", "</script>", "<script",
+          "<style>", "</style>", "<style",
+          "<link", "<meta", "<canvas", "<svg", "<iframe>"
+        ],
+        "dom_apis": [
+          "document.getElementById",
+          "document.querySelector",
+          "document.querySelectorAll",
+          "document.createElement",
+          "window.location",
+          "window.localStorage",
+          "window.sessionStorage",
+          "window.addEventListener",
+          "alert(",
+          "confirm(",
+          "prompt("
+        ],
+        "template_directives": [
+          "@extends",
+          "@section",
+          "@yield",
+          "@include",
+          "@component",
+          "{% block",
+          "{% extends",
+          "{{",
+          "}}",
+          "*ngIf",
+          "*ngFor",
+          "v-if",
+          "v-for",
+          "v-bind",
+          "v-model"
+        ],
+        "raw_render_methods": [
+          "echo \"<",
+          "echo '<",
+          "print(\"<",
+          "print('<",
+          "Response.Write(\"<",
+          "Response.Write('<",
+          "innerHTML",
+          "outerHTML"
+        ]
+      },
+      "forbidden_in": ["Domain", "Model", "Application", "Service", "Infrastructure"]
+    },
+
+    "Interface_Transport": {
+      "layer_id": "LAYER_INTERFACE_TRANSPORT",
+      "description": "HTTP request/response handling, routing, gRPC coordinators, controller endpoints, and transport protocols.",
+      "tokens": {
+        "http_contexts": [
+          "HttpContext",
+          "HttpRequest",
+          "HttpResponse",
+          "Request.Headers",
+          "Request.Query",
+          "Request.Cookies",
+          "Request.Form",
+          "express.Request",
+          "express.Response",
+          "fastapi.Request",
+          "fastapi.Response",
+          "gin.Context",
+          "echo.Context",
+          "fiber.Ctx",
+          "HttpServletRequest",
+          "HttpServletResponse"
+        ],
+        "superglobals_and_helpers": [
+          "request()",
+          "Request::",
+          "$_GET",
+          "$_POST",
+          "$_REQUEST",
+          "$_SERVER",
+          "$_COOKIE",
+          "$_SESSION",
+          "$_FILES"
+        ],
+        "routing_attributes": [
+          "[ApiController]",
+          "[HttpGet]",
+          "[HttpPost]",
+          "[HttpPut]",
+          "[HttpDelete]",
+          "[Route(",
+          "@RestController",
+          "@GetMapping",
+          "@PostMapping",
+          "@RequestMapping",
+          "@Controller()"
+        ]
+      },
+      "forbidden_in": ["Domain", "Model", "Entity", "Presentation"]
+    },
+
+    "Infrastructure_Persistence": {
+      "layer_id": "LAYER_INFRASTRUCTURE_PERSISTENCE",
+      "description": "Database engines, SQL queries, ORM context, repositories, caching, and external I/O SDKs.",
+      "tokens": {
+        "sql_keywords": [
+          "SELECT * FROM",
+          "SELECT ",
+          "INSERT INTO ",
+          "UPDATE ",
+          "DELETE FROM ",
+          "DROP TABLE",
+          "ALTER TABLE",
+          "INNER JOIN ",
+          "LEFT JOIN ",
+          "RIGHT JOIN ",
+          " GROUP BY ",
+          " ORDER BY ",
+          " HAVING "
+        ],
+        "orm_primitives": [
+          "DbContext",
+          "DbSet<",
+          "EntityManager",
+          "DB::table",
+          "DB::raw",
+          "DB::select",
+          "Model::where",
+          "Model::all",
+          "Model::find",
+          "::where(",
+          "::query(",
+          "objects.filter(",
+          "objects.all(",
+          "objects.get(",
+          "gorm.DB",
+          "db.Where(",
+          "db.Query(",
+          "prisma.",
+          "mongoose.model",
+          "typeorm"
+        ],
+        "storage_and_messaging": [
+          "S3Client",
+          "BlobServiceClient",
+          "RedisClient",
+          "KafkaProducer",
+          "RabbitMQClient"
+        ]
+      },
+      "forbidden_in": ["Presentation", "View", "Domain", "Template"]
+    },
+
+    "Domain_Core": {
+      "layer_id": "LAYER_DOMAIN_CORE",
+      "description": "Pure enterprise business logic, entities, value objects, domain events, and invariant specifications.",
+      "tokens": {
+        "domain_primitives": [
+          "AggregateRoot",
+          "Entity<",
+          "ValueObject",
+          "IDomainEvent",
+          "DomainEvent",
+          "Specification<",
+          "BusinessRuleValidationException"
+        ]
+      },
+      "forbidden_in": ["Presentation"]
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "../rules_schema.json",
+  "version": "1.0.0",
+  "architecture_id": "ARCH_PROFILE_CQRS_EVENT_SOURCING",
+  "name": "CQRS & Event Sourcing Architecture Profile",
+  "description": "Defines strict separation between Command (mutation) models, Read (query) projections, and immutable Event Streams.",
+  "layers": [
+    {
+      "name": "CommandSide",
+      "aliases": ["commands", "command_handlers", "aggregates", "write_model"],
+      "allowed_dependencies": ["EventStore"],
+      "description": "Validates business invariants and writes state deltas exclusively to the append-only Event Store."
+    },
+    {
+      "name": "EventStore",
+      "aliases": ["event_store", "events", "snapshots"],
+      "allowed_dependencies": [],
+      "description": "Immutable append-only ledger of domain events."
+    },
+    {
+      "name": "ReadProjections",
+      "aliases": ["projections", "projectors", "read_models", "queries"],
+      "allowed_dependencies": ["ReadDatabase"],
+      "description": "Asynchronously projects immutable domain events into query-optimized read databases."
+    },
+    {
+      "name": "ReadDatabase",
+      "aliases": ["read_db", "elasticsearch", "redis_cache", "query_views"],
+      "allowed_dependencies": [],
+      "description": "Denormalized and read-optimized query storage."
+    }
+  ]
+}

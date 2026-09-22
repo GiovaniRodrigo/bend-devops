@@ -1,0 +1,9 @@
+image: python:3.11
+
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: AI Culture & Architecture Guardian
+          script:
+            - python3 scripts/culture_guard.py --vcs bitbucket

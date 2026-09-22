@@ -1,0 +1,41 @@
+{
+  "$schema": "../rules_schema.json",
+  "version": "1.0.0",
+  "language": "Python (3.10+)",
+  "file_extensions": [".py", ".jinja2", ".html"],
+  "layer_detection": {
+    "Domain": ["/domain/", "/models/", "/entities/"],
+    "Application": ["/services/", "/use_cases/", "/handlers/"],
+    "Interface": ["/controllers/", "/routers/", "/api/", "/views.py"],
+    "Presentation": ["/templates/", "/static/"],
+    "Infrastructure": ["/infrastructure/", "/repositories/", "/db/"]
+  },
+  "forbidden_patterns": {
+    "Domain": [
+      {
+        "pattern": "<html|<div|<span|<p>|<script>|<style>",
+        "maps_to_rule": "ARCH-LAYER-01",
+        "message": "Presentation markup detected in Python Domain Model"
+      },
+      {
+        "pattern": "fastapi\\.Request|flask\\.request|django\\.http|request\\.GET|request\\.POST",
+        "maps_to_rule": "ARCH-LAYER-03",
+        "message": "HTTP transport request object coupled into Python Domain Model"
+      }
+    ],
+    "Controller": [
+      {
+        "pattern": "<html|<div|<span|<p>|<script>",
+        "maps_to_rule": "ARCH-LAYER-01",
+        "message": "Raw HTML string concatenation in Python Controller/Router"
+      }
+    ],
+    "Presentation": [
+      {
+        "pattern": "objects\\.filter\\(|objects\\.all\\(|\\.query\\(|SELECT\\s+\\*\\s+FROM",
+        "maps_to_rule": "ARCH-LAYER-02",
+        "message": "Direct ORM query execution inside Jinja/HTML template"
+      }
+    ]
+  }
+}

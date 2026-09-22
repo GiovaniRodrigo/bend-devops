@@ -1,0 +1,39 @@
+{
+  "$schema": "../rules_schema.json",
+  "version": "1.0.0",
+  "architecture_id": "ARCH_PROFILE_MICROSERVICES",
+  "name": "Microservices & Distributed Systems Profile",
+  "description": "Defines service boundaries, database isolation, inter-service resilience, and event-driven communication protocols.",
+  "layers": [
+    {
+      "name": "Gateway",
+      "aliases": ["api-gateway", "bff", "ingress", "reverse-proxy"],
+      "allowed_dependencies": ["ServiceEndpoint"],
+      "description": "Ingress routing, authentication termination, and client rate limiting."
+    },
+    {
+      "name": "ServiceEndpoint",
+      "aliases": ["controllers", "grpc_handlers", "api", "consumers"],
+      "allowed_dependencies": ["ApplicationService"],
+      "description": "Public gRPC, REST endpoints, and asynchronous event consumers."
+    },
+    {
+      "name": "ApplicationService",
+      "aliases": ["services", "usecases", "workflows", "sagas"],
+      "allowed_dependencies": ["DomainModel", "RepositoryInterface", "OutboxPublisher"],
+      "description": "Distributed saga orchestration and application workflows."
+    },
+    {
+      "name": "DomainModel",
+      "aliases": ["domain", "aggregates", "entities"],
+      "allowed_dependencies": [],
+      "description": "Isolated bounded context domain entities and business rules."
+    },
+    {
+      "name": "InfrastructurePersistence",
+      "aliases": ["repositories", "db", "outbox", "clients"],
+      "allowed_dependencies": ["DomainModel"],
+      "description": "Dedicated database access (Database-per-Service) and messaging relays."
+    }
+  ]
+}

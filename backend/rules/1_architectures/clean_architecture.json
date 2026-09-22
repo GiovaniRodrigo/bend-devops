@@ -1,0 +1,33 @@
+{
+  "$schema": "../rules_schema.json",
+  "version": "1.0.0",
+  "architecture_id": "ARCH_PROFILE_CLEAN_HEXAGONAL",
+  "name": "Clean & Hexagonal Architecture Profile",
+  "description": "Defines concentric dependency layers and Ports & Adapters boundaries.",
+  "layers": [
+    {
+      "name": "DomainCore",
+      "aliases": ["domain/entities", "core/domain", "domain/models"],
+      "allowed_dependencies": [],
+      "description": "Enterprise business entities, value objects, and domain events."
+    },
+    {
+      "name": "ApplicationUseCases",
+      "aliases": ["application/usecases", "domain/usecases", "core/usecases"],
+      "allowed_dependencies": ["DomainCore"],
+      "description": "Use cases, commands, queries, and output port interfaces."
+    },
+    {
+      "name": "AdaptersAndControllers",
+      "aliases": ["adapters/controllers", "adapters/gateways", "controllers"],
+      "allowed_dependencies": ["ApplicationUseCases", "DomainCore"],
+      "description": "Inbound and outbound adapters converting data formats."
+    },
+    {
+      "name": "FrameworksAndInfra",
+      "aliases": ["infrastructure", "frameworks", "db", "external"],
+      "allowed_dependencies": ["AdaptersAndControllers", "ApplicationUseCases", "DomainCore"],
+      "description": "ORMs, databases, external APIs, and web frameworks."
+    }
+  ]
+}

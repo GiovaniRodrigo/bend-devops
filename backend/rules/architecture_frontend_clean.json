@@ -1,0 +1,60 @@
+{
+  "$schema": "./rules_schema.json",
+  "version": "1.0.0",
+  "manifesto_name": "Modern Frontend Architecture & Component Standards",
+  "category": "Architecture - Frontend Clean",
+  "description": "Architectural rules for frontend component hierarchy, state immutability, container vs presentational separation, and API encapsulation.",
+  "rules": [
+    {
+      "id": "ARCH-FE-01",
+      "name": "Zero Direct Network/API Calls in Presentational Components",
+      "layer": "UI / Presentational Component",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 35,
+      "description": "Prohibits invoking `fetch()`, `axios`, or direct HTTP client methods inside pure presentational / dumb UI components.",
+      "rationale": "Presentational components must be purely driven by props/inputs and output events, allowing effortless visual testing (Storybook) and UI reusability.",
+      "remediation": "Encapsulate network requests in dedicated API services, hooks, or Smart/Container components, passing data down via props/signals.",
+      "detection_patterns": [
+        "fetch(",
+        "axios.",
+        "http.get(",
+        "http.post("
+      ],
+      "forbidden_targets": [
+        "src/components/ui/**/*.tsx",
+        "src/components/ui/**/*.vue",
+        "src/app/components/ui/**/*.ts"
+      ]
+    },
+    {
+      "id": "ARCH-FE-02",
+      "name": "Strict State Immutability",
+      "layer": "State Management / Signals / Store",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 30,
+      "description": "Prohibits direct mutation of component state, stores, or signals arrays/objects (e.g. `state.items.push()`, `this.state.x = y`).",
+      "rationale": "Direct state mutation bypasses reactivity triggers, causes silent render bugs, and prevents change detection optimization.",
+      "remediation": "Use immutable update patterns (spread operators `[...arr]`, `{...obj}`, or immutable signal helpers like `.update(s => [...s, item])`)."
+    },
+    {
+      "id": "ARCH-FE-03",
+      "name": "No Deep Prop Drilling (Max 2 Levels)",
+      "layer": "Component Hierarchy",
+      "severity": "P1_WARNING",
+      "penalty_points": 15,
+      "description": "Passing identical state or callbacks through more than two intermediate component layers without utilization is prohibited.",
+      "rationale": "Deep prop drilling tightly couples unrelated components and complicates refactoring.",
+      "remediation": "Use Context API, dedicated Angular Injectable Services/Signals, or a centralized state store."
+    },
+    {
+      "id": "ARCH-FE-04",
+      "name": "Mandatory Accessible Markup & Semantic HTML",
+      "layer": "Template / JSX / HTML",
+      "severity": "P1_WARNING",
+      "penalty_points": 15,
+      "description": "Interactive elements must use proper semantic HTML tags (e.g., `<button>` instead of `<div onClick=...>`) with accessibility attributes (`aria-label`, `alt`).",
+      "rationale": "Guarantees keyboard accessibility, screen reader compatibility, and compliance with WCAG standards.",
+      "remediation": "Replace clickable `<div>`/`<span>` with `<button>` and include required accessibility attributes."
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Engineering & Architecture Rules Schema",
+  "description": "Validation schema for engineering, architecture, and code culture rule packs.",
+  "type": "object",
+  "required": ["version", "manifesto_name", "category", "rules"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "manifesto_name": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "severity", "penalty_points", "description", "rationale", "remediation"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Z0-9_-]+$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "layer": {
+            "type": "string",
+            "description": "Target architectural layer of the rule (e.g., Model, Controller, View, Domain, Service, Gateway, EventConsumer)"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["P0_BLOCKING", "P1_WARNING", "P2_INFO"]
+          },
+          "penalty_points": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "description": {
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "remediation": {
+            "type": "string"
+          },
+          "detection_patterns": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "forbidden_targets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

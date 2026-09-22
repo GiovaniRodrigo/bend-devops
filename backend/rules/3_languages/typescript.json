@@ -1,0 +1,34 @@
+{
+  "$schema": "../rules_schema.json",
+  "version": "1.0.0",
+  "language": "TypeScript / JavaScript",
+  "file_extensions": [".ts", ".tsx", ".js", ".jsx", ".vue"],
+  "layer_detection": {
+    "Domain": ["/domain/", "/models/", "/entities/"],
+    "Application": ["/services/", "/usecases/", "/commands/"],
+    "Interface": ["/controllers/", "/routes/", "/api/"],
+    "Presentation": ["/components/ui/", "/views/", "/pages/"],
+    "Infrastructure": ["/infrastructure/", "/repositories/", "/db/"]
+  },
+  "forbidden_patterns": {
+    "Domain": [
+      {
+        "pattern": "<html|<div|<span|<p>|<script>|<style>|jsx|React\\.createElement",
+        "maps_to_rule": "ARCH-LAYER-01",
+        "message": "JSX/HTML presentation code detected in TypeScript Domain Entity"
+      },
+      {
+        "pattern": "express\\.Request|Request$|FastifyRequest|req\\.body|req\\.query",
+        "maps_to_rule": "ARCH-LAYER-03",
+        "message": "HTTP transport request coupled into TypeScript Domain Entity"
+      }
+    ],
+    "Presentation": [
+      {
+        "pattern": "fetch\\(|axios\\.|http\\.get\\(|http\\.post\\(",
+        "maps_to_rule": "ARCH-FE-01",
+        "message": "Direct API/network call inside pure Presentational UI component"
+      }
+    ]
+  }
+}

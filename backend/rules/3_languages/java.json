@@ -1,0 +1,36 @@
+{
+  "$schema": "../rules_schema.json",
+  "version": "1.0.0",
+  "language": "Java (Spring Boot / Jakarta EE)",
+  "file_extensions": [".java", ".jsp", ".html"],
+  "layer_detection": {
+    "Domain": ["/domain/", "/models/", "/entities/"],
+    "Application": ["/services/", "/usecases/"],
+    "Interface": ["/controllers/", "/rest/", "/endpoints/"],
+    "Presentation": ["/templates/", "/views/", "/jsp/"],
+    "Infrastructure": ["/repositories/", "/infrastructure/", "/data/"]
+  },
+  "forbidden_patterns": {
+    "Domain": [
+      {
+        "pattern": "<html|<div|<span|<p>|<script>|HttpServletRequest|HttpServletResponse",
+        "maps_to_rule": "ARCH-LAYER-01",
+        "message": "Presentation markup or servlet HTTP context detected inside Java Domain Entity"
+      }
+    ],
+    "Controller": [
+      {
+        "pattern": "<html|<div|<span|<p>|<script>",
+        "maps_to_rule": "ARCH-LAYER-01",
+        "message": "Raw HTML markup detected in Spring RestController"
+      }
+    ],
+    "Presentation": [
+      {
+        "pattern": "EntityManager|JpaRepository|SELECT\\s+\\*\\s+FROM",
+        "maps_to_rule": "ARCH-LAYER-02",
+        "message": "Direct EntityManager or SQL execution inside JSP / HTML template"
+      }
+    ]
+  }
+}

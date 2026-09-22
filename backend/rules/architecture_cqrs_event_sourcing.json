@@ -1,0 +1,39 @@
+{
+  "$schema": "./rules_schema.json",
+  "version": "1.0.0",
+  "manifesto_name": "CQRS & Event-Driven Architecture Standards",
+  "category": "Architecture - CQRS & Event-Driven",
+  "description": "Architectural rules for Command Query Responsibility Segregation (CQRS), event immutability, and projection decoupling.",
+  "rules": [
+    {
+      "id": "ARCH-CQRS-01",
+      "name": "Strict Command & Query Model Segregation",
+      "layer": "Application / Handlers",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 35,
+      "description": "Commands must only perform state mutations and return void/result status (no complex query projections). Queries must be side-effect free and never mutate state.",
+      "rationale": "Prevents subtle race conditions, optimizes read/write scalability independently, and maintains clear cognitive separation between read and write models.",
+      "remediation": "Split combined handlers into explicit CommandHandler and QueryHandler classes."
+    },
+    {
+      "id": "ARCH-CQRS-02",
+      "name": "Absolute Immutability of Domain Events",
+      "layer": "Domain / Event Store",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 40,
+      "description": "Domain events persisted in an Event Store or published to a message bus must be append-only and immutable. Modifying past events is strictly prohibited.",
+      "rationale": "Event streams represent the historical source of truth. Mutating past events breaks auditability and corrupts read model replays.",
+      "remediation": "To correct mistakes, publish a compensating event (e.g., OrderRefunded, ItemReturned) rather than updating prior events."
+    },
+    {
+      "id": "ARCH-CQRS-03",
+      "name": "Asynchronous Read Projection Decoupling",
+      "layer": "Projection / Read Model",
+      "severity": "P1_WARNING",
+      "penalty_points": 20,
+      "description": "Read model projections must be updated via asynchronous event subscribers and must never block the write command transaction.",
+      "rationale": "Keeps write path latency minimal and prevents read model projection failures from rolling back valid business commands.",
+      "remediation": "Update materialized read views asynchronously via background event handlers or change data capture (CDC)."
+    }
+  ]
+}

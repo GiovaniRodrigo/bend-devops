@@ -1,0 +1,9 @@
+@* @spec RF01 *@
+@* VIOLATION: ARCH-LAYER-02 (Direct database query inside view template) *@
+<div>
+    <h1>Products</h1>
+    @{
+        var db = DbContext.Database;
+        var items = "SELECT * FROM Products";
+    }
+</div>

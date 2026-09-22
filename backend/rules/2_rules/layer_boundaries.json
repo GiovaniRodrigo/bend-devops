@@ -1,0 +1,49 @@
+{
+  "$schema": "../rules_schema.json",
+  "version": "1.0.0",
+  "manifesto_name": "Universal Layer Boundary Rules",
+  "category": "Architecture - Layer Boundaries",
+  "description": "Abstract layer isolation rules defining forbidden concerns between tiers.",
+  "rules": [
+    {
+      "id": "ARCH-LAYER-01",
+      "name": "Zero Presentation Code in Domain, Models & Controllers",
+      "layer": "Domain, Model, Controller, Service",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 40,
+      "description": "Prohibits raw UI markup (HTML, JSX, client scripts, styles) inside Domain, Model, Service, or Controller classes.",
+      "rationale": "Separation of Concerns across multi-tier software systems.",
+      "remediation": "Move presentation code to dedicated View templates or return ViewModels/DTOs."
+    },
+    {
+      "id": "ARCH-LAYER-02",
+      "name": "Zero Direct Database Queries in Presentation & Views",
+      "layer": "View, Template, Presentation",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 35,
+      "description": "Prohibits executing raw database queries or ORM calls inside presentation templates.",
+      "rationale": "Prevents N+1 query leaks, data coupling, and template bloat.",
+      "remediation": "Fetch data in controllers or application services and pass prepared collections."
+    },
+    {
+      "id": "ARCH-LAYER-03",
+      "name": "Zero Transport Protocol Coupling in Domain Models",
+      "layer": "Domain, Model, Entity",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 30,
+      "description": "Prohibits binding HTTP request objects or transport superglobals inside domain entities.",
+      "rationale": "Enables domain reuse in background workers, CLI tools, and isolated unit tests.",
+      "remediation": "Pass primitive arguments or domain DTOs to entity methods."
+    },
+    {
+      "id": "ARCH-LAYER-04",
+      "name": "Thin Controllers (Delegation to Application / Domain Services)",
+      "layer": "Controller, Endpoint",
+      "severity": "P1_WARNING",
+      "penalty_points": 20,
+      "description": "Controllers must act as lightweight coordinators without containing heavy business algorithms.",
+      "rationale": "Avoids fat controllers and improves unit testability.",
+      "remediation": "Extract business logic into Use Cases or Application Services."
+    }
+  ]
+}

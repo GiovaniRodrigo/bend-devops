@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Rust / Bend / HVM
+target/
+*.hvm
+/tmp/_culture_guard*
+
+# IDEs
+.vscode/
+.idea/
+*.swp

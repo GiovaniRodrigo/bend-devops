@@ -1,0 +1,23 @@
+{
+  "name": "ai-bend-devops",
+  "version": "1.0.0",
+  "description": "AI Culture & Standards Guardian (Bend Engine + Angular Dashboard)",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "start": "npm --prefix frontend start",
+    "build": "npm --prefix frontend run build",
+    "test": "./scripts/validate.sh",
+    "validate": "./scripts/validate.sh",
+    "audit": "python3 scripts/culture_guard.py"
+  },
+  "keywords": [
+    "bend",
+    "hvm",
+    "angular",
+    "ai-agents",
+    "culture-guardian",
+    "spec-driven-development"
+  ],
+  "author": "",
+  "license": "ISC"
+}

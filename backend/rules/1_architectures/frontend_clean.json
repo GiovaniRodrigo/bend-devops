@@ -1,0 +1,33 @@
+{
+  "$schema": "../rules_schema.json",
+  "version": "1.0.0",
+  "architecture_id": "ARCH_PROFILE_FRONTEND_CLEAN",
+  "name": "Frontend Clean Architecture & Component Profile",
+  "description": "Defines strict separation between dumb Presentational UI components, Smart Containers, Custom Hooks, and API Gateways.",
+  "layers": [
+    {
+      "name": "PresentationalUI",
+      "aliases": ["components/ui", "atoms", "molecules", "views"],
+      "allowed_dependencies": [],
+      "description": "Pure stateless or presentation-only components. Zero API calls, global store mutations, or business logic."
+    },
+    {
+      "name": "SmartContainers",
+      "aliases": ["pages", "views", "containers", "organisms"],
+      "allowed_dependencies": ["PresentationalUI", "StateHooks", "Services"],
+      "description": "State orchestration, routing integration, and binding custom hooks to UI components."
+    },
+    {
+      "name": "StateHooksAndStores",
+      "aliases": ["hooks", "store", "state", "context", "signals"],
+      "allowed_dependencies": ["ApiClients", "DomainModels"],
+      "description": "Client-side state management, reactive stores, and custom hooks."
+    },
+    {
+      "name": "ApiClients",
+      "aliases": ["api", "services", "http", "gateway"],
+      "allowed_dependencies": [],
+      "description": "Encapsulated network clients (Axios, Fetch, Apollo)."
+    }
+  ]
+}

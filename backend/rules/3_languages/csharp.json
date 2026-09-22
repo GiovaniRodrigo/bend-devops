@@ -1,0 +1,41 @@
+{
+  "$schema": "../rules_schema.json",
+  "version": "1.0.0",
+  "language": "C# (.NET 8 / 9)",
+  "file_extensions": [".cs", ".cshtml", ".razor"],
+  "layer_detection": {
+    "Domain": ["/Domain/", "/Models/", "/Entities/"],
+    "Application": ["/Services/", "/UseCases/", "/Handlers/"],
+    "Interface": ["/Controllers/", "/Endpoints/", "/Api/"],
+    "Presentation": ["/Views/", "/Pages/", "/Components/"],
+    "Infrastructure": ["/Infrastructure/", "/Data/", "/Repositories/"]
+  },
+  "forbidden_patterns": {
+    "Domain": [
+      {
+        "pattern": "<html|<div|<span|<p>|<script>|<style>|Response\\.Write",
+        "maps_to_rule": "ARCH-LAYER-01",
+        "message": "Raw HTML/presentation markup detected in C# Domain Entity"
+      },
+      {
+        "pattern": "HttpContext|HttpRequest|Request\\.Headers|Request\\.Query",
+        "maps_to_rule": "ARCH-LAYER-03",
+        "message": "HTTP transport coupling detected in C# Domain Model"
+      }
+    ],
+    "Controller": [
+      {
+        "pattern": "<html|<div|<span|<p>|<script>|Response\\.Write\\(\"<",
+        "maps_to_rule": "ARCH-LAYER-01",
+        "message": "Raw HTML markup detected in C# Controller (use ViewModels or Razor Views)"
+      }
+    ],
+    "Presentation": [
+      {
+        "pattern": "DbContext\\.|\\.Database\\.Execute|SELECT\\s+\\*\\s+FROM",
+        "maps_to_rule": "ARCH-LAYER-02",
+        "message": "Direct DbContext or raw SQL query inside Razor View"
+      }
+    ]
+  }
+}

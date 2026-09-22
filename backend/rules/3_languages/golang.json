@@ -1,0 +1,34 @@
+{
+  "$schema": "../rules_schema.json",
+  "version": "1.0.0",
+  "language": "Go (Golang)",
+  "file_extensions": [".go", ".html", ".tmpl"],
+  "layer_detection": {
+    "Domain": ["/domain/", "/entity/", "/model/"],
+    "Application": ["/usecase/", "/service/"],
+    "Interface": ["/handler/", "/controller/", "/api/"],
+    "Presentation": ["/template/", "/web/"],
+    "Infrastructure": ["/repository/", "/db/"]
+  },
+  "forbidden_patterns": {
+    "Domain": [
+      {
+        "pattern": "<html|<div|<span|<p>|<script>",
+        "maps_to_rule": "ARCH-LAYER-01",
+        "message": "HTML markup in Go domain entity"
+      },
+      {
+        "pattern": "http\\.Request|gin\\.Context|echo\\.Context|fiber\\.Ctx",
+        "maps_to_rule": "ARCH-LAYER-03",
+        "message": "Web framework context coupled into Go domain entity"
+      }
+    ],
+    "Presentation": [
+      {
+        "pattern": "db\\.Where\\(|gorm\\.DB|SELECT\\s+\\*\\s+FROM",
+        "maps_to_rule": "ARCH-LAYER-02",
+        "message": "Direct database query executed inside HTML template"
+      }
+    ]
+  }
+}

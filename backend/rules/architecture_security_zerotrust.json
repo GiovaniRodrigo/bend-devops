@@ -1,0 +1,49 @@
+{
+  "$schema": "./rules_schema.json",
+  "version": "1.0.0",
+  "manifesto_name": "Zero-Trust Security & Engineering Architecture Standards",
+  "category": "Architecture - Security & Zero Trust",
+  "description": "Architectural rules enforcing the Zero-Trust security model, defense-in-depth, least privilege, and strict cryptographic protections.",
+  "rules": [
+    {
+      "id": "ARCH-SEC-01",
+      "name": "Zero-Trust Perimeter Verification (Explicit Auth Everywhere)",
+      "layer": "API Gateway / Internal Service",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 40,
+      "description": "Internal microservices and private endpoints must validate authorization tokens (JWT/mTLS) explicitly; assuming internal networks are inherently trusted is prohibited.",
+      "rationale": "Compromised internal lateral movement is the primary threat in modern distributed attacks. Every service must verify caller identity and permissions.",
+      "remediation": "Apply authentication & RBAC authorization interceptors/guards to all private endpoints."
+    },
+    {
+      "id": "ARCH-SEC-02",
+      "name": "Mandatory Input Sanitization & Content-Type Enforcement",
+      "layer": "Presentation / Controller",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 35,
+      "description": "All request payloads must be strictly validated against strong schemas before reaching domain logic, and Content-Type headers must be strictly enforced.",
+      "rationale": "Prevents injection vulnerabilities (XSS, Command Injection, Prototype Pollution) at the earliest ingestion stage.",
+      "remediation": "Use validation DTOs/Zod schemas with unknown field stripping and explicit Content-Type verification."
+    },
+    {
+      "id": "ARCH-SEC-03",
+      "name": "Audit Logging for All Mutation Operations",
+      "layer": "Domain / Service",
+      "severity": "P1_WARNING",
+      "penalty_points": 20,
+      "description": "Any state-modifying action (create, update, delete, permission escalation) must generate structured, immutable audit log events containing caller ID, action, timestamp, and target resource ID.",
+      "rationale": "Mandatory for regulatory compliance (SOC2, GDPR, HIPAA) and forensic security auditing.",
+      "remediation": "Emit structured audit events from domain handlers to secure audit logs."
+    },
+    {
+      "id": "ARCH-SEC-04",
+      "name": "No Insecure Cryptographic Primitives",
+      "layer": "Infrastructure / Cryptography",
+      "severity": "P0_BLOCKING",
+      "penalty_points": 40,
+      "description": "Prohibits using deprecated cryptographic algorithms (e.g. MD5, SHA1 for signatures/passwords, DES, RC4) or weak random number generators for security tokens.",
+      "rationale": "Vulnerable algorithms can be cracked or collided with minimal computational effort.",
+      "remediation": "Use modern cryptographic standards: Argon2id / bcrypt for passwords, AES-256-GCM for encryption, SHA-256/SHA-512 for hashing, and cryptographically secure PRNGs."
+    }
+  ]
+}
