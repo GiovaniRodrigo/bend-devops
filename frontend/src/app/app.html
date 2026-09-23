@@ -317,6 +317,28 @@
               {{ currentViolationsCount() }} {{ currentViolationsCount() === 1 ? 'não conformidade' : 'não conformidades' }}
             </span>
           </div>
+          @if (currentViolationsCount() > 0) {
+            <div class="violation-strip border-b border-zinc-800 bg-zinc-900/35 p-3">
+              <div class="mb-2 flex items-center justify-between gap-2">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">Trechos encontrados</span>
+                <span class="text-[10px] text-zinc-500">{{ currentViolationsCount() }} ocorrências</span>
+              </div>
+              <div class="grid gap-2 md:grid-cols-2">
+                @for (violation of currentAuditedFiles()[0].violations; track violation.ruleId + '-' + violation.line) {
+                  <div class="violation-snippet rounded-md border border-rose-500/20 bg-rose-500/5 p-2.5">
+                    <div class="mb-1 flex items-center justify-between gap-2">
+                      <span class="font-mono text-[10px] font-semibold text-rose-300">{{ violation.ruleId }}</span>
+                      <span class="text-[10px] text-zinc-500">linha {{ violation.line || '—' }}</span>
+                    </div>
+                    <p class="line-clamp-2 text-[11px] leading-relaxed text-zinc-300">{{ violation.message }}</p>
+                    @if (violation.snippet) {
+                      <code class="mt-2 block truncate rounded bg-zinc-950/70 px-2 py-1 font-mono text-[10px] text-amber-200/80">{{ violation.snippet }}</code>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+          }
           <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-zinc-800">
             <div>
               <div class="code-pane-heading before-heading px-4 py-2 border-b border-zinc-800 bg-zinc-900/50 text-[11px] font-semibold uppercase tracking-wider text-zinc-400"><span>Antes da auditoria</span><span class="change-badge">trecho alterado</span></div>

@@ -110,6 +110,21 @@
   background-image: linear-gradient(90deg, rgba(245, 158, 11, 0.08), transparent 7rem);
 }
 
+.violation-strip {
+  max-height: 12rem;
+  overflow-y: auto;
+}
+
+.violation-snippet {
+  min-width: 0;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.violation-snippet:hover {
+  border-color: rgba(251, 113, 133, 0.5);
+  background-color: rgba(244, 63, 94, 0.1);
+}
+
 pre {
   margin: 0;
   white-space: pre-wrap;
