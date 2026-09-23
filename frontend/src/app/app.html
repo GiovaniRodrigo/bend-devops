@@ -220,36 +220,12 @@
       <div class="space-y-6">
         <!-- Configuration Card -->
         <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-6 shadow-sm">
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <h2 class="text-base font-semibold tracking-tight text-zinc-100">Live Code & Diff Quality Auditor</h2>
-              <p class="text-xs text-zinc-400 mt-0.5">Evaluates culture discipline, layer boundaries, and inline pragmas via Bend parallel logic.</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-zinc-400">Quick Presets:</span>
-              <select
-                [ngModel]="selectedPresetIndex()"
-                (ngModelChange)="selectPreset($event)"
-                class="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500"
-              >
-                @for (preset of codePresets; track $index) {
-                  <option [value]="$index">{{ preset.name }}</option>
-                }
-              </select>
-            </div>
+          <div class="mb-4">
+            <h2 class="text-base font-semibold tracking-tight text-zinc-100">Auditar código</h2>
+            <p class="text-xs text-zinc-400 mt-0.5">Configure apenas o contexto necessário para encontrar não conformidades.</p>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <div>
-              <label class="block text-xs font-medium text-zinc-400 mb-1.5">File Path</label>
-              <input
-                type="text"
-                [ngModel]="inputFileName()"
-                (ngModelChange)="inputFileName.set($event)"
-                class="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs font-mono text-zinc-200 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500"
-              />
-            </div>
-
             <div>
               <label class="block text-xs font-medium text-zinc-400 mb-1.5">Architecture Profile</label>
               <select
@@ -261,6 +237,19 @@
                 @for (prof of architectureProfiles(); track prof.id) {
                   <option [value]="prof.id">{{ prof.name }}</option>
                 }
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-zinc-400 mb-1.5">Comparar com</label>
+              <select
+                [ngModel]="selectedBranch()"
+                (ngModelChange)="selectedBranch.set($event)"
+                class="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500"
+              >
+                <option value="main">main</option>
+                <option value="develop">develop</option>
+                <option value="feature/billing-refactor">feature/billing-refactor</option>
               </select>
             </div>
 
@@ -277,21 +266,9 @@
               </select>
             </div>
 
-            <div class="flex items-center pt-5">
-              <label class="flex items-center gap-2 cursor-pointer text-xs text-zinc-300">
-                <input
-                  type="checkbox"
-                  [ngModel]="hasTestFileChecked()"
-                  (ngModelChange)="hasTestFileChecked.set($event)"
-                  class="rounded border-zinc-700 text-emerald-500 bg-zinc-950 focus:ring-emerald-500"
-                />
-                <span>Companion Test File Exists</span>
-              </label>
-            </div>
           </div>
-        </div>
 
-        <!-- Audit Action Bar -->
+          <!-- Audit Action Bar -->
         <div class="audit-action-bar flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-cyan-500/20 bg-zinc-900/95 p-3 shadow-2xl shadow-black/30 backdrop-blur">
           <div class="flex items-center gap-2 text-xs text-zinc-400">
             <span class="h-2 w-2 rounded-full bg-cyan-400"></span>
@@ -304,6 +281,7 @@
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
             Validar código
           </button>
+        </div>
         </div>
 
         <!-- Code Before/After Split -->
