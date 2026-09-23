@@ -1,4 +1,43 @@
 /* Estilos específicos do componente App */
+:host {
+  display: block;
+}
+
+.app-shell {
+  background-image: radial-gradient(circle at 10% 0%, rgba(8, 145, 178, 0.10), transparent 26rem), linear-gradient(180deg, #090d12 0%, #07090d 100%);
+}
+
+.app-shell header {
+  background: rgba(9, 13, 18, 0.82);
+  border-color: rgba(148, 163, 184, 0.14);
+}
+
+.app-shell > div[class*="border-b"] {
+  background: rgba(15, 23, 42, 0.62);
+  border-color: rgba(148, 163, 184, 0.12);
+}
+
+.app-shell main > div > div,
+.app-shell main > div > section {
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(14px);
+}
+
+.app-shell button,
+.app-shell select,
+.app-shell textarea,
+.app-shell input {
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.app-shell button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.app-shell nav button[class*="bg-zinc-800"] {
+  box-shadow: inset 0 -2px 0 rgba(34, 211, 238, 0.85), 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
 pre {
   margin: 0;
   white-space: pre-wrap;
