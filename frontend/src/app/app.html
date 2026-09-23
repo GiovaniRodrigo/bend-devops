@@ -257,6 +257,7 @@
                 (ngModelChange)="selectedProfile.set($event)"
                 class="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500"
               >
+                <option value="all">Todas as arquiteturas (validação completa)</option>
                 @for (prof of architectureProfiles(); track prof.id) {
                   <option [value]="prof.id">{{ prof.name }}</option>
                 }
@@ -290,34 +291,49 @@
           </div>
         </div>
 
-        <!-- Code Editor Box -->
+        <!-- Code Before/After Split -->
         <div class="rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden shadow-sm">
           <div class="px-4 py-2.5 border-b border-zinc-800 bg-zinc-900/80 flex items-center justify-between text-xs">
             <span class="font-mono text-zinc-300">{{ inputFileName() }}</span>
-            <span class="text-zinc-500 font-mono">Multi-Language Lexer + Pragma Scanner</span>
+            <span class="text-zinc-500 font-mono">Comparação antes / depois</span>
           </div>
-          <textarea
-            [ngModel]="inputSourceCode()"
-            (ngModelChange)="inputSourceCode.set($event)"
-            rows="16"
-            class="w-full p-4 font-mono text-xs leading-relaxed bg-zinc-950 text-zinc-200 resize-y border-none focus:outline-none focus:ring-0"
-            placeholder="Paste code or unified diff here..."
-          ></textarea>
+          <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-zinc-800">
+            <div>
+              <div class="px-4 py-2 border-b border-zinc-800 bg-zinc-900/50 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Antes da auditoria</div>
+              <textarea
+                [ngModel]="inputSourceCode()"
+                (ngModelChange)="inputSourceCode.set($event)"
+                rows="16"
+                class="w-full p-4 font-mono text-xs leading-relaxed bg-zinc-950 text-zinc-200 resize-y border-none focus:outline-none focus:ring-0"
+                placeholder="Cole o código ou diff aqui..."
+              ></textarea>
+            </div>
+            <div>
+              <div class="px-4 py-2 border-b border-zinc-800 bg-emerald-500/5 text-[11px] font-semibold uppercase tracking-wider text-emerald-400">Depois da auditoria</div>
+              <textarea
+                [value]="inputSourceCode()"
+                rows="16"
+                readonly
+                aria-label="Código depois da auditoria"
+                class="w-full p-4 font-mono text-xs leading-relaxed bg-zinc-950/70 text-zinc-400 resize-y border-none focus:outline-none focus:ring-0"
+              ></textarea>
+            </div>
+          </div>
         </div>
 
         <!-- Audit Action Bar -->
-        <div class="flex items-center justify-between">
+        <div class="audit-action-bar sticky bottom-4 z-30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-cyan-500/20 bg-zinc-900/95 p-3 shadow-2xl shadow-black/30 backdrop-blur">
+          <div class="flex items-center gap-2 text-xs text-zinc-400">
+            <span class="h-2 w-2 rounded-full bg-cyan-400"></span>
+            {{ selectedProfile() === 'all' ? '8 arquiteturas selecionadas' : 'Perfil pronto para validação' }}
+          </div>
           <button
             (click)="runLiveAudit()"
-            class="btn-shadcn btn-shadcn-default h-10 px-6 gap-2 text-xs font-semibold shadow-lg shadow-emerald-500/10"
+            class="btn-shadcn btn-shadcn-default h-10 px-5 gap-2 text-xs font-semibold shadow-lg shadow-cyan-500/10"
           >
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-            Execute Audit & Generate Quality Gate Report
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Validar código
           </button>
-
-          <span class="text-xs text-zinc-500 font-mono">
-            Evaluates 26 rules in O(log N) depth on Bend HVM
-          </span>
         </div>
       </div>
     }

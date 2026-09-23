@@ -28,7 +28,11 @@ export class App {
   readonly activeTab = signal<'dashboard' | 'analyze' | 'results' | 'rules' | 'vocabulary' | 'vcs' | 'history'>('dashboard');
 
   // Architecture & Branch Configuration State
-  readonly selectedProfile = signal<ArchitectureProfileId>('clean_architecture');
+  readonly selectedProfile = signal<ArchitectureProfileId | 'all'>('clean_architecture');
+  readonly auditProfileId = computed<ArchitectureProfileId>(() => {
+    const profile = this.selectedProfile();
+    return profile === 'all' ? 'clean_architecture' : profile as ArchitectureProfileId;
+  });
   readonly selectedBranch = signal<'main' | 'develop' | 'feature/billing-refactor'>('main');
   readonly selectedPlatform = signal<VcsPlatform>('github');
 
@@ -170,22 +174,26 @@ export class App {
         preset.hasTestFile,
         preset.author,
         this.selectedBranch(),
-        this.selectedProfile()
+        this.auditProfileId()
       );
       this.currentAuditedFiles.set([fileAudit]);
     }
   }
 
   runLiveAudit(): void {
-    const fileAudit = this.guardianService.auditCode(
+    const profilesToAudit = this.selectedProfile() === 'all'
+      ? this.architectureProfiles().map(profile => profile.id)
+      : [this.auditProfileId()];
+    const auditedFiles = profilesToAudit.map(profileId => this.guardianService.auditCode(
       this.inputFileName(),
       this.inputSourceCode(),
       this.hasTestFileChecked(),
       this.inputAuthor(),
       this.selectedBranch(),
-      this.selectedProfile()
-    );
-    this.currentAuditedFiles.set([fileAudit]);
+      profileId
+    ));
+    this.currentAuditedFiles.set(auditedFiles);
+    const fileAudit = auditedFiles[0];
 
     const report = this.guardianService.generateReport([fileAudit]);
     const statusText = report.p0Count > 0 ? 'Blocked' : report.score === 100 ? 'Full compliance' : 'Completed';
@@ -194,7 +202,7 @@ export class App {
       id: `${Date.now()}`,
       date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
       project: `${this.inputRepo()} · PR #${this.inputPrNumber()}`,
-      mrTitle: `${this.inputFileName()} (${this.selectedProfile()})`,
+      mrTitle: `${this.inputFileName()} (${this.selectedProfile() === 'all' ? 'all architectures' : this.selectedProfile()})`,
       author: this.inputAuthor(),
       targetBranch: this.selectedBranch(),
       platform: this.selectedPlatform(),
@@ -225,7 +233,7 @@ export class App {
         this.hasTestFileChecked(),
         this.inputAuthor(),
         this.selectedBranch(),
-        this.selectedProfile()
+        this.auditProfileId()
       );
       this.currentAuditedFiles.set([fileAudit]);
     }
