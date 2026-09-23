@@ -308,9 +308,14 @@
 
         <!-- Code Before/After Split -->
         <div class="rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden shadow-sm">
-          <div class="px-4 py-2.5 border-b border-zinc-800 bg-zinc-900/80 flex items-center justify-between text-xs">
-            <span class="font-mono text-zinc-300">{{ inputFileName() }}</span>
-            <span class="text-zinc-500 font-mono">Comparação antes / depois</span>
+          <div class="px-4 py-2.5 border-b border-zinc-800 bg-zinc-900/80 flex items-center justify-between gap-3 text-xs">
+            <div class="min-w-0">
+              <span class="block truncate font-mono text-zinc-200">{{ inputFileName() }}</span>
+              <span class="block text-[10px] text-zinc-500">Código com não conformidades encontradas</span>
+            </div>
+            <span class="shrink-0 rounded-full border border-rose-500/25 bg-rose-500/10 px-2 py-1 text-[10px] font-semibold text-rose-300">
+              {{ currentViolationsCount() }} {{ currentViolationsCount() === 1 ? 'não conformidade' : 'não conformidades' }}
+            </span>
           </div>
           <div class="grid grid-cols-1 lg:grid-cols-2 divide-y lg:divide-y-0 lg:divide-x divide-zinc-800">
             <div>

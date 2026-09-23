@@ -142,6 +142,7 @@ export class App {
   });
 
   // Real Computed Dashboard Metrics (Zero arbitrary fake counts)
+  readonly currentViolationsCount = computed(() => this.currentAuditedFiles().reduce((sum, file) => sum + file.violations.length, 0));
   readonly totalAuditsExecuted = computed(() => this.history().length);
   readonly totalViolationsBlocked = computed(() => {
     return this.history().reduce((sum, item) => sum + item.p0Count, 0);
