@@ -154,20 +154,36 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     expect(app.diffViewMode()).toBe('split');
   });
 
-  it('should toggle scope between single_file and branch_changes and select branch files', () => {
+  it('should toggle scope between branch_analysis and single_file and support post-analysis file review', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
-    expect(app.auditScope()).toBe('single_file');
+    expect(app.auditScope()).toBe('branch_analysis');
+    expect(app.isReviewingSpecificFile()).toBe(false);
 
-    app.setAuditScope('branch_changes');
-    expect(app.auditScope()).toBe('branch_changes');
+    // Initial branch analysis
+    app.analyzeBranch();
+    expect(app.currentReport().totalFiles).toBe(4);
+    expect(app.branchSummary().totalAdditions).toBe(327);
+    expect(app.branchSummary().totalDeletions).toBe(84);
 
-    app.selectBranchFile(1);
+    // Start post-analysis file review on file 1
+    app.startFileReview(1);
+    expect(app.isReviewingSpecificFile()).toBe(true);
     expect(app.selectedBranchFileIndex()).toBe(1);
     expect(app.inputFileName()).toBe('src/Domain/Models/OrderInvoice.cs');
 
+    // Close file review
+    app.closeFileReview();
+    expect(app.isReviewingSpecificFile()).toBe(false);
+
+    // Switch to Single File Review mode
     app.setAuditScope('single_file');
     expect(app.auditScope()).toBe('single_file');
+    expect(app.isReviewingSpecificFile()).toBe(false);
+
+    // Switch back to Branch Analysis mode
+    app.setAuditScope('branch_analysis');
+    expect(app.auditScope()).toBe('branch_analysis');
   });
 
   it('should toggle progressive disclosure accordions and diff visibility', () => {
@@ -198,6 +214,7 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     const app = fixture.componentInstance;
     const prevHistoryLen = app.history().length;
 
+    app.setAuditScope('single_file');
     app.selectPreset(1);
     app.analyzeCurrentScope();
 
@@ -205,5 +222,93 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     expect(app.currentReport().isApproved).toBe(false);
     expect(app.currentReport().totalViolations).toBeGreaterThan(0);
     expect(app.history().length).toBe(prevHistoryLen + 1);
+  });
+
+  it('should support Stage 1 Code Source switching between Local and GitHub repository', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    expect(app.codeSourceMode()).toBe('local');
+    expect(app.localRepoName()).toBe('bend-devops');
+    expect(app.activeRepoName()).toBe('bend-devops');
+
+    // Switch to GitHub repository
+    app.setCodeSourceMode('github');
+    expect(app.codeSourceMode()).toBe('github');
+    expect(app.githubAccount()).toBe('GiovaniRodrigo');
+    expect(app.githubRepo()).toBe('bend-devops');
+    expect(app.activeRepoName()).toBe('GiovaniRodrigo/bend-devops');
+
+    // Change GitHub repository
+    app.setGitHubRepo('billing-service');
+    expect(app.githubRepo()).toBe('billing-service');
+    expect(app.activeRepoName()).toBe('GiovaniRodrigo/billing-service');
+
+    // Switch back to Local repository and change local repo
+    app.setCodeSourceMode('local');
+    app.setLocalRepo('customer-api');
+    expect(app.localRepoName()).toBe('customer-api');
+    expect(app.localRepoPath()).toBe('~/projects/customer-api');
+    expect(app.activeRepoName()).toBe('customer-api');
+  });
+
+  it('should support Stage 2 Repository and Branch target configuration', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    expect(app.analysisTargetMode()).toBe('branch');
+    expect(app.sourceBranch()).toBe('feature/order-refactor');
+    expect(app.compareBranch()).toBe('main');
+
+    // Switch target mode
+    app.setAnalysisTargetMode('working_tree');
+    expect(app.analysisTargetMode()).toBe('working_tree');
+
+    app.setAnalysisTargetMode('commit');
+    expect(app.analysisTargetMode()).toBe('commit');
+
+    // Change source and compare branches
+    app.setSourceBranch('feature/billing-service');
+    expect(app.sourceBranch()).toBe('feature/billing-service');
+
+    app.setCompareBranch('develop');
+    expect(app.compareBranch()).toBe('develop');
+    expect(app.selectedBranch()).toBe('develop');
+  });
+
+  it('should support Stage 3 Architecture Validation scope (All, Rule Set, Custom) and dynamic rule counts', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    // Mode 1: All Architecture Rules
+    expect(app.validationScopeMode()).toBe('all');
+    expect(app.allActiveRulesCount()).toBe(app.rules().filter(r => r.status === 'active').length);
+    expect(app.effectiveRulesCount()).toBe(app.allActiveRulesCount());
+    expect(app.ctaButtonText()).toContain(`Analyze Branch (All ${app.allActiveRulesCount()} Rules)`);
+
+    // Mode 2: Rule Set Profile
+    app.setValidationScopeMode('ruleset');
+    expect(app.validationScopeMode()).toBe('ruleset');
+    expect(app.ctaButtonText()).toContain('Analyze Branch');
+
+    // Mode 3: Custom Rules
+    app.setValidationScopeMode('custom');
+    expect(app.validationScopeMode()).toBe('custom');
+    expect(app.selectedCustomRuleIds().size).toBeGreaterThan(0);
+
+    // Toggle custom rules
+    const firstRuleId = app.rules()[0].id;
+    expect(app.isCustomRuleSelected(firstRuleId)).toBe(true);
+    app.toggleCustomRule(firstRuleId);
+    expect(app.isCustomRuleSelected(firstRuleId)).toBe(false);
+
+    // Clear all and Select all
+    app.clearAllCustomRules();
+    expect(app.selectedCustomRuleIds().size).toBe(0);
+    expect(app.effectiveRulesCount()).toBe(0);
+
+    app.selectAllCustomRules();
+    expect(app.selectedCustomRuleIds().size).toBe(app.rules().length);
+    expect(app.effectiveRulesCount()).toBe(app.rules().length);
   });
 });

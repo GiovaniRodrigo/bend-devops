@@ -596,15 +596,22 @@ class LegacyConnector:
     hasTestFile: boolean,
     author: string = 'DevOps Pipeline',
     targetBranch: string = 'main',
-    profileId: ArchitectureProfileId = 'clean_architecture'
+    profileId: ArchitectureProfileId = 'clean_architecture',
+    ruleIdsFilter?: Set<string> | string[]
   ): FileAuditInfo {
     const lines = code.split('\n');
     const violations: CodeViolation[] = [];
     let activeSuppressionsCount = 0;
 
+    const filterSet = ruleIdsFilter
+      ? (ruleIdsFilter instanceof Set ? ruleIdsFilter : new Set(ruleIdsFilter))
+      : null;
+
     const activeRulesMap = new Map<string, CultureRule>();
     this.rules().forEach(r => {
-      if (r.status === 'active') activeRulesMap.set(r.id, r);
+      if (r.status === 'active' && (!filterSet || filterSet.has(r.id))) {
+        activeRulesMap.set(r.id, r);
+      }
     });
 
     // Detect file language

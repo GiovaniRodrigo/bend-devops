@@ -34,6 +34,8 @@ export type TabId =
   | 'vcs'
   | 'history';
 
+export type AuditScope = 'branch_analysis' | 'single_file';
+
 export interface PipelineStageInfo {
   id: 'code' | 'rules' | 'scanner' | 'gate' | 'cicd';
   name: string;
@@ -66,6 +68,28 @@ export class App {
   readonly selectedBranch = signal<'main' | 'develop' | 'feature/billing-refactor'>('main');
   readonly selectedPlatform = signal<VcsPlatform>('github');
 
+  // Code Source State (Stage 1)
+  readonly codeSourceMode = signal<'local' | 'github'>('local');
+  readonly localRepoPath = signal<string>('~/projects/bend-devops');
+  readonly localRepoName = signal<string>('bend-devops');
+  readonly isChangingLocalRepo = signal<boolean>(false);
+  readonly availableLocalRepos = ['bend-devops', 'billing-service', 'customer-api', 'payment-gateway'];
+  readonly githubAccount = signal<string>('GiovaniRodrigo');
+  readonly githubRepo = signal<string>('bend-devops');
+  readonly availableGitHubRepos = ['bend-devops', 'billing-service', 'customer-api', 'devops-guardian-cli'];
+
+  // Repository & Branch Target State (Stage 2)
+  readonly analysisTargetMode = signal<'working_tree' | 'branch' | 'commit'>('branch');
+  readonly sourceBranch = signal<string>('feature/order-refactor');
+  readonly compareBranch = signal<string>('main');
+  readonly availableBranches = ['feature/order-refactor', 'feature/billing-service', 'fix/security-audit', 'develop', 'main'];
+  readonly availableBaseBranches = ['main', 'develop', 'staging'];
+
+  // Validation Rules Scope State (Stage 3)
+  readonly validationScopeMode = signal<'all' | 'ruleset' | 'custom'>('all');
+  readonly customRuleSearch = signal<string>('');
+  readonly selectedCustomRuleIds = signal<Set<string>>(new Set<string>());
+
   // Interactive Code Editor State
   readonly selectedPresetIndex = signal<number>(0);
   readonly inputFileName = signal<string>('src/Domain/Entities/Order.cs');
@@ -74,11 +98,11 @@ export class App {
   readonly inputAuthor = signal<string>('DevOps Engineer');
   readonly inputRepo = signal<string>('GiovaniRodrigo/bend-devops');
   readonly inputPrNumber = signal<string>('42');
-
   // Scope & Progressive Disclosure State
-  readonly auditScope = signal<'single_file' | 'branch_changes'>('single_file');
+  readonly auditScope = signal<AuditScope>('branch_analysis');
   readonly isAnalyzing = signal<boolean>(false);
   readonly showDiffView = signal<boolean>(true);
+  readonly isReviewingSpecificFile = signal<boolean>(false);
   readonly isViolationsExpanded = signal<boolean>(false);
   readonly isDetailsExpanded = signal<boolean>(false);
   readonly isAdvancedScopeOpen = signal<boolean>(false);
@@ -91,6 +115,18 @@ export class App {
     { name: 'src/Presentation/Controllers/CheckoutController.cs', status: 'blocked' as const, additions: 84, deletions: 36, violationsCount: 2, presetIndex: 2 },
     { name: 'src/Infrastructure/Adapters/PaymentGatewayAdapter.py', status: 'passed' as const, additions: 136, deletions: 36, violationsCount: 0, presetIndex: 3 }
   ];
+
+  readonly branchSummary = computed(() => {
+    const files = this.branchFiles;
+    const totalAdditions = files.reduce((acc, f) => acc + f.additions, 0);
+    const totalDeletions = files.reduce((acc, f) => acc + f.deletions, 0);
+    const totalFiles = files.length;
+    return {
+      totalFiles,
+      totalAdditions,
+      totalDeletions
+    };
+  });
 
   // Diff View State
   readonly diffViewMode = signal<DiffViewMode>('split');
@@ -123,6 +159,14 @@ export class App {
   readonly exportedBitbucketJson = signal<string>('');
   readonly exportedMarkdown = signal<string>('');
   readonly activeExportModal = signal<'sarif' | 'gitlab' | 'bitbucket' | 'markdown' | null>(null);
+
+  // Redesign UX State: Drawers, Explorers, Previews & Progressive Disclosure
+  readonly selectedRuleForDrawer = signal<CultureRule | null>(null);
+  readonly selectedLayerForExplorer = signal<string>('Domain');
+  readonly expandedViolationIndex = signal<number | null>(null);
+  readonly showPayloadPreview = signal<boolean>(false);
+  readonly showExportPreview = signal<boolean>(false);
+  readonly showTechnicalDetails = signal<boolean>(false);
 
   // Interactive Pipeline Visualization State
   readonly selectedPipelineStage = signal<'code' | 'rules' | 'scanner' | 'gate' | 'cicd'>('gate');
@@ -295,7 +339,8 @@ export class App {
     const fileName = this.inputFileName();
     const sourceCode = this.inputSourceCode();
     const audited = this.currentAuditedFiles();
-    const violations = audited[0]?.violations || [];
+    const matching = audited.find(f => f.name === fileName) || audited[0];
+    const violations = matching?.violations || [];
     const profileId = this.selectedProfile();
     return this.guardianService.generateCodeDiff(fileName, sourceCode, violations, profileId);
   });
@@ -386,21 +431,156 @@ export class App {
     { name: 'Bend', ext: '.bend', version: 'HVM 2.0', category: 'Massively Parallel Engine', status: 'Active' }
   ];
 
+  // Stage 1-3 Dynamic Computed Properties
+  readonly activeRepoName = computed(() => {
+    return this.codeSourceMode() === 'local' 
+      ? this.localRepoName() 
+      : `${this.githubAccount()}/${this.githubRepo()}`;
+  });
+
+  readonly allActiveRules = computed(() => {
+    return this.rules().filter(r => r.status === 'active');
+  });
+
+  readonly allActiveRulesCount = computed(() => {
+    return this.allActiveRules().length;
+  });
+
+  readonly selectedProfileName = computed(() => {
+    const prof = this.architectureProfiles().find(p => p.id === this.selectedProfile());
+    return prof ? prof.name.split('(')[0].trim() : 'Clean Architecture';
+  });
+
+  readonly profileRulesCount = computed(() => {
+    return this.allActiveRules().length;
+  });
+
+  readonly effectiveRulesCount = computed(() => {
+    if (this.validationScopeMode() === 'all') return this.allActiveRulesCount();
+    if (this.validationScopeMode() === 'ruleset') return this.profileRulesCount();
+    return this.selectedCustomRuleIds().size;
+  });
+
+  readonly filteredCustomRulesList = computed(() => {
+    const q = this.customRuleSearch().toLowerCase().trim();
+    return this.rules().filter(r => 
+      !q || 
+      r.id.toLowerCase().includes(q) || 
+      r.name.toLowerCase().includes(q) || 
+      r.category.toLowerCase().includes(q)
+    );
+  });
+
+  readonly ctaButtonText = computed(() => {
+    const count = this.effectiveRulesCount();
+    const mode = this.validationScopeMode();
+    if (this.auditScope() === 'branch_analysis') {
+      if (mode === 'all') return `Analyze Branch (All ${count} Rules)`;
+      if (mode === 'ruleset') return `Analyze Branch (${this.selectedProfileName()})`;
+      return `Analyze Branch (${count} Rules)`;
+    } else {
+      if (mode === 'all') return `Analyze File (All ${count} Rules)`;
+      if (mode === 'ruleset') return `Analyze File (${this.selectedProfileName()})`;
+      return `Analyze File (${count} Rules)`;
+    }
+  });
+
   constructor() {
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', () => {
         this.isMobile.set(window.innerWidth < 768);
       });
     }
-    this.selectPreset(0);
+    this.selectedCustomRuleIds.set(new Set(this.rules().map(r => r.id)));
+    this.analyzeBranch();
   }
 
-  setAuditScope(scope: 'single_file' | 'branch_changes'): void {
+  // Stage 1 Helper Methods
+  setCodeSourceMode(mode: 'local' | 'github'): void {
+    this.codeSourceMode.set(mode);
+    this.inputRepo.set(this.activeRepoName());
+  }
+
+  setLocalRepo(repo: string): void {
+    this.localRepoName.set(repo);
+    this.localRepoPath.set(`~/projects/${repo}`);
+    this.inputRepo.set(repo);
+    this.isChangingLocalRepo.set(false);
+    this.reanalyzeCurrentScope();
+  }
+
+  setGitHubRepo(repo: string): void {
+    this.githubRepo.set(repo);
+    this.inputRepo.set(`${this.githubAccount()}/${repo}`);
+    this.reanalyzeCurrentScope();
+  }
+
+  // Stage 2 Helper Methods
+  setAnalysisTargetMode(mode: 'working_tree' | 'branch' | 'commit'): void {
+    this.analysisTargetMode.set(mode);
+    this.reanalyzeCurrentScope();
+  }
+
+  setSourceBranch(branch: string): void {
+    this.sourceBranch.set(branch);
+    this.reanalyzeCurrentScope();
+  }
+
+  setCompareBranch(branch: string): void {
+    this.compareBranch.set(branch);
+    if (branch === 'main' || branch === 'develop') {
+      this.selectedBranch.set(branch);
+    }
+    this.reanalyzeCurrentScope();
+  }
+
+  // Stage 3 Helper Methods
+  setValidationScopeMode(mode: 'all' | 'ruleset' | 'custom'): void {
+    this.validationScopeMode.set(mode);
+    this.reanalyzeCurrentScope();
+  }
+
+  toggleCustomRule(ruleId: string): void {
+    this.selectedCustomRuleIds.update(set => {
+      const next = new Set(set);
+      if (next.has(ruleId)) {
+        next.delete(ruleId);
+      } else {
+        next.add(ruleId);
+      }
+      return next;
+    });
+    this.reanalyzeCurrentScope();
+  }
+
+  selectAllCustomRules(): void {
+    this.selectedCustomRuleIds.set(new Set(this.rules().map(r => r.id)));
+    this.reanalyzeCurrentScope();
+  }
+
+  clearAllCustomRules(): void {
+    this.selectedCustomRuleIds.set(new Set());
+    this.reanalyzeCurrentScope();
+  }
+
+  isCustomRuleSelected(ruleId: string): boolean {
+    return this.selectedCustomRuleIds().has(ruleId);
+  }
+
+  getActiveRuleIdsFilter(): Set<string> | undefined {
+    if (this.validationScopeMode() === 'custom') {
+      return this.selectedCustomRuleIds();
+    }
+    return undefined;
+  }
+
+  setAuditScope(scope: AuditScope): void {
     this.auditScope.set(scope);
     if (scope === 'single_file') {
+      this.isReviewingSpecificFile.set(false);
       this.selectPreset(this.selectedPresetIndex());
     } else {
-      this.selectBranchFile(this.selectedBranchFileIndex());
+      this.analyzeBranch();
     }
   }
 
@@ -408,23 +588,88 @@ export class App {
     this.selectedBranchFileIndex.set(index);
     const file = this.branchFiles[index];
     if (file) {
-      this.selectPreset(file.presetIndex);
+      const preset = this.codePresets[file.presetIndex];
+      if (preset) {
+        this.inputFileName.set(preset.fileName);
+        this.inputSourceCode.set(preset.code);
+        this.hasTestFileChecked.set(preset.hasTestFile);
+        this.inputAuthor.set(preset.author);
+      }
     }
   }
 
-  analyzeCurrentScope(): void {
+  startFileReview(index: number = 0): void {
+    this.selectBranchFile(index);
+    this.isReviewingSpecificFile.set(true);
+    this.showDiffView.set(true);
+  }
+
+  closeFileReview(): void {
+    this.isReviewingSpecificFile.set(false);
+  }
+
+  analyzeBranch(): void {
     this.isAnalyzing.set(true);
     setTimeout(() => {
       this.isAnalyzing.set(false);
     }, 120);
 
+    const ruleIdsFilter = this.getActiveRuleIdsFilter();
+    const auditedFiles: FileAuditInfo[] = this.branchFiles.map(f => {
+      const preset = this.codePresets[f.presetIndex];
+      return this.guardianService.auditCode(
+        preset.fileName,
+        preset.code,
+        preset.hasTestFile,
+        preset.author,
+        this.selectedBranch(),
+        this.selectedProfile(),
+        ruleIdsFilter
+      );
+    });
+
+    this.currentAuditedFiles.set(auditedFiles);
+    const report = this.guardianService.generateReport(auditedFiles);
+    const statusText = report.p0Count > 0 ? 'Blocked' : report.score === 100 ? 'Full compliance' : 'Completed';
+
+    const newRun: AnalysisRun = {
+      id: `${Date.now()}`,
+      date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      project: `${this.inputRepo()} · PR #${this.inputPrNumber()}`,
+      mrTitle: `Branch ${this.selectedBranch()} (${this.branchFiles.length} files)`,
+      author: this.inputAuthor(),
+      targetBranch: this.selectedBranch(),
+      platform: this.selectedPlatform(),
+      issues: report.totalViolations,
+      p0Count: report.p0Count,
+      p1Count: report.p1Count,
+      status: statusText,
+      duration: '0.04s (Bend HVM)',
+      violations: auditedFiles.flatMap(f => f.violations),
+      score: report.score,
+      suppressionsCount: report.activeSuppressionsCount
+    };
+
+    this.history.update(h => [newRun, ...h]);
+    this.isAudited.set(true);
+    this.isReviewingSpecificFile.set(false);
+  }
+
+  analyzeSingleFile(): void {
+    this.isAnalyzing.set(true);
+    setTimeout(() => {
+      this.isAnalyzing.set(false);
+    }, 120);
+
+    const ruleIdsFilter = this.getActiveRuleIdsFilter();
     const fileAudit = this.guardianService.auditCode(
       this.inputFileName(),
       this.inputSourceCode(),
       this.hasTestFileChecked(),
       this.inputAuthor(),
       this.selectedBranch(),
-      this.selectedProfile()
+      this.selectedProfile(),
+      ruleIdsFilter
     );
     this.currentAuditedFiles.set([fileAudit]);
 
@@ -453,17 +698,34 @@ export class App {
     this.isAudited.set(true);
   }
 
+  analyzeCurrentScope(): void {
+    if (this.auditScope() === 'branch_analysis') {
+      this.analyzeBranch();
+    } else {
+      this.analyzeSingleFile();
+    }
+  }
+
   reanalyzeCurrentScope(): void {
-    if (this.inputSourceCode()) {
-      const fileAudit = this.guardianService.auditCode(
-        this.inputFileName(),
-        this.inputSourceCode(),
-        this.hasTestFileChecked(),
-        this.inputAuthor(),
-        this.selectedBranch(),
-        this.selectedProfile()
-      );
-      this.currentAuditedFiles.set([fileAudit]);
+    const ruleIdsFilter = this.getActiveRuleIdsFilter();
+    if (this.auditScope() === 'branch_analysis') {
+      this.analyzeBranch();
+      if (this.isReviewingSpecificFile()) {
+        this.selectBranchFile(this.selectedBranchFileIndex());
+      }
+    } else {
+      if (this.inputSourceCode()) {
+        const fileAudit = this.guardianService.auditCode(
+          this.inputFileName(),
+          this.inputSourceCode(),
+          this.hasTestFileChecked(),
+          this.inputAuthor(),
+          this.selectedBranch(),
+          this.selectedProfile(),
+          ruleIdsFilter
+        );
+        this.currentAuditedFiles.set([fileAudit]);
+      }
     }
   }
 
@@ -492,26 +754,30 @@ export class App {
       this.hasTestFileChecked.set(preset.hasTestFile);
       this.inputAuthor.set(preset.author);
 
+      const ruleIdsFilter = this.getActiveRuleIdsFilter();
       const fileAudit = this.guardianService.auditCode(
         preset.fileName,
         preset.code,
         preset.hasTestFile,
         preset.author,
         this.selectedBranch(),
-        this.selectedProfile()
+        this.selectedProfile(),
+        ruleIdsFilter
       );
       this.currentAuditedFiles.set([fileAudit]);
     }
   }
 
   runLiveAudit(): void {
+    const ruleIdsFilter = this.getActiveRuleIdsFilter();
     const fileAudit = this.guardianService.auditCode(
       this.inputFileName(),
       this.inputSourceCode(),
       this.hasTestFileChecked(),
       this.inputAuthor(),
       this.selectedBranch(),
-      this.selectedProfile()
+      this.selectedProfile(),
+      ruleIdsFilter
     );
     this.currentAuditedFiles.set([fileAudit]);
 
@@ -547,13 +813,15 @@ export class App {
 
     // Re-evaluate current file if present
     if (this.inputSourceCode()) {
+      const ruleIdsFilter = this.getActiveRuleIdsFilter();
       const fileAudit = this.guardianService.auditCode(
         this.inputFileName(),
         this.inputSourceCode(),
         this.hasTestFileChecked(),
         this.inputAuthor(),
         this.selectedBranch(),
-        this.selectedProfile()
+        this.selectedProfile(),
+        ruleIdsFilter
       );
       this.currentAuditedFiles.set([fileAudit]);
     }
@@ -646,6 +914,38 @@ export class App {
       target.scrollTop = source.scrollTop;
       target.scrollLeft = source.scrollLeft;
     }
+  }
+
+  openRuleDrawer(rule: CultureRule): void {
+    this.selectedRuleForDrawer.set(rule);
+  }
+
+  closeRuleDrawer(): void {
+    this.selectedRuleForDrawer.set(null);
+  }
+
+  selectLayerExplorer(layerName: string): void {
+    this.selectedLayerForExplorer.set(layerName);
+  }
+
+  toggleViolationDetail(index: number): void {
+    if (this.expandedViolationIndex() === index) {
+      this.expandedViolationIndex.set(null);
+    } else {
+      this.expandedViolationIndex.set(index);
+    }
+  }
+
+  togglePayloadPreview(): void {
+    this.showPayloadPreview.update(v => !v);
+  }
+
+  toggleExportPreview(): void {
+    this.showExportPreview.update(v => !v);
+  }
+
+  toggleTechnicalDetails(): void {
+    this.showTechnicalDetails.update(v => !v);
   }
 
   copyCorrectedCode(): void {

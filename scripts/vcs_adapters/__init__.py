@@ -10,7 +10,12 @@ from scripts.vcs_adapters.base_adapter import BaseVcsAdapter
 from scripts.vcs_adapters.github_adapter import GitHubAdapter
 from scripts.vcs_adapters.gitlab_adapter import GitLabAdapter
 from scripts.vcs_adapters.bitbucket_adapter import BitbucketAdapter
-from scripts.vcs_adapters.diff_parser import parse_unified_diff, extract_changed_lines
+from scripts.vcs_adapters.diff_parser import (
+    parse_unified_diff,
+    parse_unified_diff_structured,
+    extract_changed_lines,
+    ParsedDiffFile
+)
 from scripts.vcs_adapters.webhook_gateway import WebhookGateway, VcsPullRequestEvent
 from scripts.vcs_adapters.policy_engine import BranchPolicyEngine
 
@@ -70,7 +75,9 @@ __all__ = [
     "GitLabAdapter",
     "BitbucketAdapter",
     "parse_unified_diff",
+    "parse_unified_diff_structured",
     "extract_changed_lines",
+    "ParsedDiffFile",
     "detect_vcs_environment",
     "get_vcs_adapter",
     "WebhookGateway",

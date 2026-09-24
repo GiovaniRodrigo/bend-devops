@@ -89,23 +89,23 @@ def capture_all_screens():
                 "desc": "Visão geral de métricas KPI, perfis de arquitetura suportados e card de veredito do último arquivo avaliado."
             })
 
-            # 2. Live Auditor - Preset 0 (Clean Architecture Compliant)
-            print("📸 [2/20] Capturing Live Code Auditor (Clean Architecture Compliant Preset)...")
+            # 2. Live Auditor - Branch Analysis (Primary Workflow)
+            print("📸 [2/20] Capturing Live Code Auditor (Branch Analysis Workflow)...")
             page.locator("nav button:has-text('Live Code & Diff Auditor')").click()
             time.sleep(0.3)
-            page.locator("select").first.select_option(index=0)
+            page.locator("button:has-text('Branch Analysis')").first.click()
             time.sleep(0.3)
             p2 = SCREENSHOTS_DIR / "02_live_auditor_clean_preset.png"
             page.screenshot(path=str(p2), full_page=True)
             captured_screens.append({
                 "file": "02_live_auditor_clean_preset.png",
-                "title": "Live Code Auditor (Preset Clean Architecture 100% Compliant)",
-                "desc": "Editor de código interativo com entidade de domínio C# em conformidade estrita e rastreabilidade @spec RF14."
+                "title": "Live Code Auditor (Branch Analysis Workflow)",
+                "desc": "Fluxo primário de auditoria por branch comparando todas as alterações com as regras de arquitetura."
             })
 
-            # 3. Execute Audit on Compliant Code -> Audit Results Approved
-            print("📸 [3/20] Executing Audit on Compliant Code -> Audit Results Approved...")
-            page.locator("button:has-text('Analyze')").first.click()
+            # 3. Execute Audit on Branch -> Audit Results Approved
+            print("📸 [3/20] Executing Audit on Branch -> Audit Results...")
+            page.locator("button:has-text('Analyze Branch')").first.click()
             time.sleep(0.3)
             page.locator("nav button:has-text('Audit Results')").click()
             time.sleep(0.4)
@@ -113,27 +113,27 @@ def capture_all_screens():
             page.screenshot(path=str(p3), full_page=True)
             captured_screens.append({
                 "file": "03_audit_results_approved_100.png",
-                "title": "Audit Results (100% Compliant - Zero Infractions)",
-                "desc": "Tela de resultados com veredito APPROVED (Score 100/100) e feedback de conformidade total."
+                "title": "Audit Results (Relatório Consolidado da Auditoria)",
+                "desc": "Tela de resultados com veredito consolidado da branch e detalhamento de conformidade arquitetural."
             })
 
-            # 4. Live Auditor - Preset 1 (Non-Compliant Layer Leakage)
-            print("📸 [4/20] Capturing Live Code Auditor (Violation Preset)...")
+            # 4. Live Auditor - Review Specific File (Before / After Diff)
+            print("📸 [4/20] Capturing Live Code Auditor (File Review Before/After Diff)...")
             page.locator("nav button:has-text('Live Code & Diff Auditor')").click()
             time.sleep(0.3)
-            page.locator("select").first.select_option(index=1)
+            page.locator("button:has-text('OrderInvoice.cs')").first.click()
             time.sleep(0.3)
             p4 = SCREENSHOTS_DIR / "04_live_auditor_violation_preset.png"
             page.screenshot(path=str(p4), full_page=True)
             captured_screens.append({
                 "file": "04_live_auditor_violation_preset.png",
-                "title": "Live Code Auditor (Preset com Violações Arquiteturais)",
-                "desc": "Código C# contendo vazamento de apresentação HTML no domínio, segredo hardcoded e código incompleto TODO."
+                "title": "Live Code Auditor (Revisão de Arquivo com Diff Before & After)",
+                "desc": "Inspeção detalhada de arquivo alterado na branch com comparativo Before (Original) e After (Guardian-Corrected)."
             })
 
             # 5. Execute Audit on Violation Code -> Audit Results Blocked
             print("📸 [5/20] Executing Audit on Violation Code -> Audit Results Blocked...")
-            page.locator("button:has-text('Analyze')").first.click()
+            page.locator("button:has-text('Analyze Branch')").first.click()
             time.sleep(0.3)
             page.locator("nav button:has-text('Audit Results')").click()
             time.sleep(0.4)
@@ -160,9 +160,11 @@ def capture_all_screens():
             page.locator("select").last.select_option("all")
             time.sleep(0.2)
 
-            # 7. Live Auditor - Preset 3 (Pragma Suppression with Justification)
-            print("📸 [7/20] Capturing Live Code Auditor (Pragma Suppression Preset)...")
+            # 7. Live Auditor - Single File Review (Pragma Suppression Preset)
+            print("📸 [7/20] Capturing Live Code Auditor (Single File Review Mode)...")
             page.locator("nav button:has-text('Live Code & Diff Auditor')").click()
+            time.sleep(0.3)
+            page.locator("button:has-text('Single File Review')").first.click()
             time.sleep(0.3)
             page.locator("select").first.select_option(index=3)
             time.sleep(0.3)
@@ -170,10 +172,10 @@ def capture_all_screens():
             page.screenshot(path=str(p7), full_page=True)
             captured_screens.append({
                 "file": "07_live_auditor_suppression_preset.png",
-                "title": "Live Code Auditor (Supressão com Justificativa @guardian-ignore)",
-                "desc": "Código Python com pragma inline devidamente justificado para supressão controlada de falso-positivo."
+                "title": "Live Code Auditor (Single File Review - Supressão @guardian-ignore)",
+                "desc": "Modo de revisão de arquivo avulso com código Python e pragma inline devidamente justificado."
             })
-            page.locator("button:has-text('Analyze')").first.click()
+            page.locator("button:has-text('Analyze File')").first.click()
             time.sleep(0.3)
 
             # 8. Rules Manifests Catalog
