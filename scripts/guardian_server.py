@@ -730,19 +730,24 @@ class GuardianRequestHandler(SimpleHTTPRequestHandler):
             self._send_json(res)
             return
 
-        # 2. API: Execute Real Audit
+        # 3. API: Execute Real Audit
         if path == "/api/audit":
-            repo_id = body.get("repository", "ai-bend-devops")
-            repo = get_repository_by_id(repo_id)
-            repo_path = repo["path"] if repo else str(REPO_ROOT)
+            repo_id = body.get("repository", "")
+            repo_path = body.get("path", "")
+            if not repo_path and repo_id:
+                repo = get_repository_by_id(repo_id)
+                repo_path = repo["path"] if repo else repo_id
+            if not repo_path:
+                repo_path = str(REPO_ROOT)
             
-            target_type = body.get("targetType", "working_tree")
+            target_type = body.get("targetType", "branch")
             profile = body.get("profile", "clean_architecture")
+            branch = body.get("branch", "main")
             
             # Execute python audit CLI
-            cmd = ["python3", "scripts/culture_guard.py", repo_path, f"--architecture={profile}", "--format=json"]
+            cmd = ["python3", "scripts/culture_guard.py", str(repo_path), f"--architecture={profile}", f"--branch={branch}", "--format=json"]
             try:
-                proc = subprocess.run(cmd, capture_output=True, text=True, timeout=10, cwd=str(REPO_ROOT))
+                proc = subprocess.run(cmd, capture_output=True, text=True, timeout=15, cwd=str(REPO_ROOT))
                 if proc.stdout.strip():
                     audit_res = json.loads(proc.stdout)
                     self._send_json(audit_res)

@@ -1093,7 +1093,7 @@
                     Changed Files in Branch (Click to review Before/After diff)
                   </div>
                   
-                  <div *ngFor="let f of branchFiles; let i = index" class="p-3 rounded-lg bg-[#0B0F19] border border-slate-800/80 hover:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div *ngFor="let f of displayBranchFiles(); let i = index" class="p-3 rounded-lg bg-[#0B0F19] border border-slate-800/80 hover:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div class="flex items-center gap-2.5 min-w-0">
                       <span [class]="'h-2 w-2 rounded-full shrink-0 ' + (f.status === 'passed' ? 'bg-emerald-400' : 'bg-rose-400')"></span>
                       <span class="text-xs font-mono text-slate-200 truncate font-medium">{{ f.name }}</span>

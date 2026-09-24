@@ -489,20 +489,33 @@ def generate_bend_harness(files: List[FileAuditResult]) -> str:
     
     return "\n".join(bend_code) + "\n"
 
-def run_bend_engine(harness_code: str) -> tuple:
+def run_bend_engine(harness_code: str, files: Optional[List[FileAuditResult]] = None) -> tuple:
     """Executes Bend code via bend run-rs and extracts metrics"""
-    tmp_path = Path("/tmp/_culture_guard_run.bend")
-    tmp_path.write_text(harness_code, encoding="utf-8")
-    try:
-        res = subprocess.run(["bend", "run-rs", str(tmp_path)], capture_output=True, text=True, check=True)
-        out = res.stdout.strip()
-        numbers = [int(x) for x in re.findall(r"\d+", out)]
-        if len(numbers) >= 7:
-            return tuple(numbers[:7])
-        return (0, 0, 0, 0, 0, 100, 1)
-    finally:
-        if tmp_path.exists():
-            tmp_path.unlink()
+    file_list = files or []
+    tot_files = len(file_list)
+    p0 = sum(sum(1 for v in f.violations if v.get("severity") == "P0_BLOCKING") for f in file_list)
+    p1 = sum(sum(1 for v in f.violations if v.get("severity") == "P1_WARNING") for f in file_list)
+    pen = sum(sum(v.get("penalty", 0) for v in f.violations) for f in file_list)
+    score = max(0, 100 - pen)
+    approved = 1 if p0 == 0 and score >= 80 else 0
+    tot_viol = sum(len(f.violations) for f in file_list)
+
+    if file_list and len(file_list) <= 30:
+        tmp_path = Path("/tmp/_culture_guard_run.bend")
+        try:
+            tmp_path.write_text(harness_code, encoding="utf-8")
+            res = subprocess.run(["bend", "run-rs", str(tmp_path)], capture_output=True, text=True, timeout=3)
+            if res.returncode == 0:
+                numbers = [int(x) for x in re.findall(r"\d+", res.stdout.strip())]
+                if len(numbers) >= 7:
+                    return tuple(numbers[:7])
+        except Exception:
+            pass
+        finally:
+            if tmp_path.exists():
+                tmp_path.unlink()
+
+    return (tot_files, tot_viol, p0, p1, pen, score, approved)
 
 def print_report(
     files: List[FileAuditResult],
@@ -534,7 +547,7 @@ def print_report(
             "approved": bool(is_ok),
             "files": [
                 {
-                    "path": f.path,
+                    "path": str(f.path),
                     "layer": f.layer,
                     "suppressed_count": f.suppressed_count,
                     "violations": f.violations
@@ -613,24 +626,29 @@ def main():
 
     project_exemptions = load_guardianignore()
 
+    IGNORED_DIRS = {
+        ".git", "node_modules", "dist", ".angular", "build", "bin", "obj", 
+        "target", "venv", ".venv", "env", "__pycache__", ".pytest_cache", 
+        ".mypy_cache", ".cache", "coverage", ".nyc_output", ".idea", ".vscode"
+    }
+
     all_files = []
     for p_str in args.paths:
-        p = Path(p_str)
+        p = Path(p_str).resolve()
         if p.is_file():
             if p.suffix in SUPPORTED_EXTENSIONS:
                 all_files.append(p)
         elif p.is_dir():
-            for ext in SUPPORTED_EXTENSIONS:
-                all_files.extend(p.glob(f"**/*{ext}"))
+            for root, dirs, files in os.walk(str(p)):
+                dirs[:] = [d for d in dirs if d not in IGNORED_DIRS and not d.startswith(".")]
+                for file_name in files:
+                    file_path = Path(root) / file_name
+                    if file_path.suffix in SUPPORTED_EXTENSIONS:
+                        all_files.append(file_path)
 
-    filtered_files = [
-        f for f in all_files 
-        if not str(f).startswith(("./.git", "./build", "/tmp", "./specs", "./frontend/node_modules", "./dist"))
-    ]
-
-    audit_results = [FileAuditResult(f, project_exemptions) for f in filtered_files]
+    audit_results = [FileAuditResult(f, project_exemptions) for f in all_files]
     harness = generate_bend_harness(audit_results)
-    bend_stats = run_bend_engine(harness)
+    bend_stats = run_bend_engine(harness, audit_results)
     score = bend_stats[5]
     p0_count = bend_stats[2]
     p1_count = bend_stats[3]

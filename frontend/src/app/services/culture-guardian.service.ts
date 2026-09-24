@@ -938,7 +938,102 @@ class LegacyConnector:
     };
   }
 
-  // 12. Multi-Platform VCS Exporters
+  // 12. Execute Real Repository Audit via Backend API or Local Engine
+  async executeRepositoryAudit(
+    repoPathOrId: string,
+    targetBranch: string = 'main',
+    profileId: ArchitectureProfileId = 'clean_architecture',
+    ruleIdsFilter?: Set<string> | string[]
+  ): Promise<{
+    files: FileAuditInfo[];
+    report: AuditReport;
+    isRealBackend: boolean;
+  }> {
+    const trimmed = (repoPathOrId || '').trim();
+    const rulesList = ruleIdsFilter
+      ? (ruleIdsFilter instanceof Set ? Array.from(ruleIdsFilter) : ruleIdsFilter)
+      : undefined;
+
+    try {
+      if (typeof window !== 'undefined' && window.location) {
+        const res = await fetch('/api/audit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            repository: trimmed,
+            path: trimmed,
+            branch: targetBranch,
+            profile: profileId,
+            rules: rulesList
+          })
+        });
+
+        const contentType = res.headers.get('content-type') || '';
+        if (res.ok && contentType.includes('application/json')) {
+          const data = await res.json();
+          if (data && Array.isArray(data.files) && data.files.length > 0) {
+            const files: FileAuditInfo[] = data.files.map((f: any) => {
+              const fileName = f.path || 'unknown';
+              let lang = 'TypeScript';
+              if (fileName.endsWith('.cs')) lang = 'C#';
+              else if (fileName.endsWith('.py')) lang = 'Python';
+              else if (fileName.endsWith('.go')) lang = 'Go';
+              else if (fileName.endsWith('.rs')) lang = 'Rust';
+              else if (fileName.endsWith('.php')) lang = 'PHP';
+              else if (fileName.endsWith('.java')) lang = 'Java';
+
+              const violations: CodeViolation[] = (f.violations || []).map((v: any) => ({
+                ruleId: v.rule_id || v.ruleId || 'RULE',
+                fileName: fileName,
+                lineNumber: v.line,
+                lineContent: v.snippet,
+                severity: v.severity || 'P1_WARNING',
+                penalty: v.penalty || 10,
+                author: 'DevOps Pipeline',
+                astNode: v.layer || f.layer || 'Generic',
+                message: v.message || 'Violation detected',
+                remediation: v.remediation
+              }));
+
+              return {
+                name: fileName,
+                linesCount: f.linesCount || 50,
+                language: lang,
+                identifiedLayer: (f.layer as ArchitecturalLayer) || 'Unknown',
+                hasSpecTag: !violations.some(v => v.ruleId === 'CULT02'),
+                hasLazyCode: violations.some(v => v.ruleId === 'CULT01'),
+                hasSecrets: violations.some(v => v.ruleId === 'CULT04'),
+                hasTestCoverage: !violations.some(v => v.ruleId === 'CULT03'),
+                hasTypeAnnotations: !violations.some(v => v.ruleId === 'CULT05'),
+                violations,
+                activeSuppressions: f.suppressed_count || 0
+              };
+            });
+
+            const report = this.generateReport(files);
+            return { files, report, isRealBackend: true };
+          }
+        }
+      }
+    } catch (e) {}
+
+    // Fallback if backend is offline or during isolated unit testing:
+    const fallbackAudited: FileAuditInfo[] = this.codePresets.map(preset => {
+      return this.auditCode(
+        preset.fileName,
+        preset.code,
+        preset.hasTestFile,
+        preset.author,
+        targetBranch,
+        profileId,
+        ruleIdsFilter
+      );
+    });
+    const fallbackReport = this.generateReport(fallbackAudited);
+    return { files: fallbackAudited, report: fallbackReport, isRealBackend: false };
+  }
+
+  // 13. Multi-Platform VCS Exporters
   generateSarifJson(report: AuditReport): string {
     const sarif = {
       $schema: 'https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json',
