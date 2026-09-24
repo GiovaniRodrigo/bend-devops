@@ -262,6 +262,39 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     await app.validateAndSetCustomPath('/nonexistent/random/directory/path');
     expect(app.customLocalPathValidation()?.valid).toBe(false);
     expect(app.customLocalPathValidation()?.error).toBeDefined();
+    expect(app.selectedLocalRepo()).toBeNull();
+    expect(app.availableBranches()).toEqual([]);
+    expect(app.inputRepo()).toBe('');
+  });
+
+  it('should detect subdirectory of a git repository and allow using repository root', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    // Simulate validation result for a subdirectory
+    app.customLocalPathValidation.set({
+      valid: true,
+      selectedPath: '/home/isabelle/projects/ai-bend-devops/frontend',
+      isSubdirectory: true,
+      repositoryRoot: '/home/isabelle/projects/ai-bend-devops',
+      repository: {
+        id: 'ai-bend-devops',
+        name: 'ai-bend-devops',
+        path: '/home/isabelle/projects/ai-bend-devops',
+        remoteUrl: '',
+        currentBranch: 'main',
+        branches: ['main'],
+        headCommit: 'ab28967',
+        isClean: true
+      }
+    });
+
+    expect(app.isSubdirectoryDetected()).toBe(true);
+    expect(app.subdirectoryRoot()).toBe('/home/isabelle/projects/ai-bend-devops');
+
+    // Call useRepositoryRoot
+    app.useRepositoryRoot();
+    expect(app.customLocalPathInput()).toBe('/home/isabelle/projects/ai-bend-devops');
   });
 
   it('should trigger native directory picker and update card with real repository information', async () => {

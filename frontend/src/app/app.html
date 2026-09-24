@@ -557,6 +557,28 @@
                       </div>
                     </div>
                   } @else if (selectedLocalRepo(); as repo) {
+                    <!-- Subdirectory Notice Banner if user selected a subdirectory -->
+                    @if (isSubdirectoryDetected()) {
+                      <div class="p-3 rounded-lg bg-cyan-950/30 border border-cyan-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                        <div class="space-y-0.5">
+                          <div class="flex items-center gap-1.5 text-cyan-300 font-semibold">
+                            <span>ℹ️ This directory is inside a Git repository.</span>
+                          </div>
+                          <p class="text-slate-400 text-[11px]">
+                            Repository root: <strong class="text-slate-200 select-all">{{ subdirectoryRoot() }}</strong>
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          (click)="useRepositoryRoot()"
+                          class="btn-guardian btn-guardian-primary h-7 px-3 text-xs font-semibold shrink-0"
+                          data-testid="use-repository-root-button"
+                        >
+                          Use Repository Root
+                        </button>
+                      </div>
+                    }
+
                     <!-- Valid Detected Repository State -->
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div class="space-y-1 min-w-0">
@@ -796,38 +818,44 @@
               <!-- TARGET 3: Branch Comparison Mode -->
               @if (analysisTargetMode() === 'branch') {
                 <div class="space-y-2">
-                  <div class="grid grid-cols-1 sm:grid-cols-11 gap-2 items-center text-xs font-mono pt-1">
-                    <div class="sm:col-span-5">
-                      <label class="block text-slate-400 mb-1 text-[11px]">Source Branch (Changes under review)</label>
-                      <select
-                        [ngModel]="sourceBranch()"
-                        (ngModelChange)="setSourceBranch($event)"
-                        class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-slate-200"
-                      >
-                        <option *ngFor="let b of availableBranches()" [value]="b">{{ b }}</option>
-                      </select>
+                  @if (availableBranches().length === 0) {
+                    <div class="p-3 rounded-lg bg-slate-900/60 border border-slate-800 text-[11px] text-slate-400 font-mono">
+                      No branches found for the selected repository. Please select a valid Git repository with initialized branches.
                     </div>
-
-                    <div class="sm:col-span-1 flex items-center justify-center pt-4 sm:pt-4 text-cyan-400 font-bold select-none">
-                      &rarr;
-                    </div>
-
-                    <div class="sm:col-span-5">
-                      <div class="flex items-center justify-between mb-1">
-                        <label class="text-slate-400 text-[11px]">Base Branch (Comparison policy)</label>
-                        <span class="text-[10px] text-emerald-400 font-semibold">Strict Gate</span>
+                  } @else {
+                    <div class="grid grid-cols-1 sm:grid-cols-11 gap-2 items-center text-xs font-mono pt-1">
+                      <div class="sm:col-span-5">
+                        <label class="block text-slate-400 mb-1 text-[11px]">Source Branch (Changes under review)</label>
+                        <select
+                          [ngModel]="sourceBranch()"
+                          (ngModelChange)="setSourceBranch($event)"
+                          class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-slate-200"
+                        >
+                          <option *ngFor="let b of availableBranches()" [value]="b">{{ b }}</option>
+                        </select>
                       </div>
-                      <select
-                        [ngModel]="compareBranch()"
-                        (ngModelChange)="setCompareBranch($event)"
-                        class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-slate-200"
-                      >
-                        <option *ngFor="let b of availableBaseBranches()" [value]="b">{{ b }}</option>
-                      </select>
+
+                      <div class="sm:col-span-1 flex items-center justify-center pt-4 sm:pt-4 text-cyan-400 font-bold select-none">
+                        &rarr;
+                      </div>
+
+                      <div class="sm:col-span-5">
+                        <div class="flex items-center justify-between mb-1">
+                          <label class="text-slate-400 text-[11px]">Base Branch (Comparison policy)</label>
+                          <span class="text-[10px] text-emerald-400 font-semibold">Strict Gate</span>
+                        </div>
+                        <select
+                          [ngModel]="compareBranch()"
+                          (ngModelChange)="setCompareBranch($event)"
+                          class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-slate-200"
+                        >
+                          <option *ngFor="let b of availableBaseBranches()" [value]="b">{{ b }}</option>
+                        </select>
+                      </div>
                     </div>
-                  </div>
-                  @if (availableBranches().length <= 1) {
-                    <p class="text-[11px] text-slate-500 font-mono">Single branch ({{ availableBranches()[0] }}) detected in selected repository.</p>
+                    @if (availableBranches().length === 1) {
+                      <p class="text-[11px] text-slate-500 font-mono">Single branch ({{ availableBranches()[0] }}) detected in selected repository.</p>
+                    }
                   }
                 </div>
               }

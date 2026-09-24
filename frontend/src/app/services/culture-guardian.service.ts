@@ -1429,7 +1429,7 @@ namespace Enterprise.Presentation.Pages
   async validateAndLoadLocalRepositoryPath(dirPath: string): Promise<LocalRepositoryValidationResult> {
     const trimmed = (dirPath || '').trim();
     if (!trimmed) {
-      return { valid: false, error: 'Directory path cannot be empty' };
+      return { valid: false, errorType: 'EMPTY_PATH', error: 'Directory path cannot be empty' };
     }
 
     try {
@@ -1453,20 +1453,38 @@ namespace Enterprise.Presentation.Pages
             }
             return data;
           }
-          return { valid: false, error: data.error || 'Invalid repository directory' };
+          return {
+            valid: false,
+            selectedPath: data.selectedPath || trimmed,
+            isSubdirectory: false,
+            errorType: data.errorType || 'NOT_GIT',
+            error: data.error || 'Invalid repository directory'
+          };
         }
       }
     } catch (e) {}
 
-    // Fallback check against already loaded repos
+    // Fallback check against already loaded repos strictly matching exact path, id, or name (unit testing only)
     const existing = this.localRepositories().find(
-      r => r.path === trimmed || r.id === trimmed || r.name === trimmed || trimmed.endsWith(r.name)
+      r => r.path === trimmed || r.id === trimmed || r.name === trimmed
     );
     if (existing) {
-      return { valid: true, repository: existing };
+      return {
+        valid: true,
+        selectedPath: trimmed,
+        isSubdirectory: false,
+        repositoryRoot: existing.path,
+        repository: existing
+      };
     }
 
-    return { valid: false, error: `Directory not found or not a valid Git repository: ${trimmed}` };
+    return {
+      valid: false,
+      selectedPath: trimmed,
+      isSubdirectory: false,
+      errorType: 'NOT_FOUND',
+      error: `Directory not found or not a valid Git repository: ${trimmed}`
+    };
   }
 
   async browseDirectories(dirPath?: string): Promise<DirectoryBrowseResult> {

@@ -96,7 +96,7 @@ def discover_local_repositories() -> List[Dict[str, Any]]:
                 "id": top_path.name,
                 "name": top_path.name,
                 "path": str(top_path),
-                "remoteUrl": remote or f"https://github.com/GiovaniRodrigo/{top_path.name}.git",
+                "remoteUrl": remote,
                 "currentBranch": branch,
                 "branches": branches,
                 "headCommit": head,
@@ -161,45 +161,97 @@ CUSTOM_REPOSITORIES: Dict[str, Dict[str, Any]] = {}
 def inspect_local_repository_path(path_str: str) -> Dict[str, Any]:
     """Validates if path_str is an existing Git repository and extracts full metadata."""
     if not path_str or not path_str.strip():
-        return {"valid": False, "error": "Directory path cannot be empty"}
+        return {
+            "valid": False,
+            "errorType": "EMPTY_PATH",
+            "error": "Directory path cannot be empty"
+        }
     
     clean_str = os.path.expanduser(path_str.strip())
     p = Path(clean_str).resolve()
     
     if not p.exists():
-        return {"valid": False, "error": f"Directory does not exist: {clean_str}"}
+        return {
+            "valid": False,
+            "errorType": "NOT_FOUND",
+            "error": f"Directory does not exist: {clean_str}",
+            "selectedPath": str(p)
+        }
     if not p.is_dir():
-        return {"valid": False, "error": f"Path is not a directory: {clean_str}"}
+        return {
+            "valid": False,
+            "errorType": "NOT_DIR",
+            "error": f"Path is not a directory: {clean_str}",
+            "selectedPath": str(p)
+        }
         
     try:
-        is_git = subprocess.run(
+        is_git_res = subprocess.run(
             ["git", "-C", str(p), "rev-parse", "--is-inside-work-tree"],
-            capture_output=True, text=True, timeout=2
-        ).stdout.strip()
-        if is_git != "true":
-            return {"valid": False, "error": f"Directory is not a Git repository (no .git found): {clean_str}"}
+            capture_output=True, text=True, timeout=3
+        )
+        if is_git_res.returncode != 0 or is_git_res.stdout.strip() != "true":
+            return {
+                "valid": False,
+                "errorType": "NOT_GIT",
+                "error": f"Directory is not a Git repository (no .git found): {clean_str}",
+                "selectedPath": str(p)
+            }
             
-        top_level = subprocess.run(
+        top_level_res = subprocess.run(
             ["git", "-C", str(p), "rev-parse", "--show-toplevel"],
-            capture_output=True, text=True, timeout=2
-        ).stdout.strip()
-        top_path = Path(top_level)
+            capture_output=True, text=True, timeout=3
+        )
+        if top_level_res.returncode != 0 or not top_level_res.stdout.strip():
+            return {
+                "valid": False,
+                "errorType": "GIT_ERROR",
+                "error": f"Could not determine Git repository root for: {clean_str}",
+                "selectedPath": str(p)
+            }
+            
+        top_path = Path(top_level_res.stdout.strip()).resolve()
+        is_subdir = (top_path != p)
         
+        # Remote URL
         remote = subprocess.run(
             ["git", "-C", str(top_path), "config", "--get", "remote.origin.url"],
             capture_output=True, text=True, timeout=2
         ).stdout.strip()
+        if not remote:
+            remote = subprocess.run(
+                ["git", "-C", str(top_path), "remote", "get-url", "origin"],
+                capture_output=True, text=True, timeout=2
+            ).stdout.strip()
+
+        # Branch (Detached HEAD aware)
         branch = subprocess.run(
             ["git", "-C", str(top_path), "branch", "--show-current"],
             capture_output=True, text=True, timeout=2
-        ).stdout.strip() or "main"
+        ).stdout.strip()
+        if not branch:
+            detached_check = subprocess.run(
+                ["git", "-C", str(top_path), "rev-parse", "--abbrev-ref", "HEAD"],
+                capture_output=True, text=True, timeout=2
+            ).stdout.strip()
+            if detached_check == "HEAD":
+                branch = "Detached HEAD"
+            else:
+                branch = detached_check or "Detached HEAD"
         
+        # Real local branches
         raw_branches = subprocess.run(
-            ["git", "-C", str(top_path), "branch", "--list"],
+            ["git", "-C", str(top_path), "for-each-ref", "--format=%(refname:short)", "refs/heads/"],
             capture_output=True, text=True, timeout=2
         ).stdout.splitlines()
-        branches = [b.strip().lstrip("* ") for b in raw_branches if b.strip()]
+        branches = [b.strip() for b in raw_branches if b.strip()]
         if not branches:
+            raw_branches_fallback = subprocess.run(
+                ["git", "-C", str(top_path), "branch", "--list"],
+                capture_output=True, text=True, timeout=2
+            ).stdout.splitlines()
+            branches = [b.strip().lstrip("* ") for b in raw_branches_fallback if b.strip()]
+        if not branches and branch and branch != "Detached HEAD":
             branches = [branch]
             
         head = subprocess.run(
@@ -219,17 +271,31 @@ def inspect_local_repository_path(path_str: str) -> Dict[str, Any]:
             "id": top_path.name,
             "name": top_path.name,
             "path": str(top_path),
-            "remoteUrl": remote or f"https://github.com/GiovaniRodrigo/{top_path.name}.git",
+            "selectedPath": str(p),
+            "repositoryRoot": str(top_path),
+            "isSubdirectory": is_subdir,
+            "remoteUrl": remote,
             "currentBranch": branch,
             "branches": branches,
             "headCommit": head,
             "headCommitMessage": head_msg,
             "isClean": len(status) == 0,
-            "isCurrent": str(top_path) == str(REPO_ROOT)
+            "isCurrent": str(top_path) == str(REPO_ROOT.resolve())
         }
-        return {"valid": True, "repository": repo_obj}
+        return {
+            "valid": True,
+            "selectedPath": str(p),
+            "isSubdirectory": is_subdir,
+            "repositoryRoot": str(top_path),
+            "repository": repo_obj
+        }
     except Exception as e:
-        return {"valid": False, "error": f"Git inspection failed: {str(e)}"}
+        return {
+            "valid": False,
+            "errorType": "GIT_ERROR",
+            "error": f"Git inspection failed: {str(e)}",
+            "selectedPath": str(p)
+        }
 
 def browse_local_directories(base_path: Optional[str] = None) -> Dict[str, Any]:
     """Browses directories at base_path and identifies Git repositories."""

@@ -18,6 +18,9 @@ export interface LocalRepositoryInfo {
   id: string;
   name: string;
   path: string;
+  selectedPath?: string;
+  repositoryRoot?: string;
+  isSubdirectory?: boolean;
   remoteUrl: string;
   currentBranch: string;
   branches: string[];
@@ -29,6 +32,10 @@ export interface LocalRepositoryInfo {
 
 export interface LocalRepositoryValidationResult {
   valid: boolean;
+  selectedPath?: string;
+  isSubdirectory?: boolean;
+  repositoryRoot?: string;
+  errorType?: 'EMPTY_PATH' | 'NOT_FOUND' | 'NOT_DIR' | 'NOT_GIT' | 'GIT_UNAVAILABLE' | 'GIT_ERROR' | string;
   repository?: LocalRepositoryInfo;
   error?: string;
 }

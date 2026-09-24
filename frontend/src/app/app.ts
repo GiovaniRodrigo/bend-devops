@@ -84,18 +84,34 @@ export class App {
   readonly localRepositories = this.guardianService.localRepositories;
   readonly isDiscoveringRepos = this.guardianService.isDiscoveringRepos;
   readonly selectedLocalRepoId = signal<string>('ai-bend-devops');
-  readonly selectedLocalRepo = computed(() => {
-    return this.localRepositories().find(r => r.id === this.selectedLocalRepoId()) || this.localRepositories()[0];
-  });
-  readonly localRepoName = computed(() => this.selectedLocalRepo() ? this.selectedLocalRepo().name : 'ai-bend-devops');
-  readonly localRepoPath = computed(() => this.selectedLocalRepo() ? this.selectedLocalRepo().path : '/home/isabelle/projects/ai-bend-devops');
-  readonly isChangingLocalRepo = signal<boolean>(false);
-  readonly availableLocalRepos = computed(() => this.localRepositories().map(r => r.name));
+  readonly selectedRepositoryPath = signal<string | null>('/home/isabelle/projects/ai-bend-devops');
   readonly customLocalPathInput = signal<string>('/home/isabelle/projects/ai-bend-devops');
   readonly customLocalPathValidation = signal<LocalRepositoryValidationResult | null>(null);
   readonly isValidatingCustomLocalPath = signal<boolean>(false);
   readonly isCustomPathActive = signal<boolean>(false);
   readonly isManualPathVisible = signal<boolean>(false);
+
+  readonly isSubdirectoryDetected = computed(() => !!this.customLocalPathValidation()?.isSubdirectory);
+  readonly subdirectoryRoot = computed(() => this.customLocalPathValidation()?.repositoryRoot || '');
+
+  readonly selectedLocalRepo = computed<LocalRepositoryInfo | null>(() => {
+    const val = this.customLocalPathValidation();
+    if (val !== null && val.valid === false) {
+      return null;
+    }
+    if (val?.valid && val.repository) {
+      return val.repository;
+    }
+    const path = this.selectedRepositoryPath();
+    const id = this.selectedLocalRepoId();
+    if (!path && !id) return null;
+    return this.localRepositories().find(r => r.path === path || r.id === id) || null;
+  });
+
+  readonly localRepoName = computed(() => this.selectedLocalRepo()?.name || '');
+  readonly localRepoPath = computed(() => this.selectedLocalRepo()?.path || '');
+  readonly isChangingLocalRepo = signal<boolean>(false);
+  readonly availableLocalRepos = computed(() => this.localRepositories().map(r => r.name));
 
   // GitHub Repository State
   readonly gitHubRepositories = this.guardianService.gitHubRepositories;
@@ -118,10 +134,10 @@ export class App {
   readonly availableBranches = computed(() => {
     if (this.codeSourceMode() === 'local') {
       const repo = this.selectedLocalRepo();
-      return repo && repo.branches && repo.branches.length > 0 ? repo.branches : ['main'];
+      return repo && repo.branches && repo.branches.length > 0 ? repo.branches : [];
     } else {
       const gh = this.gitHubRepositories().find(r => r.fullName === this.selectedGitHubRepoFullName());
-      return gh ? [gh.defaultBranch] : ['main'];
+      return gh && gh.defaultBranch ? [gh.defaultBranch] : [];
     }
   });
   readonly availableBaseBranches = computed(() => this.availableBranches());
@@ -614,18 +630,33 @@ export class App {
     }
   }
 
+  clearRepositoryState(): void {
+    this.selectedRepositoryPath.set(null);
+    this.selectedLocalRepoId.set('');
+    this.sourceBranch.set('');
+    this.compareBranch.set('');
+    this.currentAuditedFiles.set([]);
+    this.isAudited.set(false);
+  }
+
   setLocalRepo(repoNameOrId: string): void {
     const found = this.localRepositories().find(r => r.id === repoNameOrId || r.name === repoNameOrId || r.path === repoNameOrId);
     if (found) {
       this.selectedLocalRepoId.set(found.id);
+      this.selectedRepositoryPath.set(found.path);
       this.customLocalPathInput.set(found.path);
       this.customLocalPathValidation.set({ valid: true, repository: found });
       this.inputRepo.set(found.name);
       if (found.branches && found.branches.length > 0) {
         this.sourceBranch.set(found.currentBranch || found.branches[0]);
         this.compareBranch.set(found.branches[0]);
+      } else {
+        this.sourceBranch.set(found.currentBranch || 'Detached HEAD');
+        this.compareBranch.set(found.currentBranch || 'Detached HEAD');
       }
       this.guardianService.inspectWorkingTree(found.id);
+    } else {
+      this.clearRepositoryState();
     }
     this.isChangingLocalRepo.set(false);
     this.reanalyzeCurrentScope();
@@ -640,14 +671,32 @@ export class App {
     this.isValidatingCustomLocalPath.set(false);
 
     if (res.valid && res.repository) {
+      this.selectedRepositoryPath.set(res.repository.path);
       this.selectedLocalRepoId.set(res.repository.id);
       this.inputRepo.set(res.repository.name);
       if (res.repository.branches && res.repository.branches.length > 0) {
-        this.sourceBranch.set(res.repository.currentBranch || res.repository.branches[0]);
+        const defaultBranch = res.repository.currentBranch && res.repository.currentBranch !== 'Detached HEAD'
+          ? res.repository.currentBranch
+          : res.repository.branches[0];
+        this.sourceBranch.set(defaultBranch);
         this.compareBranch.set(res.repository.branches[0]);
+      } else {
+        this.sourceBranch.set(res.repository.currentBranch || 'Detached HEAD');
+        this.compareBranch.set(res.repository.currentBranch || 'Detached HEAD');
       }
       this.guardianService.inspectWorkingTree(res.repository.id);
       this.reanalyzeCurrentScope();
+    } else {
+      this.clearRepositoryState();
+      this.inputRepo.set('');
+    }
+  }
+
+  useRepositoryRoot(): void {
+    const root = this.subdirectoryRoot();
+    if (root) {
+      this.customLocalPathInput.set(root);
+      this.validateAndSetCustomPath(root);
     }
   }
 
