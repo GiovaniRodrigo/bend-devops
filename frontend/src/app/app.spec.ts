@@ -264,27 +264,31 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     expect(app.customLocalPathValidation()?.error).toBeDefined();
   });
 
-  it('should open folder browser dialog, navigate directories, and select a folder', async () => {
+  it('should trigger native directory picker and update card with real repository information', async () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
 
-    expect(app.isFolderBrowserOpen()).toBe(false);
+    // Verify initial clean state with active real repository
+    expect(app.codeSourceMode()).toBe('local');
+    expect(app.selectedLocalRepo()?.name).toBe('ai-bend-devops');
+    expect(app.selectedLocalRepo()?.path).toBe('/home/isabelle/projects/ai-bend-devops');
+    expect(app.selectedLocalRepo()?.currentBranch).toBe('main');
 
-    // 1. Open Folder Browser Dialog
-    await app.openFolderBrowser('/home/isabelle/projects');
-    expect(app.isFolderBrowserOpen()).toBe(true);
-    expect(app.browserCurrentPath()).toBe('/home/isabelle/projects');
-    expect(app.browserDirectories().length).toBeGreaterThan(0);
+    // Trigger directory picker with native input
+    const mockInput = document.createElement('input');
+    mockInput.type = 'file';
+    let clicked = false;
+    mockInput.click = () => { clicked = true; };
 
-    // 2. Filter directories
-    app.browserSearch.set('bend');
-    expect(app.filteredBrowserDirectories().length).toBeGreaterThan(0);
-    app.browserSearch.set('');
+    await app.triggerNativeDirectoryPicker(mockInput);
+    expect(clicked).toBe(true);
 
-    // 3. Select a folder from browser
-    await app.selectAndLoadBrowserFolder('/home/isabelle/projects/ai-bend-devops');
-    expect(app.isFolderBrowserOpen()).toBe(false);
-    expect(app.selectedLocalRepoId()).toBe('ai-bend-devops');
+    // Mock native directory picked event
+    const mockFile = { webkitRelativePath: 'ai-bend-devops/README.md' } as File;
+    const mockEvent = { target: { files: [mockFile] } } as unknown as Event;
+    await app.onNativeDirectoryPicked(mockEvent);
+
+    expect(app.selectedLocalRepo()?.name).toBe('ai-bend-devops');
     expect(app.customLocalPathValidation()?.valid).toBe(true);
   });
 
