@@ -1,669 +1,2032 @@
-<div class="min-h-screen bg-zinc-950 text-zinc-100 antialiased selection:bg-emerald-500/30 selection:text-emerald-200">
-  <!-- Header (shadcn/ui style) -->
-  <header class="border-b border-zinc-800 bg-zinc-900/80 backdrop-blur sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-inner">
-          <!-- Shield Check Icon -->
-          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-            <polyline points="9 12 11 14 15 10"></polyline>
-          </svg>
-        </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-base font-bold tracking-tight text-zinc-100">Bend DevOps Guardian</h1>
-            <span class="inline-flex items-center rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-mono font-medium text-emerald-400">
-              Bend HVM Core
-            </span>
+<div class="min-h-screen bg-[#080B12] text-[#F8FAFC] flex flex-col antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
+  
+  <!-- Top App Shell -->
+  <div class="flex flex-1 min-h-screen">
+
+    <!-- Mobile Backdrop Overlay -->
+    @if (isMobileMenuOpen()) {
+      <div (click)="isMobileMenuOpen.set(false)" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 md:hidden"></div>
+    }
+
+    <!-- 1. LEFT SIDEBAR (Security & DevOps Control Center) -->
+    @if (!isMobile() || isMobileMenuOpen()) {
+      <aside [class]="'shrink-0 border-r border-slate-800/80 bg-[#0B0F19] transition-all duration-300 z-40 flex flex-col justify-between fixed inset-y-0 left-0 md:static ' + (isMobileMenuOpen() ? 'translate-x-0 shadow-2xl ' : '-translate-x-full md:translate-x-0 ') + (isSidebarCollapsed() ? 'w-20' : 'w-64 lg:w-72')">
+      
+      <!-- Brand & Header -->
+      <div class="p-4 border-b border-slate-800/80">
+        <div class="flex items-center gap-3">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/20 to-purple-600/20 text-cyan-400 border border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
+            <!-- Shield with Cyber Core Icon -->
+            <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              <polyline points="9 12 11 14 15 10"></polyline>
+            </svg>
           </div>
-          <p class="text-xs text-zinc-400">Massively Parallel Architecture & Culture Quality Gate</p>
+
+          @if (!isSidebarCollapsed()) {
+            <div class="overflow-hidden">
+              <div class="flex items-center gap-1.5">
+                <h1 class="text-sm font-bold tracking-tight text-slate-100 truncate">Bend DevOps Guardian</h1>
+              </div>
+              <p class="text-[11px] text-slate-400 truncate">Architecture & Engineering Quality Gate</p>
+            </div>
+          }
         </div>
+
+        @if (!isSidebarCollapsed()) {
+          <div class="mt-3 flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[#111722] border border-slate-800 text-[11px] font-mono">
+            <div class="flex items-center gap-2">
+              <span class="pulse-dot-green"><span></span><span></span></span>
+              <span class="text-emerald-400 font-semibold">HVM Core: Ready</span>
+            </div>
+            <span class="text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 text-[10px]">64-Thread</span>
+          </div>
+        }
       </div>
 
-      <div class="flex items-center gap-2.5">
-        <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md border border-zinc-800 bg-zinc-900/60 text-xs text-zinc-400 font-mono">
-          <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>Engine: Ready (26 Rules • 8 Profiles)</span>
+      <!-- Navigation Links -->
+      <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <div class="px-3 pb-2 text-[10px] font-mono uppercase tracking-wider text-slate-500 font-semibold" *ngIf="!isSidebarCollapsed()">
+          Quality Control Center
         </div>
 
-        <button (click)="openExport('sarif')" class="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border border-zinc-700 bg-zinc-800/80 hover:bg-zinc-700 text-xs font-medium text-zinc-200 transition-colors shadow-sm">
-          <svg class="w-3.5 h-3.5 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          <span>SARIF Export</span>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <!-- Navigation Tabs (shadcn tabs style) -->
-  <div class="border-b border-zinc-800 bg-zinc-900/40 sticky top-[65px] z-40 backdrop-blur">
-    <div class="max-w-7xl mx-auto px-6">
-      <nav class="flex gap-1 overflow-x-auto py-1">
+        <!-- 1. Dashboard / Overview -->
         <button
           (click)="activeTab.set('dashboard')"
-          [class]="'inline-flex items-center gap-2 px-3.5 py-2.5 rounded-md text-xs font-medium transition-all ' + (activeTab() === 'dashboard' ? 'bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40')"
+          [class]="'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all group ' + (activeTab() === 'dashboard' ? 'bg-gradient-to-r from-cyan-500/15 to-transparent text-cyan-300 border-l-2 border-cyan-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40')"
+          title="Overview & Executive Health"
         >
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-          <span>Dashboard</span>
+          <svg class="w-4 h-4 shrink-0 transition-colors" [class.text-cyan-400]="activeTab() === 'dashboard'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <span *ngIf="!isSidebarCollapsed()" class="truncate">Dashboard</span>
         </button>
 
+        <!-- 2. Pipelines -->
         <button
-          (click)="activeTab.set('analyze')"
-          [class]="'inline-flex items-center gap-2 px-3.5 py-2.5 rounded-md text-xs font-medium transition-all ' + (activeTab() === 'analyze' ? 'bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40')"
+          (click)="activeTab.set('pipelines')"
+          [class]="'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all group ' + (activeTab() === 'pipelines' ? 'bg-gradient-to-r from-cyan-500/15 to-transparent text-cyan-300 border-l-2 border-cyan-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40')"
+          title="CI/CD Pipeline Stages & Execution"
         >
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
-          <span>Live Code & Diff Auditor</span>
+          <svg class="w-4 h-4 shrink-0 transition-colors" [class.text-cyan-400]="activeTab() === 'pipelines'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M13 6h3a2 2 0 0 1 2 2v7"></path><line x1="6" y1="9" x2="6" y2="21"></line></svg>
+          <span *ngIf="!isSidebarCollapsed()" class="truncate">Pipelines</span>
         </button>
 
+        <!-- 3. Architecture -->
+        <button
+          (click)="activeTab.set('architecture')"
+          [class]="'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all group ' + (activeTab() === 'architecture' ? 'bg-gradient-to-r from-cyan-500/15 to-transparent text-cyan-300 border-l-2 border-cyan-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40')"
+          title="Clean Architecture Profiles & Concentric Layers"
+        >
+          <svg class="w-4 h-4 shrink-0 transition-colors" [class.text-cyan-400]="activeTab() === 'architecture'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+          <span *ngIf="!isSidebarCollapsed()" class="truncate">Architecture</span>
+        </button>
+
+        <!-- 4. Rules Manifests -->
+        <button
+          (click)="activeTab.set('rules')"
+          [class]="'w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all group ' + (activeTab() === 'rules' ? 'bg-gradient-to-r from-cyan-500/15 to-transparent text-cyan-300 border-l-2 border-cyan-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40')"
+          title="Declarative Rules Manifest Catalog"
+        >
+          <div class="flex items-center gap-3">
+            <svg class="w-4 h-4 shrink-0 transition-colors" [class.text-cyan-400]="activeTab() === 'rules'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            <span *ngIf="!isSidebarCollapsed()" class="truncate">Rules Manifests</span>
+          </div>
+          <span *ngIf="!isSidebarCollapsed()" class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+            {{ rules().length }}
+          </span>
+        </button>
+
+        <!-- 5. Layer Taxonomy -->
+        <button
+          (click)="activeTab.set('vocabulary')"
+          [class]="'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all group ' + (activeTab() === 'vocabulary' ? 'bg-gradient-to-r from-cyan-500/15 to-transparent text-cyan-300 border-l-2 border-cyan-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40')"
+          title="Layer Vocabulary & Token Taxonomy"
+        >
+          <svg class="w-4 h-4 shrink-0 transition-colors" [class.text-cyan-400]="activeTab() === 'vocabulary'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          <span *ngIf="!isSidebarCollapsed()" class="truncate">Layer Taxonomy</span>
+        </button>
+
+        <!-- 6. Violations & Audit Results -->
         <button
           (click)="activeTab.set('results')"
-          [class]="'inline-flex items-center gap-2 px-3.5 py-2.5 rounded-md text-xs font-medium transition-all ' + (activeTab() === 'results' ? 'bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40')"
+          [class]="'w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all group ' + ((activeTab() === 'violations' || activeTab() === 'results') ? 'bg-gradient-to-r from-cyan-500/15 to-transparent text-cyan-300 border-l-2 border-cyan-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40')"
+          title="Infractions & Severity Breakdown"
         >
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-          <span>Audit Results</span>
-          @if (currentReport().totalViolations > 0) {
-            <span class="rounded-full bg-rose-500/20 text-rose-400 text-[10px] font-bold px-1.5 py-0.2 border border-rose-500/30">
+          <div class="flex items-center gap-3">
+            <svg class="w-4 h-4 shrink-0 transition-colors" [class.text-cyan-400]="activeTab() === 'violations' || activeTab() === 'results'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            <span *ngIf="!isSidebarCollapsed()" class="truncate">Audit Results</span>
+          </div>
+          @if (currentReport().totalViolations > 0 && !isSidebarCollapsed()) {
+            <span class="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
               {{ currentReport().totalViolations }}
             </span>
           }
         </button>
 
+        <!-- 7. Scans (Live Code Auditor) -->
         <button
-          (click)="activeTab.set('rules')"
-          [class]="'inline-flex items-center gap-2 px-3.5 py-2.5 rounded-md text-xs font-medium transition-all ' + (activeTab() === 'rules' ? 'bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40')"
+          (click)="activeTab.set('analyze')"
+          [class]="'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all group ' + (activeTab() === 'analyze' ? 'bg-gradient-to-r from-cyan-500/15 to-transparent text-cyan-300 border-l-2 border-cyan-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40')"
+          title="Interactive Code Scanner & Lexer"
         >
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-          <span>Rules Manifests ({{ rules().length }})</span>
+          <svg class="w-4 h-4 shrink-0 transition-colors" [class.text-cyan-400]="activeTab() === 'analyze'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+          <span *ngIf="!isSidebarCollapsed()" class="truncate">Live Code & Diff Auditor</span>
         </button>
 
-        <button
-          (click)="activeTab.set('vocabulary')"
-          [class]="'inline-flex items-center gap-2 px-3.5 py-2.5 rounded-md text-xs font-medium transition-all ' + (activeTab() === 'vocabulary' ? 'bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40')"
-        >
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-          <span>Layer Taxonomy</span>
-        </button>
+        <div class="pt-4 pb-2 px-3 text-[10px] font-mono uppercase tracking-wider text-slate-500 font-semibold" *ngIf="!isSidebarCollapsed()">
+          Integrations & Governance
+        </div>
 
+        <!-- 8. VCS & Webhook Simulator -->
         <button
           (click)="activeTab.set('vcs')"
-          [class]="'inline-flex items-center gap-2 px-3.5 py-2.5 rounded-md text-xs font-medium transition-all ' + (activeTab() === 'vcs' ? 'bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40')"
+          [class]="'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all group ' + ((activeTab() === 'integrations' || activeTab() === 'vcs') ? 'bg-gradient-to-r from-cyan-500/15 to-transparent text-cyan-300 border-l-2 border-cyan-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40')"
+          title="VCS Webhooks & Multi-Platform CI"
         >
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M13 6h3a2 2 0 0 1 2 2v7"></path><line x1="6" y1="9" x2="6" y2="21"></line></svg>
-          <span>VCS & Webhook Simulator</span>
+          <svg class="w-4 h-4 shrink-0 transition-colors" [class.text-cyan-400]="activeTab() === 'integrations' || activeTab() === 'vcs'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+          <span *ngIf="!isSidebarCollapsed()" class="truncate">VCS & Webhook Simulator</span>
         </button>
 
+        <!-- 9. Session History -->
         <button
           (click)="activeTab.set('history')"
-          [class]="'inline-flex items-center gap-2 px-3.5 py-2.5 rounded-md text-xs font-medium transition-all ' + (activeTab() === 'history' ? 'bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700' : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/40')"
+          [class]="'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all group ' + (activeTab() === 'history' ? 'bg-gradient-to-r from-cyan-500/15 to-transparent text-cyan-300 border-l-2 border-cyan-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40')"
+          title="Deterministic Session Telemetry"
         >
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><polyline points="12 7 12 12 15 15"></polyline></svg>
-          <span>Session History</span>
-          @if (history().length > 0) {
-            <span class="rounded-full bg-zinc-700 text-zinc-300 text-[10px] font-bold px-1.5 py-0.2">
-              {{ history().length }}
-            </span>
-          }
+          <svg class="w-4 h-4 shrink-0 transition-colors" [class.text-cyan-400]="activeTab() === 'history'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><polyline points="12 7 12 12 15 15"></polyline></svg>
+          <span *ngIf="!isSidebarCollapsed()" class="truncate">Session History</span>
+        </button>
+
+        <!-- 10. Reports -->
+        <button
+          (click)="activeTab.set('reports')"
+          [class]="'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all group ' + (activeTab() === 'reports' ? 'bg-gradient-to-r from-cyan-500/15 to-transparent text-cyan-300 border-l-2 border-cyan-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40')"
+          title="SARIF, GitLab & PR Summary Artifacts"
+        >
+          <svg class="w-4 h-4 shrink-0 transition-colors" [class.text-cyan-400]="activeTab() === 'reports'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span *ngIf="!isSidebarCollapsed()" class="truncate">Reports (SARIF/PR)</span>
+        </button>
+
+        <!-- 11. Settings -->
+        <button
+          (click)="activeTab.set('settings')"
+          [class]="'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all group ' + (activeTab() === 'settings' ? 'bg-gradient-to-r from-cyan-500/15 to-transparent text-cyan-300 border-l-2 border-cyan-400 font-semibold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40')"
+          title="Branch Policies & Quality Thresholds"
+        >
+          <svg class="w-4 h-4 shrink-0 transition-colors" [class.text-cyan-400]="activeTab() === 'settings'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <span *ngIf="!isSidebarCollapsed()" class="truncate">Settings & Policies</span>
         </button>
       </nav>
-    </div>
-  </div>
 
-  <!-- Main Content Container -->
-  <main class="max-w-7xl mx-auto px-6 py-8">
-    <!-- 1. DASHBOARD TAB -->
-    @if (activeTab() === 'dashboard') {
-      <div class="space-y-8">
-        <!-- Stats Grid (shadcn Cards) -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 shadow-sm">
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">Session Audits Run</p>
-            <p class="text-3xl font-bold tracking-tight text-zinc-100">{{ totalAuditsExecuted() }}</p>
-            <p class="text-xs text-zinc-400 mt-2 font-mono">Live HVM evaluations</p>
+      <!-- Sidebar Footer (Bend Parallel Reduction Telemetry) -->
+      <div class="p-3 border-t border-slate-800/80 bg-[#080B12]/80" *ngIf="!isSidebarCollapsed()">
+        <div class="rounded-xl border border-purple-500/20 bg-gradient-to-b from-purple-950/20 to-slate-900/40 p-3 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-mono font-bold uppercase text-purple-400 flex items-center gap-1.5">
+              <span class="pulse-dot-purple"><span></span><span></span></span>
+              Bend / HVM Brain
+            </span>
+            <span class="text-[10px] font-mono text-slate-400">O(log N)</span>
           </div>
-
-          <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 shadow-sm">
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">Blocking Violations (P0)</p>
-            <p class="text-3xl font-bold tracking-tight text-rose-400">{{ totalViolationsBlocked() }}</p>
-            <p class="text-xs text-zinc-400 mt-2 font-mono">Gated PR infractions</p>
+          <div class="text-[11px] text-slate-300 font-mono flex items-center justify-between">
+            <span class="text-slate-400">Reduction Latency:</span>
+            <span class="font-bold text-cyan-400">{{ hvmReductionLatency() }}</span>
           </div>
+          <div class="text-[11px] text-slate-300 font-mono flex items-center justify-between">
+            <span class="text-slate-400">Virtual Workers:</span>
+            <span class="font-bold text-purple-300">{{ hvmThreadCount() }} Cores</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+    }
 
-          <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 shadow-sm">
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">Average Quality Score</p>
-            <div class="flex items-baseline gap-2">
-              <p class="text-3xl font-bold tracking-tight text-emerald-400">{{ averageComplianceScore() }}%</p>
-              <span class="text-xs text-zinc-400">Target &ge; 80%</span>
+    <!-- 2. MAIN APPLICATION WORKSPACE -->
+    <div class="flex-1 flex flex-col min-w-0 bg-[#080B12] bg-tech-grid">
+      
+      <!-- Top Compact Professional Header -->
+      <header class="border-b border-slate-800/80 bg-[#0B0F19]/90 backdrop-blur sticky top-0 z-20 px-4 lg:px-8 py-2.5">
+        <div class="flex items-center justify-between gap-4">
+          
+          <!-- Left: Breadcrumb & Context -->
+          <div class="flex items-center gap-3 min-w-0">
+            <!-- Mobile Menu Toggle -->
+            <button (click)="toggleMobileMenu()" class="md:hidden text-slate-400 hover:text-slate-100 p-1">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+
+            <!-- Desktop Breadcrumb -->
+            <div class="flex items-center gap-2 text-xs font-mono text-slate-400 truncate">
+              <span class="text-slate-200 font-semibold flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                Bend DevOps Guardian
+              </span>
+              <span class="text-slate-600">/</span>
+              <span class="text-slate-300">{{ inputRepo() }}</span>
+              <span class="text-slate-600">/</span>
+              <span class="text-cyan-400 font-semibold bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20">{{ selectedBranch() }}</span>
             </div>
-            <div class="w-full bg-zinc-800 h-1.5 rounded-full mt-3 overflow-hidden">
-              <div class="bg-emerald-500 h-full rounded-full transition-all duration-500" [style.width.%]="averageComplianceScore()"></div>
-            </div>
           </div>
 
-          <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 shadow-sm">
-            <p class="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">Active Rules Enforced</p>
-            <p class="text-3xl font-bold tracking-tight text-zinc-100">{{ activeRulesCount() }} / {{ rules().length }}</p>
-            <p class="text-xs text-zinc-400 mt-2 font-mono">7 Languages Supported</p>
+          <!-- Right: Health Status & Actions -->
+          <div class="flex items-center gap-3">
+            
+            <!-- Quality Gate Live Badge -->
+            <div [class]="'hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-semibold border ' + (currentReport().isApproved ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.15)]' : 'bg-rose-500/10 text-rose-400 border-rose-500/30 shadow-[0_0_12px_rgba(239,68,68,0.15)]')">
+              <span [class]="'h-2 w-2 rounded-full ' + (currentReport().isApproved ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400 animate-pulse')"></span>
+              <span>Quality Gate: {{ currentReport().isApproved ? 'PASS' : 'BLOCKED' }}</span>
+              <span class="text-[10px] text-slate-400">({{ currentReport().score }}%)</span>
+            </div>
+
+            <!-- Quick Action: Export SARIF -->
+            <button (click)="openExport('sarif')" class="btn-guardian btn-guardian-secondary h-8 px-3 text-xs">
+              <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              <span>SARIF Export</span>
+            </button>
+
+            <!-- Quick Action: Run Scan -->
+            <button (click)="activeTab.set('analyze')" class="btn-guardian btn-guardian-primary h-8 px-3.5 text-xs">
+              <svg class="w-3.5 h-3.5 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              <span>Live Scan</span>
+            </button>
           </div>
         </div>
 
-        <!-- Architecture Profiles Matrix -->
-        <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-6 shadow-sm">
-          <div class="flex items-center justify-between mb-5">
-            <div>
-              <h2 class="text-base font-semibold tracking-tight text-zinc-100">Configured Architecture Profiles</h2>
-              <p class="text-xs text-zinc-400 mt-0.5">Formal profiles enforcing concentric layer boundary invariants in code</p>
-            </div>
-            <span class="text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md">
-              8 Profiles Loaded
-            </span>
-          </div>
+      </header>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            @for (profile of architectureProfiles(); track profile.id) {
-              <div class="rounded-lg border border-zinc-800/80 bg-zinc-950/50 p-4 hover:border-zinc-700 transition-colors">
+      <!-- Mobile Horizontal Navigation Bar -->
+      @if (isMobile() && !isMobileMenuOpen()) {
+        <nav class="md:hidden border-b border-slate-800 bg-[#0B0F19] px-3 py-2 flex items-center gap-1.5 overflow-x-auto shrink-0 z-10 sticky top-[53px]">
+        <button
+          (click)="activeTab.set('dashboard')"
+          [class]="'shrink-0 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-colors ' + (activeTab() === 'dashboard' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200 bg-slate-900 border border-slate-800')"
+        >
+          Dashboard
+        </button>
+        <button
+          (click)="activeTab.set('analyze')"
+          [class]="'shrink-0 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-colors ' + (activeTab() === 'analyze' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200 bg-slate-900 border border-slate-800')"
+        >
+          Live Code & Diff Auditor
+        </button>
+        <button
+          (click)="activeTab.set('results')"
+          [class]="'shrink-0 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-colors ' + ((activeTab() === 'violations' || activeTab() === 'results') ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200 bg-slate-900 border border-slate-800')"
+        >
+          Audit Results
+        </button>
+        <button
+          (click)="activeTab.set('rules')"
+          [class]="'shrink-0 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-colors ' + (activeTab() === 'rules' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200 bg-slate-900 border border-slate-800')"
+        >
+          Rules Manifests
+        </button>
+        <button
+          (click)="activeTab.set('vocabulary')"
+          [class]="'shrink-0 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-colors ' + (activeTab() === 'vocabulary' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200 bg-slate-900 border border-slate-800')"
+        >
+          Layer Taxonomy
+        </button>
+        <button
+          (click)="activeTab.set('vcs')"
+          [class]="'shrink-0 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-colors ' + ((activeTab() === 'integrations' || activeTab() === 'vcs') ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200 bg-slate-900 border border-slate-800')"
+        >
+          VCS & Webhook Simulator
+        </button>
+        <button
+          (click)="activeTab.set('history')"
+          [class]="'shrink-0 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-colors ' + (activeTab() === 'history' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200 bg-slate-900 border border-slate-800')"
+        >
+          Session History
+        </button>
+        <button
+          (click)="activeTab.set('reports')"
+          [class]="'shrink-0 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-colors ' + (activeTab() === 'reports' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200 bg-slate-900 border border-slate-800')"
+        >
+          Reports
+        </button>
+        <button
+          (click)="activeTab.set('settings')"
+          [class]="'shrink-0 px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-colors ' + (activeTab() === 'settings' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' : 'text-slate-400 hover:text-slate-200 bg-slate-900 border border-slate-800')"
+        >
+          Settings
+        </button>
+      </nav>
+      }
+
+      <!-- Scrollable Main Content -->
+      <main class="flex-1 p-4 lg:p-8 max-w-[1600px] w-full mx-auto space-y-8">
+
+        <!-- ===================================================================== -->
+        <!-- VIEW 1: OVERVIEW / MAIN DASHBOARD                                      -->
+        <!-- ===================================================================== -->
+        @if (activeTab() === 'dashboard') {
+          <div class="space-y-8">
+            
+            <!-- Hero Section: Codebase Protection & Quality Gate Dominant Decision -->
+            <div class="rounded-2xl border border-slate-800/80 bg-gradient-to-r from-[#0D131F] via-[#111722] to-[#0D131F] p-6 lg:p-8 shadow-xl relative overflow-hidden">
+              <div class="absolute -right-16 -bottom-16 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none"></div>
+              <div class="absolute -left-16 -top-16 w-80 h-80 bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+              <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
+                <div class="space-y-2 max-w-2xl">
+                  <div class="flex items-center gap-2.5">
+                    <span class="badge-tech badge-cyan">DevOps CI/CD Guardian</span>
+                    <span class="badge-tech badge-hvm">Bend HVM Parallel Reduction</span>
+                  </div>
+                  <h2 class="text-2xl lg:text-3xl font-extrabold tracking-tight text-white">
+                    Bend DevOps Guardian
+                  </h2>
+                  <p class="text-sm text-slate-300 leading-relaxed">
+                    Your codebase is protected by automated architecture and engineering quality gates.
+                    Enforcing Clean Architecture concentric invariants and engineering discipline at commit, PR, and merge time.
+                  </p>
+                  <div class="flex flex-wrap items-center gap-4 pt-2 text-xs font-mono text-slate-400">
+                    <span class="flex items-center gap-1.5">
+                      <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                      Profile: <strong class="text-slate-200">Clean Architecture</strong>
+                    </span>
+                    <span>•</span>
+                    <span>Platform: <strong class="text-slate-200">GitHub Actions</strong></span>
+                    <span>•</span>
+                    <span>Evaluator: <strong class="text-purple-300">Bend / HVM</strong></span>
+                  </div>
+                </div>
+
+                <!-- Dominant Quality Gate Decision Box -->
+                <div [class]="'rounded-xl border p-5 sm:p-6 text-center shrink-0 min-w-[280px] sm:min-w-[320px] transition-all duration-300 ' + (currentReport().isApproved ? 'bg-gradient-to-b from-emerald-950/40 to-slate-900/80 border-emerald-500/40 shadow-[0_0_30px_rgba(16,185,129,0.15)]' : 'bg-gradient-to-b from-rose-950/40 to-slate-900/80 border-rose-500/40 shadow-[0_0_30px_rgba(239,68,68,0.15)]')">
+                  <div class="text-[11px] font-mono uppercase tracking-wider text-slate-400 mb-1">
+                    Gating Decision Verdict
+                  </div>
+                  <div [class]="'text-2xl sm:text-3xl font-black tracking-wider my-2 font-mono ' + (currentReport().isApproved ? 'text-emerald-400' : 'text-rose-400')">
+                    [ Quality Gate: {{ currentReport().isApproved ? 'PASS' : 'BLOCKED' }} ]
+                  </div>
+                  <p class="text-xs text-slate-300 font-mono mt-1">
+                    Compliance: <strong class="text-white">{{ currentReport().score }}%</strong> · Blocking (P0): <strong [class]="currentReport().p0Count > 0 ? 'text-rose-400' : 'text-emerald-400'">{{ currentReport().p0Count }}</strong>
+                  </p>
+                  <div class="mt-4 flex items-center justify-center gap-2">
+                    <button (click)="activeTab.set('analyze')" class="btn-guardian btn-guardian-secondary text-xs h-8 px-3">
+                      Run Live Audit
+                    </button>
+                    <button (click)="activeTab.set('violations')" class="btn-guardian btn-guardian-primary text-xs h-8 px-3">
+                      View Infractions &rarr;
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 7. KPI CARDS (Four Primary Consistent KPI Cards) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              
+              <!-- KPI 1: ARCHITECTURE -->
+              <div class="card-guardian-interactive p-5">
                 <div class="flex items-center justify-between mb-2">
-                  <span class="text-[10px] font-mono font-bold uppercase text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                    {{ profile.category }}
+                  <p class="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400">Architecture</p>
+                  <span class="badge-tech badge-pass text-[10px]">Clean Arch</span>
+                </div>
+                <div class="flex items-baseline gap-2 mt-1">
+                  <p class="text-2xl lg:text-3xl font-bold tracking-tight text-emerald-400 font-mono">✓ PASS</p>
+                </div>
+                <p class="text-xs text-slate-400 mt-2">4 Concentric Rings Intact</p>
+                <div class="mt-3 text-[11px] text-slate-500 font-mono flex items-center gap-1.5">
+                  <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                  Zero inward layer leaks
+                </div>
+              </div>
+
+              <!-- KPI 2: RULES -->
+              <div class="card-guardian-interactive p-5">
+                <div class="flex items-center justify-between mb-2">
+                  <p class="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400">Rules</p>
+                  <span class="badge-tech badge-cyan text-[10px]">8 Profiles</span>
+                </div>
+                <div class="flex items-baseline gap-2 mt-1">
+                  <p class="text-2xl lg:text-3xl font-bold tracking-tight text-white font-mono">124</p>
+                </div>
+                <p class="text-xs text-slate-400 mt-2">26 Active Rules Manifest</p>
+                <div class="mt-3 text-[11px] text-slate-500 font-mono flex items-center gap-1.5">
+                  <span class="h-1.5 w-1.5 rounded-full bg-cyan-400"></span>
+                  Zero False-Positives via Lexer
+                </div>
+              </div>
+
+              <!-- KPI 3: FILES ANALYZED -->
+              <div class="card-guardian-interactive p-5">
+                <div class="flex items-center justify-between mb-2">
+                  <p class="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400">Files Analyzed</p>
+                  <span class="badge-tech badge-hvm text-[10px]">Multi-Lang</span>
+                </div>
+                <div class="flex items-baseline gap-2 mt-1">
+                  <p class="text-2xl lg:text-3xl font-bold tracking-tight text-purple-300 font-mono">{{ totalFilesAnalyzedCount() }}</p>
+                </div>
+                <p class="text-xs text-slate-400 mt-2">AST & Pragma Evaluated</p>
+                <div class="mt-3 text-[11px] text-slate-500 font-mono flex items-center gap-1.5">
+                  <span class="h-1.5 w-1.5 rounded-full bg-purple-400"></span>
+                  C#, Python, TS, Go, PHP, Rust
+                </div>
+              </div>
+
+              <!-- KPI 4: QUALITY SCORE -->
+              <div class="card-guardian-interactive p-5">
+                <div class="flex items-center justify-between mb-2">
+                  <p class="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400">Quality Score</p>
+                  <span [class]="'badge-tech text-[10px] ' + (currentReport().score >= 80 ? 'badge-pass' : 'badge-fail')">
+                    Target &ge; 80%
                   </span>
                 </div>
-                <h3 class="text-sm font-semibold text-zinc-100 mb-1">{{ profile.name }}</h3>
-                <p class="text-xs text-zinc-400 line-clamp-2 mb-3">{{ profile.description }}</p>
-                <div class="text-[11px] text-zinc-400 font-mono">
-                  Tiers: {{ profile.tiers.length }} concentric layers
+                <div class="flex items-baseline gap-2 mt-1">
+                  <p [class]="'text-2xl lg:text-3xl font-bold tracking-tight font-mono ' + (currentReport().score >= 80 ? 'text-emerald-400' : 'text-rose-400')">
+                    {{ currentReport().score }}%
+                  </p>
+                </div>
+                <div class="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden">
+                  <div [class]="'h-full rounded-full transition-all duration-500 ' + (currentReport().score >= 80 ? 'bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.5)]' : 'bg-rose-500 shadow-[0_0_10px_rgba(239,68,68,0.5)]')" [style.width.%]="currentReport().score"></div>
+                </div>
+                <div class="mt-2 text-[11px] text-slate-500 font-mono flex items-center justify-between">
+                  <span>Strict Branch Gate</span>
+                  <span>{{ currentReport().totalViolations }} Infractions</span>
                 </div>
               </div>
-            }
-          </div>
-        </div>
-
-        <!-- Current Quality Gate Verdict Card -->
-        <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-6 shadow-sm">
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <h2 class="text-base font-semibold tracking-tight text-zinc-100">Latest Evaluated File Status</h2>
-              <p class="text-xs text-zinc-400 mt-0.5">{{ inputFileName() }} • Branch: {{ selectedBranch() }}</p>
-            </div>
-            <span [class]="'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ' + (currentReport().isApproved ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border-rose-500/30')">
-              {{ currentReport().isApproved ? '✅ APPROVED' : '❌ BLOCKED' }}
-            </span>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 py-3 border-y border-zinc-800 text-xs">
-            <div>
-              <span class="text-zinc-400">Score:</span>
-              <strong class="ml-1 text-zinc-100">{{ currentReport().score }} / 100</strong>
-            </div>
-            <div>
-              <span class="text-zinc-400">Total Violations:</span>
-              <strong class="ml-1 text-zinc-100">{{ currentReport().totalViolations }}</strong>
-            </div>
-            <div>
-              <span class="text-zinc-400">P0 Blocking:</span>
-              <strong class="ml-1 text-rose-400">{{ currentReport().p0Count }}</strong>
-            </div>
-            <div>
-              <span class="text-zinc-400">Active Suppressions:</span>
-              <strong class="ml-1 text-zinc-100">{{ currentReport().activeSuppressionsCount }}</strong>
-            </div>
-          </div>
-
-          <div class="mt-4 flex justify-end">
-            <button (click)="activeTab.set('analyze')" class="btn-shadcn btn-shadcn-default text-xs h-8 px-4">
-              Open in Live Auditor &rarr;
-            </button>
-          </div>
-        </div>
-      </div>
-    }
-
-    <!-- 2. LIVE CODE & DIFF AUDITOR TAB -->
-    @if (activeTab() === 'analyze') {
-      <div class="space-y-6">
-        <!-- Configuration Card -->
-        <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-6 shadow-sm">
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <h2 class="text-base font-semibold tracking-tight text-zinc-100">Live Code & Diff Quality Auditor</h2>
-              <p class="text-xs text-zinc-400 mt-0.5">Evaluates culture discipline, layer boundaries, and inline pragmas via Bend parallel logic.</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs text-zinc-400">Quick Presets:</span>
-              <select
-                [ngModel]="selectedPresetIndex()"
-                (ngModelChange)="selectPreset($event)"
-                class="rounded-md border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500"
-              >
-                @for (preset of codePresets; track $index) {
-                  <option [value]="$index">{{ preset.name }}</option>
-                }
-              </select>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-            <div>
-              <label class="block text-xs font-medium text-zinc-400 mb-1.5">File Path</label>
-              <input
-                type="text"
-                [ngModel]="inputFileName()"
-                (ngModelChange)="inputFileName.set($event)"
-                class="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs font-mono text-zinc-200 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500"
-              />
             </div>
 
-            <div>
-              <label class="block text-xs font-medium text-zinc-400 mb-1.5">Architecture Profile</label>
-              <select
-                [ngModel]="selectedProfile()"
-                (ngModelChange)="selectedProfile.set($event)"
-                class="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500"
-              >
-                @for (prof of architectureProfiles(); track prof.id) {
-                  <option [value]="prof.id">{{ prof.name }}</option>
-                }
-              </select>
-            </div>
-
-            <div>
-              <label class="block text-xs font-medium text-zinc-400 mb-1.5">Target Branch Policy</label>
-              <select
-                [ngModel]="selectedBranch()"
-                (ngModelChange)="selectedBranch.set($event)"
-                class="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500"
-              >
-                <option value="main">main (Strict Gate: 0 P0 required)</option>
-                <option value="develop">develop (Warning Mode)</option>
-                <option value="feature/billing-refactor">feature/* (Permissive)</option>
-              </select>
-            </div>
-
-            <div class="flex items-center pt-5">
-              <label class="flex items-center gap-2 cursor-pointer text-xs text-zinc-300">
-                <input
-                  type="checkbox"
-                  [ngModel]="hasTestFileChecked()"
-                  (ngModelChange)="hasTestFileChecked.set($event)"
-                  class="rounded border-zinc-700 text-emerald-500 bg-zinc-950 focus:ring-emerald-500"
-                />
-                <span>Companion Test File Exists</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <!-- Code Editor Box -->
-        <div class="rounded-xl border border-zinc-800 bg-zinc-950 overflow-hidden shadow-sm">
-          <div class="px-4 py-2.5 border-b border-zinc-800 bg-zinc-900/80 flex items-center justify-between text-xs">
-            <span class="font-mono text-zinc-300">{{ inputFileName() }}</span>
-            <span class="text-zinc-500 font-mono">Multi-Language Lexer + Pragma Scanner</span>
-          </div>
-          <textarea
-            [ngModel]="inputSourceCode()"
-            (ngModelChange)="inputSourceCode.set($event)"
-            rows="16"
-            class="w-full p-4 font-mono text-xs leading-relaxed bg-zinc-950 text-zinc-200 resize-y border-none focus:outline-none focus:ring-0"
-            placeholder="Paste code or unified diff here..."
-          ></textarea>
-        </div>
-
-        <!-- Audit Action Bar -->
-        <div class="flex items-center justify-between">
-          <button
-            (click)="runLiveAudit()"
-            class="btn-shadcn btn-shadcn-default h-10 px-6 gap-2 text-xs font-semibold shadow-lg shadow-emerald-500/10"
-          >
-            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-            Execute Audit & Generate Quality Gate Report
-          </button>
-
-          <span class="text-xs text-zinc-500 font-mono">
-            Evaluates 26 rules in O(log N) depth on Bend HVM
-          </span>
-        </div>
-      </div>
-    }
-
-    <!-- 3. AUDIT RESULTS TAB -->
-    @if (activeTab() === 'results') {
-      <div class="space-y-6">
-        <!-- Search & Filter Controls -->
-        <div class="flex flex-col sm:flex-row gap-3">
-          <div class="flex-1 relative">
-            <svg class="w-4 h-4 absolute left-3 top-2.5 text-zinc-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input
-              type="text"
-              [ngModel]="searchQuery()"
-              (ngModelChange)="searchQuery.set($event)"
-              placeholder="Filter violations by rule ID, message, or file..."
-              class="w-full h-9 pl-9 pr-4 rounded-md border border-zinc-700 bg-zinc-900 text-xs text-zinc-200 placeholder-zinc-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500"
-            />
-          </div>
-          <select
-            [ngModel]="selectedSeverityFilter()"
-            (ngModelChange)="selectedSeverityFilter.set($event)"
-            class="h-9 px-3 rounded-md border border-zinc-700 bg-zinc-900 text-xs text-zinc-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500"
-          >
-            <option value="all">All Severities</option>
-            <option value="P0_BLOCKING">P0 Blocking Only</option>
-            <option value="P1_WARNING">P1 Warnings Only</option>
-          </select>
-        </div>
-
-        <!-- Report Summary Banner -->
-        <div [class]="'rounded-xl border p-5 shadow-sm flex flex-wrap items-center justify-between gap-4 ' + (currentReport().isApproved ? 'bg-emerald-500/5 border-emerald-500/30' : 'bg-rose-500/5 border-rose-500/30')">
-          <div class="flex items-center gap-3.5">
-            <div [class]="'flex h-10 w-10 items-center justify-center rounded-lg ' + (currentReport().isApproved ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400')">
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-            </div>
-            <div>
-              <div class="flex items-center gap-2">
-                <h3 class="text-sm font-bold text-zinc-100">Quality Gate Status: {{ currentReport().isApproved ? 'APPROVED' : 'BLOCKED' }}</h3>
-                <span class="font-mono text-xs font-bold text-zinc-300">Score: {{ currentReport().score }}/100</span>
-              </div>
-              <p class="text-xs text-zinc-400 mt-0.5">
-                {{ currentReport().totalViolations }} total infractions • {{ currentReport().p0Count }} blocking P0 • {{ currentReport().activeSuppressionsCount }} active suppressions
-              </p>
-            </div>
-          </div>
-
-          <div class="flex items-center gap-2">
-            <button (click)="openExport('markdown')" class="btn-shadcn btn-shadcn-outline text-xs h-8 px-3">
-              Markdown PR Summary
-            </button>
-            <button (click)="openExport('sarif')" class="btn-shadcn btn-shadcn-outline text-xs h-8 px-3">
-              SARIF v2.1.0
-            </button>
-          </div>
-        </div>
-
-        <!-- Violations List -->
-        @if (filteredViolations().length === 0) {
-          <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-12 text-center shadow-sm space-y-3">
-            <div class="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 mx-auto">
-              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-            </div>
-            <h3 class="text-base font-semibold tracking-tight text-zinc-100">100% Compliant — Zero Infractions</h3>
-            <p class="text-xs text-zinc-400 max-w-md mx-auto">The analyzed code adheres strictly to all active culture and architectural boundaries without any unsuppressed violations.</p>
-          </div>
-        } @else {
-          <div class="space-y-3.5">
-            @for (violation of filteredViolations(); track $index) {
-              <div [class]="'rounded-xl border p-4 shadow-sm ' + (violation.severity === 'P0_BLOCKING' ? 'bg-rose-500/5 border-rose-500/30' : 'bg-amber-500/5 border-amber-500/30')">
-                <div class="flex items-start gap-3">
-                  <div [class]="'flex h-8 w-8 shrink-0 items-center justify-center rounded-md ' + (violation.severity === 'P0_BLOCKING' ? 'bg-rose-500/15 text-rose-400' : 'bg-amber-500/15 text-amber-400')">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <!-- 8. CI/CD PIPELINE VISUALIZATION (Prominent & Interactive) -->
+            <div class="card-guardian p-6">
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+                      <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M13 6h3a2 2 0 0 1 2 2v7"></path><line x1="6" y1="9" x2="6" y2="21"></line></svg>
+                      CI/CD Quality Gate Pipeline Execution
+                    </h3>
+                    <span class="badge-tech badge-cyan text-[10px]">End-to-End Flow</span>
                   </div>
+                  <p class="text-xs text-slate-400 mt-1">Live execution pipeline tracking commit inspection, rule resolution, parallel HVM reduction, and VCS annotations</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-mono text-slate-400">Pipeline Duration:</span>
+                  <span class="text-xs font-mono font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">0.11s Total</span>
+                </div>
+              </div>
 
-                  <div class="flex-1">
-                    <div class="flex items-center justify-between mb-1.5">
-                      <div class="flex items-center gap-2">
-                        <span class="font-mono text-xs font-semibold text-zinc-200">{{ violation.fileName }}</span>
-                        @if (violation.line) {
-                          <span class="text-[11px] font-mono text-zinc-400">line {{ violation.line }}</span>
-                        }
-                      </div>
-                      <span class="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-mono font-medium bg-zinc-800 text-zinc-300 border border-zinc-700">
-                        {{ violation.ruleId }} (-{{ violation.penalty }} pts)
+              <!-- Pipeline Stage Flow Line -->
+              <div class="grid grid-cols-1 md:grid-cols-5 gap-3 relative">
+                @for (stage of pipelineStages(); track stage.id; let idx = $index) {
+                  <div
+                    (click)="selectPipelineStage(stage.id)"
+                    [class]="'rounded-xl border p-4 cursor-pointer transition-all duration-200 relative group ' + (selectedPipelineStage() === stage.id ? 'bg-[#161F2E] border-cyan-400/80 shadow-[0_0_20px_rgba(6,182,212,0.15)] ring-1 ring-cyan-400/40' : 'bg-[#0E1420] border-slate-800 hover:border-slate-700 hover:bg-[#121A2A]')"
+                  >
+                    <!-- Header with Stage Number & Status Badge -->
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="text-[10px] font-mono font-bold text-slate-500 uppercase">Stage 0{{ idx + 1 }}</span>
+                      <span [class]="'badge-tech text-[9px] ' + (stage.status === 'passed' ? 'badge-pass' : 'badge-fail')">
+                        {{ stage.status === 'passed' ? '✓ Passed' : '✕ Blocked' }}
                       </span>
                     </div>
 
-                    <p class="text-xs font-medium text-zinc-100 leading-relaxed">{{ violation.message }}</p>
+                    <!-- Stage Name -->
+                    <h4 class="text-xs font-bold text-slate-100 mb-1 group-hover:text-cyan-300 transition-colors font-mono">{{ stage.shortName }}</h4>
+                    <p class="text-[11px] text-slate-400 line-clamp-2 leading-relaxed mb-3">{{ stage.summary }}</p>
 
-                    @if (violation.snippet) {
-                      <pre class="mt-2.5 p-2 rounded bg-zinc-950 font-mono text-[11px] text-rose-300 overflow-x-auto border border-zinc-800"><code>{{ violation.snippet }}</code></pre>
-                    }
+                    <!-- Timing & Meta -->
+                    <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-mono">
+                      <span class="text-slate-500">Latency:</span>
+                      <span class="text-cyan-400 font-semibold">{{ stage.duration }}</span>
+                    </div>
+                  </div>
+                }
+              </div>
 
-                    @if (violation.remediation) {
-                      <div class="mt-2 text-[11px] text-emerald-400 bg-emerald-500/5 p-2 rounded border border-emerald-500/20">
-                        <strong>Remediation:</strong> {{ violation.remediation }}
+              <!-- Active Pipeline Stage Detail Panel -->
+              @for (st of pipelineStages(); track st.id) {
+                @if (selectedPipelineStage() === st.id) {
+                  <div class="mt-5 p-4 rounded-xl border border-slate-800 bg-[#0A0E17] text-xs space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+                      <div>
+                        <span class="text-[10px] font-mono text-cyan-400 uppercase tracking-wider">Inspecting Pipeline Stage</span>
+                        <h4 class="text-sm font-bold text-white font-mono mt-0.5">{{ st.name }}</h4>
+                        <p class="text-slate-400 mt-0.5">{{ st.detail }}</p>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        <span class="text-slate-500 font-mono">Execution Verdict:</span>
+                        <span [class]="'badge-tech ' + (st.status === 'passed' ? 'badge-pass' : 'badge-fail')">
+                          {{ st.status === 'passed' ? 'PASSED (0.01s)' : 'BLOCKED' }}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      @for (m of st.metrics; track m.label) {
+                        <div class="p-2.5 rounded-lg bg-[#111722] border border-slate-800/80">
+                          <p class="text-[10px] font-mono text-slate-500 uppercase">{{ m.label }}</p>
+                          <p class="text-xs font-mono font-bold text-slate-200 mt-0.5 truncate">{{ m.value }}</p>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              }
+            </div>
+
+            <!-- 9. BEND / HVM PARALLEL REDUCTION & 10. ARCHITECTURE HEALTH (Two-Column Layout) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              <!-- BEND / HVM VISUALIZATION (Parallel Execution Differentiator) -->
+              <div class="card-guardian p-6 space-y-5 bg-hvm-glow">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <h3 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+                        <svg class="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                        Bend / HVM Parallel Reduction
+                      </h3>
+                      <span class="badge-tech badge-hvm text-[10px]">Brain Metaphor</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">Massively parallel rule tree reduction executing in O(log N) depth on HVM</p>
+                  </div>
+                  <span class="text-[11px] font-mono font-bold text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">
+                    64 Threads Active
+                  </span>
+                </div>
+
+                <!-- Visual Node Representation -->
+                <div class="p-4 rounded-xl border border-purple-500/20 bg-[#0B0F18] space-y-4">
+                  <!-- Central Brain Root -->
+                  <div class="flex items-center justify-center">
+                    <div class="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-900/60 to-indigo-900/60 border border-purple-500/40 text-center shadow-[0_0_20px_rgba(168,85,247,0.2)]">
+                      <div class="text-[10px] font-mono uppercase tracking-wider text-purple-300 font-bold">Parallel Brain Root</div>
+                      <div class="text-xs font-mono font-extrabold text-white">BEND / HVM ENGINE</div>
+                      <div class="text-[10px] text-cyan-400 font-mono">Parallel Reduction Tree</div>
+                    </div>
+                  </div>
+
+                  <!-- Connector lines -->
+                  <div class="w-full flex items-center justify-center">
+                    <div class="h-4 w-0.5 bg-gradient-to-b from-purple-500 to-cyan-500"></div>
+                  </div>
+
+                  <!-- Parallel Rule Threads Grid -->
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    @for (node of hvmParallelNodes; track node.id) {
+                      <div class="p-2 rounded-lg bg-[#111722] border border-slate-800 hover:border-purple-500/40 transition-colors text-center">
+                        <div class="text-[9px] font-mono text-purple-400 font-bold">{{ node.thread }}</div>
+                        <div class="text-[11px] font-mono font-bold text-slate-200 truncate">{{ node.id }}</div>
+                        <div class="text-[9px] text-slate-500 truncate">{{ node.name }}</div>
+                        <div class="mt-1 text-[9px] font-mono text-emerald-400">✓ {{ node.latency }}</div>
                       </div>
                     }
                   </div>
+
+                  <!-- Consolidation connector -->
+                  <div class="w-full flex items-center justify-center">
+                    <div class="h-4 w-0.5 bg-gradient-to-b from-cyan-500 to-emerald-500"></div>
+                  </div>
+
+                  <!-- Consolidated Decision Output -->
+                  <div class="p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-center">
+                    <span class="text-xs font-mono font-bold text-emerald-400 flex items-center justify-center gap-1.5">
+                      <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                      CONSOLIDATED QUALITY DECISION: {{ currentReport().isApproved ? 'APPROVED' : 'BLOCKED' }}
+                    </span>
+                    <p class="text-[10px] text-slate-400 font-mono mt-0.5">Evaluated 26 declarative invariants in 0.04s total HVM time</p>
+                  </div>
                 </div>
               </div>
-            }
-          </div>
-        }
-      </div>
-    }
 
-    <!-- 4. RULES MANIFESTS TAB -->
-    @if (activeTab() === 'rules') {
-      <div class="space-y-6">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h2 class="text-lg font-bold tracking-tight text-zinc-100">Declarative Rules Manifest Catalog</h2>
-            <p class="text-xs text-zinc-400 mt-0.5">Rules parsed dynamically from JSON schemas in backend/rules/ (Zero hardcoded data).</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <input
-              type="text"
-              [ngModel]="searchQuery()"
-              (ngModelChange)="searchQuery.set($event)"
-              placeholder="Search rules..."
-              class="h-8 px-3 rounded-md border border-zinc-700 bg-zinc-900 text-xs text-zinc-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500"
-            />
-          </div>
-        </div>
-
-        <div class="space-y-3">
-          @for (rule of filteredRules(); track rule.id) {
-            <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 shadow-sm hover:border-zinc-700 transition-colors">
-              <div class="flex items-center justify-between gap-4">
-                <div class="flex-1">
-                  <div class="flex items-center gap-2.5 mb-1.5">
-                    <span class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-zinc-800 text-emerald-400 border border-zinc-700">{{ rule.id }}</span>
-                    <h3 class="text-sm font-semibold text-zinc-100">{{ rule.name }}</h3>
-                    <span [class]="'text-[10px] font-mono px-2 py-0.2 rounded ' + (rule.severity === 'P0_BLOCKING' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20')">
-                      {{ rule.severity }} (-{{ rule.penaltyPoints }} pts)
-                    </span>
-                  </div>
-                  <p class="text-xs text-zinc-400 mb-2 leading-relaxed">{{ rule.description }}</p>
-                  <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-zinc-500">
-                    <span>Category: <strong class="text-zinc-300">{{ rule.category }}</strong></span>
-                    <span>Languages: <strong class="text-zinc-300">{{ rule.languages.join(', ') }}</strong></span>
+              <!-- 10. ARCHITECTURE HEALTH (Clean Architecture 4 Concentric Layers) -->
+              <div class="card-guardian p-6 space-y-5">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <h3 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+                        <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+                        Architecture Health: Clean Architecture
+                      </h3>
+                      <span class="badge-tech badge-pass text-[10px]">4 Concentric Layers</span>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-1">Concentric ring boundaries enforcing inward-only dependency rules</p>
                   </div>
                 </div>
 
-                <div>
-                  <button
-                    (click)="toggleRuleStatus(rule.id)"
-                    [class]="'text-xs font-semibold px-3 py-1 rounded-full cursor-pointer transition-colors border ' + (rule.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-zinc-800 text-zinc-500 border-zinc-700')"
-                  >
-                    {{ rule.status === 'active' ? 'Enforced' : 'Disabled' }}
+                <!-- Concentric Layers Visual List -->
+                <div class="space-y-2.5">
+                  @for (tier of cleanArchitectureTiers; track tier.tierNumber; let idx = $index) {
+                    <div
+                      (click)="selectLayerTier(idx)"
+                      [class]="'p-3.5 rounded-xl border cursor-pointer transition-all ' + (selectedLayerTierIndex() === idx ? 'bg-[#161F2E] border-cyan-500/60 shadow-[0_0_15px_rgba(6,182,212,0.1)]' : 'bg-[#0E1420] border-slate-800 hover:border-slate-700')"
+                    >
+                      <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center gap-2.5">
+                          <span class="h-5 w-5 rounded-md bg-cyan-500/10 text-cyan-400 font-mono text-[11px] font-bold flex items-center justify-center border border-cyan-500/20">
+                            0{{ tier.tierNumber }}
+                          </span>
+                          <span class="text-xs font-bold text-slate-100 font-mono">{{ tier.name }}</span>
+                        </div>
+                        <span class="badge-tech badge-pass text-[10px]">✓ Invariant Verified</span>
+                      </div>
+                      
+                      <p class="text-[11px] text-slate-400 ml-7.5 leading-relaxed">{{ tier.canonicalName }} · <span class="font-mono text-slate-500">{{ tier.path }}</span></p>
+
+                      @if (selectedLayerTierIndex() === idx) {
+                        <div class="mt-3 pt-2.5 border-t border-slate-800 ml-7.5 space-y-2">
+                          <div class="text-[11px] text-slate-300 leading-relaxed">{{ tier.description }}</div>
+                          <div class="flex flex-wrap gap-1">
+                            @for (inv of tier.invariants; track inv) {
+                              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-cyan-300 border border-slate-700">{{ inv }}</span>
+                            }
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+
+            <!-- 11. VIOLATIONS PANEL & 12. RULES OVERVIEW (Two-Column Layout) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              <!-- 11. VIOLATIONS PANEL -->
+              <div class="card-guardian p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h3 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+                      <svg class="w-4 h-4 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path></svg>
+                      Violations & Findings Breakdown
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-1">Gating infractions categorized by severity</p>
+                  </div>
+                  <button (click)="activeTab.set('violations')" class="text-xs font-mono text-cyan-400 hover:text-cyan-300">
+                    View All &rarr;
                   </button>
                 </div>
+
+                <!-- Severity Distribution Pills -->
+                <div class="grid grid-cols-3 gap-2">
+                  <div class="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-center">
+                    <div class="text-[10px] font-mono text-rose-400 font-bold uppercase">Critical (P0)</div>
+                    <div class="text-xl font-bold font-mono text-rose-300 mt-0.5">{{ currentReport().p0Count }}</div>
+                    <div class="text-[10px] text-slate-500">Blocking Merge</div>
+                  </div>
+                  <div class="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-center">
+                    <div class="text-[10px] font-mono text-amber-400 font-bold uppercase">Warning (P1)</div>
+                    <div class="text-xl font-bold font-mono text-amber-300 mt-0.5">{{ currentReport().p1Count }}</div>
+                    <div class="text-[10px] text-slate-500">Advisory Annotations</div>
+                  </div>
+                  <div class="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-center">
+                    <div class="text-[10px] font-mono text-emerald-400 font-bold uppercase">Passed Rules</div>
+                    <div class="text-xl font-bold font-mono text-emerald-300 mt-0.5">{{ rules().length - currentReport().totalViolations }}</div>
+                    <div class="text-[10px] text-slate-500">Full Compliance</div>
+                  </div>
+                </div>
+
+                <!-- Recent Findings List -->
+                <div class="space-y-2 pt-2">
+                  @if (filteredViolations().length === 0) {
+                    <div class="p-6 rounded-xl bg-[#0E1420] border border-slate-800 text-center space-y-1">
+                      <span class="text-emerald-400 font-bold text-xs font-mono">✓ 100% Compliant — Zero Infractions</span>
+                      <p class="text-[11px] text-slate-400">All concentric architecture boundaries and engineering standards verified.</p>
+                    </div>
+                  } @else {
+                    @for (v of filteredViolations().slice(0, 3); track $index) {
+                      <div class="p-3 rounded-lg bg-[#0E1420] border border-slate-800 hover:border-slate-700 transition-colors text-xs space-y-1.5">
+                        <div class="flex items-center justify-between">
+                          <span class="font-mono font-bold text-cyan-300">{{ v.ruleId }}</span>
+                          <span [class]="'badge-tech text-[9px] ' + (v.severity === 'P0_BLOCKING' ? 'badge-fail' : 'badge-warn')">
+                            {{ v.severity === 'P0_BLOCKING' ? '🔴 Critical P0' : '🟠 Warning P1' }} (-{{ v.penalty }} pts)
+                          </span>
+                        </div>
+                        <p class="text-slate-200 font-medium leading-relaxed">{{ v.message }}</p>
+                        <div class="text-[11px] font-mono text-slate-400 truncate">{{ v.fileName }} @if (v.line) { :{{ v.line }} }</div>
+                      </div>
+                    }
+                  }
+                </div>
+              </div>
+
+              <!-- 12. RULES OVERVIEW & SUPPRESSIONS -->
+              <div class="card-guardian p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h3 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+                      <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                      Rules Manifest & Governance
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-1">Declarative quality rules & false-positive suppressions</p>
+                  </div>
+                  <button (click)="activeTab.set('rules')" class="text-xs font-mono text-cyan-400 hover:text-cyan-300">
+                    Manage Rules &rarr;
+                  </button>
+                </div>
+
+                <!-- Rules Metrics Row -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs font-mono">
+                  <div class="p-2.5 rounded-lg bg-[#0E1420] border border-slate-800">
+                    <span class="text-slate-500 text-[10px]">TOTAL RULES</span>
+                    <div class="text-base font-bold text-white mt-0.5">{{ rules().length }}</div>
+                  </div>
+                  <div class="p-2.5 rounded-lg bg-[#0E1420] border border-slate-800">
+                    <span class="text-slate-500 text-[10px]">ENFORCED</span>
+                    <div class="text-base font-bold text-emerald-400 mt-0.5">{{ activeRulesCount() }}</div>
+                  </div>
+                  <div class="p-2.5 rounded-lg bg-[#0E1420] border border-slate-800">
+                    <span class="text-slate-500 text-[10px]">SUPPRESSIONS</span>
+                    <div class="text-base font-bold text-cyan-400 mt-0.5">{{ currentReport().activeSuppressionsCount }}</div>
+                  </div>
+                  <div class="p-2.5 rounded-lg bg-[#0E1420] border border-slate-800">
+                    <span class="text-slate-500 text-[10px]">PROFILES</span>
+                    <div class="text-base font-bold text-purple-300 mt-0.5">{{ architectureProfiles().length }}</div>
+                  </div>
+                </div>
+
+                <!-- Rules Sample Grid -->
+                <div class="space-y-2">
+                  <div class="p-3 rounded-lg bg-[#0E1420] border border-slate-800 flex items-center justify-between text-xs font-mono">
+                    <div>
+                      <span class="font-bold text-cyan-300">CULT01..05</span>
+                      <p class="text-slate-400 text-[11px] font-sans">Zero Lazy Code, Spec Traceability, Mandatory TDD & Secrets</p>
+                    </div>
+                    <span class="badge-tech badge-pass text-[9px]">Enforced</span>
+                  </div>
+
+                  <div class="p-3 rounded-lg bg-[#0E1420] border border-slate-800 flex items-center justify-between text-xs font-mono">
+                    <div>
+                      <span class="font-bold text-cyan-300">ARCH-LAYER-01..04</span>
+                      <p class="text-slate-400 text-[11px] font-sans">Zero Presentation in Domain, Zero DB in Views, Thin Controllers</p>
+                    </div>
+                    <span class="badge-tech badge-pass text-[9px]">Enforced</span>
+                  </div>
+
+                  <div class="p-3 rounded-lg bg-[#0E1420] border border-slate-800 flex items-center justify-between text-xs font-mono">
+                    <div>
+                      <span class="font-bold text-purple-300">&#64;guardian-ignore</span>
+                      <p class="text-slate-400 text-[11px] font-sans">Inline pragma suppression engine requiring documented rationale</p>
+                    </div>
+                    <span class="badge-tech badge-hvm text-[9px]">Active</span>
+                  </div>
+                </div>
               </div>
             </div>
-          }
-        </div>
-      </div>
-    }
 
-    <!-- 5. LAYER TAXONOMY TAB -->
-    @if (activeTab() === 'vocabulary') {
-      <div class="space-y-6">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h2 class="text-lg font-bold tracking-tight text-zinc-100">Layer Vocabulary & Taxonomy Explorer</h2>
-            <p class="text-xs text-zinc-400 mt-0.5">Canonical token dictionary mapped from backend/rules/layer_vocabulary.json</p>
+            <!-- 13. MULTI-PLATFORM CI/CD INTEGRATIONS & 14. MULTI-LANGUAGE COVERAGE -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              <!-- 13. MULTI-PLATFORM CI/CD -->
+              <div class="card-guardian p-6 space-y-4">
+                <div>
+                  <h3 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+                    <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                    Multi-Platform CI/CD Integrations
+                  </h3>
+                  <p class="text-xs text-slate-400 mt-1">Native adapters for VCS gating and automated pull request annotations</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <!-- GitHub Actions -->
+                  <div class="p-4 rounded-xl bg-[#0E1420] border border-slate-800 text-xs space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="font-bold text-white">GitHub Actions</span>
+                      <span class="badge-tech badge-pass text-[9px]">Connected</span>
+                    </div>
+                    <ul class="text-[11px] text-slate-400 space-y-1">
+                      <li>• PR / MR Comments</li>
+                      <li>• Inline Annotations</li>
+                      <li>• SARIF Code Scanning</li>
+                    </ul>
+                  </div>
+
+                  <!-- GitLab CI/CD -->
+                  <div class="p-4 rounded-xl bg-[#0E1420] border border-slate-800 text-xs space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="font-bold text-white">GitLab CI/CD</span>
+                      <span class="badge-tech badge-pass text-[9px]">Connected</span>
+                    </div>
+                    <ul class="text-[11px] text-slate-400 space-y-1">
+                      <li>• Code Quality JSON</li>
+                      <li>• Merge Request Widget</li>
+                      <li>• Security Quality Gate</li>
+                    </ul>
+                  </div>
+
+                  <!-- Bitbucket Pipelines -->
+                  <div class="p-4 rounded-xl bg-[#0E1420] border border-slate-800 text-xs space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="font-bold text-white">Bitbucket</span>
+                      <span class="badge-tech badge-pass text-[9px]">Connected</span>
+                    </div>
+                    <ul class="text-[11px] text-slate-400 space-y-1">
+                      <li>• Code Insights Report</li>
+                      <li>• Pipeline Step Annotation</li>
+                      <li>• Commit Status Check</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 14. MULTI-LANGUAGE TECHNOLOGY COVERAGE -->
+              <div class="card-guardian p-6 space-y-4">
+                <div>
+                  <h3 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+                    <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                    Multi-Language Technology Stack
+                  </h3>
+                  <p class="text-xs text-slate-400 mt-1">One universal quality gate across all backend, frontend, and cloud runtimes</p>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  @for (lang of supportedLanguages; track lang.name) {
+                    <div class="p-3 rounded-lg bg-[#0E1420] border border-slate-800 text-center space-y-1">
+                      <div class="flex items-center justify-between">
+                        <span class="text-xs font-mono font-bold text-white">{{ lang.name }}</span>
+                        <span class="text-[9px] font-mono text-cyan-400">{{ lang.ext }}</span>
+                      </div>
+                      <p class="text-[10px] text-slate-400 truncate">{{ lang.version }}</p>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+
           </div>
-          <input
-            type="text"
-            [ngModel]="vocabularySearch()"
-            (ngModelChange)="vocabularySearch.set($event)"
-            placeholder="Search keywords or layers..."
-            class="h-8 px-3 rounded-md border border-zinc-700 bg-zinc-900 text-xs text-zinc-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-emerald-500"
-          />
-        </div>
+        }
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          @for (item of filteredVocabulary(); track item.layer) {
-            <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 shadow-sm space-y-3">
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-mono font-bold px-2.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  {{ item.layer }} Tier
-                </span>
-              </div>
-              <p class="text-xs text-zinc-300 leading-relaxed">{{ item.description }}</p>
-
+        <!-- ===================================================================== -->
+        <!-- VIEW 2: PIPELINES (CI/CD Execution & Real-Time Runs)                  -->
+        <!-- ===================================================================== -->
+        @if (activeTab() === 'pipelines') {
+          <div class="space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <p class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">Canonical Keywords</p>
-                <div class="flex flex-wrap gap-1.5">
-                  @for (kw of item.keywords; track kw) {
-                    <span class="font-mono text-[11px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">{{ kw }}</span>
-                  }
-                </div>
+                <h2 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                  <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M13 6h3a2 2 0 0 1 2 2v7"></path><line x1="6" y1="9" x2="6" y2="21"></line></svg>
+                  CI/CD Pipeline Execution Dashboard
+                </h2>
+                <p class="text-xs text-slate-400 mt-1">Real-time pipeline gating runs, stage durations, and commit quality checks</p>
               </div>
+              <button (click)="runLiveAudit()" class="btn-guardian btn-guardian-primary text-xs h-9 px-4">
+                Execute CI Pipeline Run
+              </button>
+            </div>
 
-              <div>
-                <p class="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">Forbidden Boundaries</p>
-                <div class="flex flex-wrap gap-1.5">
-                  @for (fb of item.forbiddenInOtherLayers; track fb) {
-                    <span class="font-mono text-[11px] px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">{{ fb }}</span>
-                  }
-                </div>
+            <!-- Pipeline Visual Flow Summary -->
+            <div class="card-guardian p-6 space-y-4">
+              <h3 class="text-sm font-bold text-slate-200 font-mono">Active Workflow: guardian-quality-gate.yml</h3>
+              <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                @for (stage of pipelineStages(); track stage.id) {
+                  <div class="p-4 rounded-xl bg-[#0E1420] border border-slate-800 space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-bold text-slate-200 font-mono">{{ stage.shortName }}</span>
+                      <span [class]="'badge-tech text-[9px] ' + (stage.status === 'passed' ? 'badge-pass' : 'badge-fail')">
+                        {{ stage.status === 'passed' ? '✓ 0.01s' : '✕ Blocked' }}
+                      </span>
+                    </div>
+                    <p class="text-[11px] text-slate-400">{{ stage.summary }}</p>
+                  </div>
+                }
               </div>
             </div>
-          }
-        </div>
-      </div>
-    }
 
-    <!-- 6. VCS & WEBHOOK SIMULATOR TAB -->
-    @if (activeTab() === 'vcs') {
-      <div class="space-y-6">
-        <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-6 shadow-sm">
-          <h2 class="text-lg font-bold tracking-tight text-zinc-100 mb-1">Multi-Platform VCS Webhook Gateway Simulator</h2>
-          <p class="text-xs text-zinc-400 mb-5">Simulates webhook ingestion and branch policy evaluation for GitHub, GitLab, and Bitbucket.</p>
+            <!-- Pipeline History Table -->
+            <div class="card-guardian p-6 space-y-4">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-bold text-slate-200 font-mono">Recent Pipeline Execution History</h3>
+                <span class="text-xs font-mono text-slate-400">{{ history().length }} Runs in Session</span>
+              </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-            <div>
-              <label class="block text-xs font-medium text-zinc-400 mb-1">Platform</label>
+              @if (history().length === 0) {
+                <div class="p-8 text-center text-slate-400 text-xs font-mono">
+                  No pipeline runs recorded in current session yet. Click "Execute CI Pipeline Run" above.
+                </div>
+              } @else {
+                <div class="overflow-x-auto">
+                  <table class="w-full text-xs text-left">
+                    <thead class="text-[11px] font-mono text-slate-400 border-b border-slate-800 uppercase">
+                      <tr>
+                        <th class="py-3 px-4">Commit / PR</th>
+                        <th class="py-3 px-4">Target Branch</th>
+                        <th class="py-3 px-4">Platform</th>
+                        <th class="py-3 px-4">Score</th>
+                        <th class="py-3 px-4">Status</th>
+                        <th class="py-3 px-4">Duration</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/80 font-mono">
+                      @for (run of history(); track run.id) {
+                        <tr class="hover:bg-slate-800/30 transition-colors">
+                          <td class="py-3 px-4 text-white font-bold">{{ run.project }}</td>
+                          <td class="py-3 px-4 text-cyan-400">{{ run.targetBranch }}</td>
+                          <td class="py-3 px-4 text-slate-300 uppercase">{{ run.platform }}</td>
+                          <td class="py-3 px-4 font-bold" [class.text-emerald-400]="run.score >= 80" [class.text-rose-400]="run.score < 80">{{ run.score }}%</td>
+                          <td class="py-3 px-4">
+                            <span [class]="'badge-tech text-[9px] ' + (run.status === 'Full compliance' ? 'badge-pass' : 'badge-fail')">
+                              {{ run.status }}
+                            </span>
+                          </td>
+                          <td class="py-3 px-4 text-slate-400">{{ run.duration }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- ===================================================================== -->
+        <!-- VIEW 3: ARCHITECTURE (Profiles & Layer Taxonomy)                      -->
+        <!-- ===================================================================== -->
+        @if (activeTab() === 'architecture' || activeTab() === 'vocabulary') {
+          <div class="space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                  <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path></svg>
+                  Architecture Profiles & Layer Boundary Matrix
+                </h2>
+                <p class="text-xs text-slate-400 mt-1">Formal boundary definitions parsed from backend/rules/1_architectures/ and layer_vocabulary.json</p>
+              </div>
+              <input
+                type="text"
+                [ngModel]="vocabularySearch()"
+                (ngModelChange)="vocabularySearch.set($event)"
+                placeholder="Search keywords or layers..."
+                class="h-9 px-3.5 rounded-lg border border-slate-700 bg-[#0E1420] text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500 w-full sm:w-64"
+              />
+            </div>
+
+            <!-- Architecture Profiles Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              @for (profile of architectureProfiles(); track profile.id) {
+                <div class="card-guardian-interactive p-5 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="badge-tech badge-cyan text-[9px]">{{ profile.category }}</span>
+                  </div>
+                  <h3 class="text-sm font-bold text-white font-mono">{{ profile.name }}</h3>
+                  <p class="text-xs text-slate-400 line-clamp-3 leading-relaxed">{{ profile.description }}</p>
+                  <div class="pt-2 border-t border-slate-800 text-[11px] font-mono text-cyan-400">
+                    {{ profile.tiers.length }} Concentric Tiers Configured
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- Layer Taxonomy Token Explorer -->
+            <div class="card-guardian p-6 space-y-4">
+              <h3 class="text-sm font-bold text-slate-200 font-mono">Layer Vocabulary & Canonical Token Dictionary</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                @for (item of filteredVocabulary(); track item.layer) {
+                  <div class="p-5 rounded-xl bg-[#0E1420] border border-slate-800 space-y-3">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-mono font-bold text-cyan-400 bg-cyan-500/10 px-2.5 py-0.5 rounded border border-cyan-500/20">
+                        {{ item.layer }} Tier
+                      </span>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">{{ item.description }}</p>
+
+                    <div>
+                      <p class="text-[10px] font-mono font-semibold uppercase text-slate-400 mb-1">Canonical Keywords</p>
+                      <div class="flex flex-wrap gap-1">
+                        @for (kw of item.keywords; track kw) {
+                          <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800">{{ kw }}</span>
+                        }
+                      </div>
+                    </div>
+
+                    <div>
+                      <p class="text-[10px] font-mono font-semibold uppercase text-rose-400 mb-1">Forbidden Boundary Tokens</p>
+                      <div class="flex flex-wrap gap-1">
+                        @for (fb of item.forbiddenInOtherLayers; track fb) {
+                          <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-rose-500/10 text-rose-300 border border-rose-500/20">{{ fb }}</span>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ===================================================================== -->
+        <!-- VIEW 4: RULES MANIFESTS                                               -->
+        <!-- ===================================================================== -->
+        @if (activeTab() === 'rules') {
+          <div class="space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                  <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                  Declarative Rules Manifest Catalog
+                </h2>
+                <p class="text-xs text-slate-400 mt-1">26 canonical rules parsed dynamically from JSON schemas in backend/rules/</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <input
+                  type="text"
+                  [ngModel]="searchQuery()"
+                  (ngModelChange)="searchQuery.set($event)"
+                  placeholder="Search rules by ID, description..."
+                  class="h-9 px-3.5 rounded-lg border border-slate-700 bg-[#0E1420] text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500 w-full sm:w-64"
+                />
+              </div>
+            </div>
+
+            <!-- Rules List -->
+            <div class="space-y-3">
+              @for (rule of filteredRules(); track rule.id) {
+                <div class="card-guardian p-5 hover:border-slate-700 transition-colors">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="flex-1 space-y-1.5">
+                      <div class="flex flex-wrap items-center gap-2">
+                        <span class="font-mono text-xs font-bold px-2 py-0.5 rounded bg-[#111722] text-cyan-300 border border-slate-700">{{ rule.id }}</span>
+                        <h3 class="text-sm font-bold text-white">{{ rule.name }}</h3>
+                        <span [class]="'badge-tech text-[9px] ' + (rule.severity === 'P0_BLOCKING' ? 'badge-fail' : 'badge-warn')">
+                          {{ rule.severity }} (-{{ rule.penaltyPoints }} pts)
+                        </span>
+                      </div>
+                      <p class="text-xs text-slate-300 leading-relaxed">{{ rule.description }}</p>
+                      <div class="text-[11px] text-emerald-400 bg-emerald-500/5 p-2 rounded border border-emerald-500/15">
+                        <strong>Remediation:</strong> {{ rule.remediation }}
+                      </div>
+                      <div class="flex flex-wrap items-center gap-4 text-[11px] text-slate-500 font-mono pt-1">
+                        <span>Category: <strong class="text-slate-300">{{ rule.category }}</strong></span>
+                        <span>Languages: <strong class="text-slate-300">{{ rule.languages.join(', ') }}</strong></span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <button
+                        (click)="toggleRuleStatus(rule.id)"
+                        [class]="'text-xs font-semibold px-3 py-1.5 rounded-lg cursor-pointer transition-colors border font-mono ' + (rule.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-slate-800 text-slate-500 border-slate-700')"
+                      >
+                        {{ rule.status === 'active' ? 'Enforced' : 'Disabled' }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- ===================================================================== -->
+        <!-- VIEW 5: VIOLATIONS & AUDIT RESULTS                                    -->
+        <!-- ===================================================================== -->
+        @if (activeTab() === 'violations' || activeTab() === 'results') {
+          <div class="space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                  <svg class="w-5 h-5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path></svg>
+                  Quality Gate Violations & Infractions Explorer
+                </h2>
+                <p class="text-xs text-slate-400 mt-1">Detailed diagnostic reports with exact lines, snippets, AST nodes, and remediation steps</p>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <button (click)="openExport('markdown')" class="btn-guardian btn-guardian-secondary text-xs h-9 px-3">
+                  Markdown PR Summary
+                </button>
+                <button (click)="openExport('sarif')" class="btn-guardian btn-guardian-primary text-xs h-9 px-3">
+                  SARIF v2.1.0
+                </button>
+              </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="flex flex-col sm:flex-row gap-3">
+              <div class="flex-1 relative">
+                <input
+                  type="text"
+                  [ngModel]="searchQuery()"
+                  (ngModelChange)="searchQuery.set($event)"
+                  placeholder="Filter by rule ID, filename, or message..."
+                  class="w-full h-9 pl-4 pr-4 rounded-lg border border-slate-700 bg-[#0E1420] text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                />
+              </div>
               <select
-                [ngModel]="webhookPlatform()"
-                (ngModelChange)="webhookPlatform.set($event)"
-                class="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200"
+                [ngModel]="selectedSeverityFilter()"
+                (ngModelChange)="selectedSeverityFilter.set($event)"
+                class="h-9 px-3 rounded-lg border border-slate-700 bg-[#0E1420] text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500"
               >
-                <option value="github">GitHub Actions</option>
-                <option value="gitlab">GitLab CI/CD</option>
-                <option value="bitbucket">Bitbucket Pipelines</option>
+                <option value="all">All Severities</option>
+                <option value="P0_BLOCKING">P0 Blocking Only</option>
+                <option value="P1_WARNING">P1 Warnings Only</option>
               </select>
             </div>
 
-            <div>
-              <label class="block text-xs font-medium text-zinc-400 mb-1">Event Header</label>
-              <input
-                type="text"
-                [ngModel]="webhookEventType()"
-                (ngModelChange)="webhookEventType.set($event)"
-                class="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200 font-mono"
-              />
-            </div>
-
-            <div>
-              <label class="block text-xs font-medium text-zinc-400 mb-1">Branch Name</label>
-              <input
-                type="text"
-                [ngModel]="webhookBranch()"
-                (ngModelChange)="webhookBranch.set($event)"
-                class="w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-1.5 text-xs text-zinc-200 font-mono"
-              />
-            </div>
-          </div>
-
-          <button (click)="simulateWebhook()" class="btn-shadcn btn-shadcn-default text-xs h-8 px-4">
-            Dispatch Webhook Event
-          </button>
-
-          @if (webhookResult()) {
-            <pre class="mt-4 p-4 rounded-lg bg-zinc-950 border border-zinc-800 text-xs font-mono text-emerald-400 leading-relaxed whitespace-pre-wrap">{{ webhookResult() }}</pre>
-          }
-        </div>
-
-        <!-- Branch Policy Matrix -->
-        <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-6 shadow-sm">
-          <h3 class="text-sm font-bold text-zinc-100 mb-1">Active Branch Policies</h3>
-          <p class="text-xs text-zinc-400 mb-4">Branch gating rules defined in .guardianpolicies.json</p>
-
-          <div class="space-y-3">
-            @for (bp of branchPolicies(); track bp.branchPattern) {
-              <div class="p-3.5 rounded-lg border border-zinc-800 bg-zinc-950 text-xs flex items-center justify-between">
-                <div>
-                  <span class="font-mono font-bold text-emerald-400">{{ bp.branchPattern }}</span>
-                  <p class="text-zinc-400 mt-0.5">{{ bp.description }}</p>
+            <!-- Status Banner -->
+            <div [class]="'rounded-xl border p-5 flex flex-wrap items-center justify-between gap-4 ' + (currentReport().isApproved ? 'bg-emerald-950/20 border-emerald-500/30' : 'bg-rose-950/20 border-rose-500/30')">
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-sm font-bold text-white font-mono">Quality Gate Status: {{ currentReport().isApproved ? 'APPROVED' : 'BLOCKED' }}</h3>
+                  <span class="badge-tech badge-cyan text-[10px]">Score: {{ currentReport().score }}/100</span>
                 </div>
-                <div class="text-right font-mono">
-                  <div>Min Score: <strong class="text-zinc-200">{{ bp.minScore }}%</strong></div>
-                  <div>P0 Allowed: <strong [class]="bp.allowP0 ? 'text-amber-400' : 'text-rose-400'">{{ bp.allowP0 ? 'YES' : 'NO' }}</strong></div>
-                </div>
+                <p class="text-xs text-slate-400 mt-1">
+                  {{ currentReport().totalViolations }} total infractions · {{ currentReport().p0Count }} blocking P0 · {{ currentReport().activeSuppressionsCount }} active suppressions
+                </p>
               </div>
-            }
-          </div>
-        </div>
-      </div>
-    }
+            </div>
 
-    <!-- 7. SESSION HISTORY TAB -->
-    @if (activeTab() === 'history') {
-      <div class="space-y-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <h2 class="text-lg font-bold tracking-tight text-zinc-100">Live Session Audit History</h2>
-            <p class="text-xs text-zinc-400 mt-0.5">Deterministic audit logs computed strictly from in-session runs (Zero fake seed data).</p>
-          </div>
-          @if (history().length > 0) {
-            <button (click)="exportHistory()" class="btn-shadcn btn-shadcn-outline text-xs h-8 px-3">
-              Export History JSON
-            </button>
-          }
-        </div>
+            <!-- Violations Cards -->
+            @if (filteredViolations().length === 0) {
+              <div class="card-guardian p-12 text-center space-y-3">
+                <div class="h-12 w-12 rounded-full bg-emerald-500/10 text-emerald-400 mx-auto flex items-center justify-center">
+                  <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+                <h3 class="text-base font-bold text-white">100% Compliant — Zero Infractions</h3>
+                <p class="text-xs text-slate-400 max-w-md mx-auto">The analyzed code adheres strictly to all active culture rules and architectural boundaries without any unsuppressed violations.</p>
+              </div>
+            } @else {
+              <div class="space-y-3">
+                @for (v of filteredViolations(); track $index) {
+                  <div [class]="'card-guardian p-5 ' + (v.severity === 'P0_BLOCKING' ? 'border-rose-500/30 bg-rose-950/10' : 'border-amber-500/30 bg-amber-950/10')">
+                    <div class="flex items-start gap-3">
+                      <div class="flex-1 space-y-2">
+                        <div class="flex items-center justify-between">
+                          <div class="flex items-center gap-2">
+                            <span class="font-mono text-xs font-bold text-slate-200">{{ v.fileName }}</span>
+                            @if (v.line) {
+                              <span class="text-[11px] font-mono text-slate-400">line {{ v.line }}</span>
+                            }
+                          </div>
+                          <span class="badge-tech badge-cyan text-[10px]">
+                            {{ v.ruleId }} (-{{ v.penalty }} pts)
+                          </span>
+                        </div>
 
-        @if (history().length === 0) {
-          <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-12 text-center shadow-sm space-y-3">
-            <h3 class="text-sm font-semibold text-zinc-200">No Audits in Current Session</h3>
-            <p class="text-xs text-zinc-400">Run an audit in the Live Code & Diff Auditor to generate real session telemetry.</p>
-          </div>
-        } @else {
-          <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 overflow-hidden shadow-sm divide-y divide-zinc-800">
-            @for (run of history(); track run.id) {
-              <div class="p-4 flex items-center justify-between text-xs hover:bg-zinc-800/30 transition-colors">
-                <div>
-                  <div class="flex items-center gap-2">
-                    <span class="font-mono font-bold text-zinc-200">{{ run.project }}</span>
-                    <span class="text-zinc-500">• {{ run.date }}</span>
+                        <p class="text-xs font-semibold text-white leading-relaxed">{{ v.message }}</p>
+
+                        @if (v.snippet) {
+                          <pre class="p-3 rounded-lg bg-[#080B12] font-mono text-[11px] text-rose-300 border border-slate-800 overflow-x-auto"><code>{{ v.snippet }}</code></pre>
+                        }
+
+                        @if (v.remediation) {
+                          <div class="text-[11px] text-emerald-400 bg-emerald-500/10 p-2.5 rounded-lg border border-emerald-500/20">
+                            <strong>Remediation:</strong> {{ v.remediation }}
+                          </div>
+                        }
+                      </div>
+                    </div>
                   </div>
-                  <p class="text-zinc-400 mt-0.5">{{ run.mrTitle }} ({{ run.targetBranch }})</p>
-                </div>
-
-                <div class="flex items-center gap-4">
-                  <span class="font-mono">Score: <strong class="text-emerald-400">{{ run.score }}%</strong></span>
-                  <span [class]="'px-2 py-0.5 rounded font-mono text-[10px] ' + (run.status === 'Full compliance' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400')">
-                    {{ run.status }}
-                  </span>
-                </div>
+                }
               </div>
             }
           </div>
         }
-      </div>
-    }
-  </main>
+
+        <!-- ===================================================================== -->
+        <!-- VIEW 6: SCANS (Live Code & Diff Auditor)                              -->
+        <!-- ===================================================================== -->
+        <!-- ===================================================================== -->
+        <!-- VIEW 6: SCANS (Live Code & Diff Auditor - Clean Refactor)             -->
+        <!-- ===================================================================== -->
+        @if (activeTab() === 'analyze') {
+          <div class="space-y-6 max-w-7xl mx-auto">
+            
+            <!-- 1. HEADER (Clean & Minimal) -->
+            <div class="space-y-1">
+              <div class="flex items-center gap-2.5">
+                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                </div>
+                <h2 class="text-xl font-bold tracking-tight text-white font-mono">Live Code & Diff Auditor</h2>
+              </div>
+              <p class="text-xs text-slate-400 pl-10.5">
+                Analyze code changes against your architecture rules.
+              </p>
+            </div>
+
+            <!-- 2. ANALYSIS SCOPE & CONFIGURATION CARD -->
+            <div class="card-guardian p-6 space-y-5">
+              
+              <!-- Scope Segmented Control & Secondary Toggles -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+                <div class="flex items-center gap-3">
+                  <span class="text-xs font-mono text-slate-400 uppercase tracking-wider font-semibold">Scope</span>
+                  <div class="inline-flex rounded-lg bg-[#080B12] p-1 border border-slate-800 text-xs font-medium">
+                    <button
+                      (click)="setAuditScope('single_file')"
+                      [class]="'px-3.5 py-1.5 rounded-md transition-all font-mono ' + (auditScope() === 'single_file' ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40 shadow-sm' : 'text-slate-400 hover:text-slate-200')"
+                    >
+                      Single File
+                    </button>
+                    <button
+                      (click)="setAuditScope('branch_changes')"
+                      [class]="'px-3.5 py-1.5 rounded-md transition-all font-mono ' + (auditScope() === 'branch_changes' ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40 shadow-sm' : 'text-slate-400 hover:text-slate-200')"
+                    >
+                      Branch Changes
+                    </button>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-4 text-xs font-mono">
+                  @if (auditScope() === 'single_file') {
+                    <button
+                      (click)="toggleEditOriginal()"
+                      class="text-slate-400 hover:text-cyan-300 transition-colors flex items-center gap-1.5"
+                    >
+                      <span>{{ isEditOriginalOpen() ? '✕ Close Editor' : '✎ Edit Source Code' }}</span>
+                    </button>
+                  }
+                  <button
+                    (click)="toggleAdvancedScope()"
+                    class="text-slate-400 hover:text-cyan-300 transition-colors flex items-center gap-1"
+                  >
+                    <span>{{ isAdvancedScopeOpen() ? '▾ Hide Advanced' : '▸ Advanced Scope' }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Single File Scope Selector -->
+              @if (auditScope() === 'single_file') {
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-mono text-slate-400 mb-1.5">File</label>
+                    <select
+                      [ngModel]="selectedPresetIndex()"
+                      (ngModelChange)="selectPreset($event)"
+                      class="w-full rounded-lg border border-slate-700 bg-[#0E1420] px-3.5 py-2 text-xs text-slate-200 font-mono focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                    >
+                      @for (preset of codePresets; track $index) {
+                        <option [value]="$index">{{ preset.name }} ({{ preset.fileName }})</option>
+                      }
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-mono text-slate-400 mb-1.5">Architecture</label>
+                    <select
+                      [ngModel]="selectedProfile()"
+                      (ngModelChange)="selectedProfile.set($event); reanalyzeCurrentScope()"
+                      class="w-full rounded-lg border border-slate-700 bg-[#0E1420] px-3.5 py-2 text-xs text-slate-200 font-mono focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                    >
+                      @for (prof of architectureProfiles(); track prof.id) {
+                        <option [value]="prof.id">{{ prof.name }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+              }
+
+              <!-- Branch Changes Scope Selector -->
+              @if (auditScope() === 'branch_changes') {
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-xs font-mono text-slate-400 mb-1.5">Branch</label>
+                    <div class="flex items-center gap-2 p-2 rounded-lg border border-slate-700 bg-[#0E1420] text-xs font-mono text-slate-200">
+                      <span class="text-cyan-400 font-bold">{{ selectedBranch() }}</span>
+                      <span class="text-slate-500">→</span>
+                      <span class="text-slate-300">main</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-mono text-slate-400 mb-1.5">Target Policy</label>
+                    <select
+                      [ngModel]="selectedBranch()"
+                      (ngModelChange)="selectedBranch.set($event); reanalyzeCurrentScope()"
+                      class="w-full rounded-lg border border-slate-700 bg-[#0E1420] px-3.5 py-2 text-xs text-slate-200 font-mono focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                    >
+                      <option value="main">main (Strict Gate: 0 P0 required)</option>
+                      <option value="develop">develop (Warning Mode)</option>
+                      <option value="feature/billing-refactor">feature/billing-refactor (Permissive)</option>
+                    </select>
+                  </div>
+                </div>
+              }
+
+              <!-- Advanced Scope Options (Collapsible) -->
+              @if (isAdvancedScopeOpen()) {
+                <div class="p-3.5 rounded-lg border border-slate-800 bg-[#080B12] grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
+                  <div>
+                    <label class="block text-[11px] text-slate-400 mb-1">Custom File Path</label>
+                    <input
+                      type="text"
+                      [ngModel]="inputFileName()"
+                      (ngModelChange)="inputFileName.set($event)"
+                      class="w-full rounded border border-slate-700 bg-[#0E1420] px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label class="block text-[11px] text-slate-400 mb-1">Target Branch Policy</label>
+                    <select
+                      [ngModel]="selectedBranch()"
+                      (ngModelChange)="selectedBranch.set($event)"
+                      class="w-full rounded border border-slate-700 bg-[#0E1420] px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    >
+                      <option value="main">main (Strict Gate)</option>
+                      <option value="develop">develop (Warning)</option>
+                      <option value="feature/billing-refactor">feature/* (Permissive)</option>
+                    </select>
+                  </div>
+
+                  <div class="flex items-center pt-5">
+                    <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+                      <input
+                        type="checkbox"
+                        [ngModel]="hasTestFileChecked()"
+                        (ngModelChange)="hasTestFileChecked.set($event); reanalyzeCurrentScope()"
+                        class="rounded border-slate-700 text-cyan-500 bg-slate-900"
+                      />
+                      <span>Companion Test File</span>
+                    </label>
+                  </div>
+                </div>
+              }
+
+              <!-- Raw Code Editor Drawer -->
+              @if (isEditOriginalOpen() && auditScope() === 'single_file') {
+                <div class="p-4 rounded-xl border border-cyan-500/30 bg-[#080B12] space-y-2">
+                  <div class="flex items-center justify-between text-xs font-mono">
+                    <span class="text-cyan-400 font-bold">Custom Source Code</span>
+                    <span class="text-slate-500">Edit code and click Analyze</span>
+                  </div>
+                  <textarea
+                    [ngModel]="inputSourceCode()"
+                    (ngModelChange)="inputSourceCode.set($event)"
+                    rows="7"
+                    class="w-full p-3 font-mono text-xs leading-relaxed bg-[#0E1420] text-slate-200 rounded-lg border border-slate-800 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                    placeholder="Paste source code here..."
+                  ></textarea>
+                </div>
+              }
+
+              <!-- 3. MAIN ACTION (Dominant CTA) -->
+              <div class="pt-2 flex items-center justify-between gap-4">
+                <button
+                  (click)="analyzeCurrentScope()"
+                  class="btn-guardian btn-guardian-primary h-11 px-7 text-xs font-bold w-full sm:w-auto flex items-center justify-center gap-2.5 shadow-lg"
+                >
+                  @if (isAnalyzing()) {
+                    <span class="inline-block h-4 w-4 rounded-full border-2 border-slate-950 border-t-transparent animate-spin"></span>
+                    <span>Analyzing Architecture...</span>
+                  } @else {
+                    <svg class="w-4 h-4 text-slate-950" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <span>{{ auditScope() === 'single_file' ? 'Analyze File' : 'Analyze Changes' }}</span>
+                  }
+                </button>
+
+                <div class="hidden sm:flex items-center gap-2 text-[11px] font-mono text-slate-500">
+                  <span>Bend / HVM Engine</span>
+                  <span>·</span>
+                  <span>O(log N) Parallel Reduction</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. QUALITY GATE RESULT (Compact Result & Progressive Disclosure) -->
+            <div [class]="'rounded-xl border p-6 transition-all ' + (currentReport().isApproved ? 'bg-emerald-950/20 border-emerald-500/30' : 'bg-rose-950/20 border-rose-500/30')">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                
+                <!-- Result Verdict & Metric Summary -->
+                <div class="space-y-1.5">
+                  <div class="flex items-center gap-2.5">
+                    <span [class]="'text-lg font-bold font-mono ' + (currentReport().isApproved ? 'text-emerald-400' : 'text-rose-400')">
+                      {{ currentReport().isApproved ? '✓ Quality Gate Passed' : '✕ Quality Gate Failed' }}
+                    </span>
+                    <span class="badge-tech badge-cyan text-[10px]">
+                      Score: {{ currentReport().score }}%
+                    </span>
+                  </div>
+                  
+                  <p class="text-xs text-slate-300">
+                    @if (currentReport().isApproved) {
+                      Your changes comply with the selected architecture rules.
+                    } @else {
+                      {{ currentReport().totalViolations }} {{ currentReport().totalViolations === 1 ? 'issue was' : 'issues were' }} found in the analyzed {{ auditScope() === 'single_file' ? 'code' : 'changes' }}.
+                    }
+                  </p>
+
+                  <div class="text-xs font-mono text-slate-400 pt-0.5 flex flex-wrap items-center gap-3">
+                    @if (auditScope() === 'single_file') {
+                      <span>1 file analyzed</span>
+                      <span>·</span>
+                      @if (currentReport().totalViolations === 0) {
+                        <span class="text-emerald-400 font-semibold">0 violations</span>
+                      } @else {
+                        <span class="text-rose-400 font-semibold">{{ currentReport().totalViolations }} violations ({{ currentReport().p0Count }} P0 Blocking)</span>
+                      }
+                    } @else {
+                      <span>8 files changed</span>
+                      <span>·</span>
+                      <span class="text-emerald-400">+327 additions</span>
+                      <span>·</span>
+                      <span class="text-rose-400">−84 deletions</span>
+                      <span>·</span>
+                      <span>{{ currentReport().totalViolations }} violations</span>
+                    }
+                  </div>
+                </div>
+
+                <!-- Action Button: Toggle Changes View -->
+                <div class="flex items-center gap-3">
+                  <button
+                    (click)="toggleDiffView()"
+                    [class]="'btn-guardian h-9 px-4 text-xs font-semibold ' + (showDiffView() ? 'btn-guardian-secondary' : 'btn-guardian-primary')"
+                  >
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                    <span>{{ showDiffView() ? 'Hide Changes' : 'View Changes' }}</span>
+                  </button>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- 5. CHANGE VIEW (Before / After Diff Primary Content) -->
+            @if (showDiffView()) {
+              <div class="card-guardian p-6 space-y-4">
+                
+                <!-- Diff Toolbar & File Navigator -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
+                  
+                  <!-- Left: File Navigation / Active File Identifier -->
+                  <div class="flex items-center gap-3 text-xs font-mono">
+                    @if (auditScope() === 'branch_changes') {
+                      <div class="flex items-center gap-2">
+                        <span class="text-slate-400 text-[11px] uppercase font-bold">File {{ selectedBranchFileIndex() + 1 }} of {{ branchFiles.length }}:</span>
+                        <select
+                          [ngModel]="selectedBranchFileIndex()"
+                          (ngModelChange)="selectBranchFile($event)"
+                          class="rounded-lg border border-slate-700 bg-[#0E1420] px-2.5 py-1 text-xs text-slate-200 font-mono focus:ring-1 focus:ring-cyan-500 focus:outline-none"
+                        >
+                          @for (f of branchFiles; track $index) {
+                            <option [value]="$index">{{ f.status === 'passed' ? '✓' : '✕' }} {{ f.name }}</option>
+                          }
+                        </select>
+                      </div>
+                    } @else {
+                      <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 font-bold border border-cyan-500/20 text-[11px]">
+                          CODE DIFF
+                        </span>
+                        <span class="text-slate-200 font-semibold truncate">{{ inputFileName() }}</span>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Right: Diff View Mode Controls & Copy -->
+                  <div class="flex items-center gap-2.5">
+                    <div class="inline-flex rounded-lg bg-[#080B12] p-1 border border-slate-800 text-xs font-mono">
+                      <button
+                        (click)="setDiffViewMode('split')"
+                        [class]="'px-2.5 py-1 rounded transition-colors font-medium ' + (diffViewMode() === 'split' ? 'bg-cyan-500/20 text-cyan-300 font-bold shadow-sm' : 'text-slate-400 hover:text-slate-200')"
+                        title="Side-by-Side Split Diff View"
+                      >
+                        ⫴ Split
+                      </button>
+                      <button
+                        (click)="setDiffViewMode('unified')"
+                        [class]="'px-2.5 py-1 rounded transition-colors font-medium ' + (diffViewMode() === 'unified' ? 'bg-cyan-500/20 text-cyan-300 font-bold shadow-sm' : 'text-slate-400 hover:text-slate-200')"
+                        title="Unified Inline Diff View"
+                      >
+                        ≡ Unified Diff
+                      </button>
+                      <button
+                        (click)="setDiffViewMode('original')"
+                        [class]="'px-2.5 py-1 rounded transition-colors font-medium ' + (diffViewMode() === 'original' ? 'bg-cyan-500/20 text-cyan-300 font-bold shadow-sm' : 'text-slate-400 hover:text-slate-200')"
+                        title="Original Code Only"
+                      >
+                        ⎗ Original
+                      </button>
+                      <button
+                        (click)="setDiffViewMode('corrected')"
+                        [class]="'px-2.5 py-1 rounded transition-colors font-medium ' + (diffViewMode() === 'corrected' ? 'bg-cyan-500/20 text-cyan-300 font-bold shadow-sm' : 'text-slate-400 hover:text-slate-200')"
+                        title="Guardian-Corrected Code Only"
+                      >
+                        ⎘ Corrected
+                      </button>
+                    </div>
+
+                    <button
+                      (click)="copyCorrectedCode()"
+                      class="text-xs font-mono px-3 py-1.5 rounded-lg border bg-[#0E1420] text-slate-300 border-slate-700 hover:text-emerald-400 hover:border-emerald-500/40 transition-colors flex items-center gap-1.5"
+                      title="Copy Guardian-corrected code to clipboard"
+                    >
+                      <svg class="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                      <span class="hidden sm:inline">Copy Corrected</span>
+                    </button>
+                  </div>
+
+                </div>
+
+                <!-- Changes Metric Pill -->
+                <div class="p-2.5 rounded-lg border border-slate-800/80 bg-[#0E1420] flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+                  <div class="flex items-center gap-2">
+                    <span class="text-slate-400 text-[10px] uppercase font-bold">Line Changes:</span>
+                    @if (currentCodeDiff().isIdentical) {
+                      <span class="text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        ✓ 0 Infractions (100% Invariant Compliant)
+                      </span>
+                    } @else {
+                      <span class="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
+                        + {{ currentCodeDiff().additions }} additions
+                      </span>
+                      <span class="text-rose-400 font-bold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
+                        − {{ currentCodeDiff().deletions }} removals
+                      </span>
+                    }
+                  </div>
+
+                  @if (currentCodeDiff().affectedRules.length > 0) {
+                    <div class="flex items-center gap-1.5">
+                      <span class="text-slate-500 text-[10px] uppercase">Rules:</span>
+                      @for (ruleId of currentCodeDiff().affectedRules; track ruleId) {
+                        <span class="badge-tech badge-cyan text-[10px]">{{ ruleId }}</span>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <!-- Central Code Diff Box -->
+                <div class="rounded-xl border border-slate-800 bg-[#080B12] overflow-hidden shadow-2xl">
+                  
+                  <!-- Compliant Banner -->
+                  @if (currentCodeDiff().isIdentical) {
+                    <div class="p-3.5 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center justify-between text-xs font-mono">
+                      <div class="flex items-center gap-2 text-emerald-400 font-bold">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        <span>✓ NO CHANGES REQUIRED — Code already satisfies the selected architecture profile.</span>
+                      </div>
+                      <span class="text-emerald-300/70 text-[11px] hidden sm:inline">Clean Architecture Invariants Verified</span>
+                    </div>
+                  }
+
+                  <!-- Mobile Side Selector -->
+                  <div class="md:hidden flex border-b border-slate-800 bg-[#0B0F19] p-1 text-xs font-mono">
+                    <button
+                      (click)="setMobileActiveSide('before')"
+                      [class]="'flex-1 py-1.5 text-center font-bold rounded ' + (mobileActiveSide() === 'before' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'text-slate-400')"
+                    >
+                      🔴 BEFORE (Original)
+                    </button>
+                    <button
+                      (click)="setMobileActiveSide('after')"
+                      [class]="'flex-1 py-1.5 text-center font-bold rounded ' + (mobileActiveSide() === 'after' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'text-slate-400')"
+                    >
+                      🟢 AFTER (Corrected)
+                    </button>
+                  </div>
+
+                  <!-- VIEW A: SPLIT DIFF -->
+                  @if (diffViewMode() === 'split') {
+                    <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-800/80">
+                      
+                      <!-- BEFORE Panel -->
+                      <div [class]="'flex flex-col ' + (mobileActiveSide() === 'before' ? 'block' : 'hidden md:flex')">
+                        <div class="px-4 py-2 border-b border-slate-800 bg-[#0D121D] flex items-center justify-between text-xs font-mono">
+                          <div class="flex items-center gap-2">
+                            <span class="h-2 w-2 rounded-full bg-rose-500"></span>
+                            <span class="font-bold text-rose-300 uppercase tracking-wider">BEFORE · Original Code</span>
+                          </div>
+                          <span class="text-rose-400 text-[11px]">− {{ currentCodeDiff().deletions }} lines</span>
+                        </div>
+
+                        <div
+                          #beforeScroll
+                          (scroll)="syncScroll(beforeScroll, afterScroll)"
+                          class="max-h-[500px] overflow-y-auto font-mono text-xs divide-y divide-slate-900/40 select-text"
+                        >
+                          @for (line of currentCodeDiff().splitBefore; track $index) {
+                            <div
+                              [class]="'flex items-stretch min-h-[22px] leading-5 transition-colors ' + 
+                                (line.type === 'removed' ? 'bg-rose-950/30 text-rose-200 border-l-2 border-rose-500' : 
+                                 line.type === 'empty' ? 'bg-slate-950/40 opacity-30 select-none' : 
+                                 'text-slate-300 hover:bg-slate-900/30')"
+                            >
+                              <span class="w-10 shrink-0 text-right pr-3 select-none text-[10px] text-slate-600 bg-[#090D15]/80 font-mono py-0.5">
+                                {{ line.lineNumber ? (line.lineNumber < 10 ? '0' + line.lineNumber : line.lineNumber) : '' }}
+                              </span>
+                              <span class="w-5 shrink-0 text-center select-none font-bold py-0.5" [class.text-rose-400]="line.type === 'removed'">
+                                {{ line.type === 'removed' ? '−' : ' ' }}
+                              </span>
+                              <span class="px-2 py-0.5 whitespace-pre flex-1 font-mono text-[11px] overflow-x-auto">
+                                {{ line.content }}
+                              </span>
+                            </div>
+                          }
+                        </div>
+                      </div>
+
+                      <!-- AFTER Panel -->
+                      <div [class]="'flex flex-col ' + (mobileActiveSide() === 'after' ? 'block' : 'hidden md:flex')">
+                        <div class="px-4 py-2 border-b border-slate-800 bg-[#0D121D] flex items-center justify-between text-xs font-mono">
+                          <div class="flex items-center gap-2">
+                            <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                            <span class="font-bold text-emerald-300 uppercase tracking-wider">AFTER · Guardian-Corrected</span>
+                          </div>
+                          <span class="text-emerald-400 text-[11px]">+ {{ currentCodeDiff().additions }} lines</span>
+                        </div>
+
+                        <div
+                          #afterScroll
+                          (scroll)="syncScroll(afterScroll, beforeScroll)"
+                          class="max-h-[500px] overflow-y-auto font-mono text-xs divide-y divide-slate-900/40 select-text"
+                        >
+                          @for (line of currentCodeDiff().splitAfter; track $index) {
+                            <div
+                              [class]="'flex items-stretch min-h-[22px] leading-5 transition-colors ' + 
+                                (line.type === 'added' ? 'bg-emerald-950/30 text-emerald-200 border-l-2 border-emerald-500' : 
+                                 line.type === 'empty' ? 'bg-slate-950/40 opacity-30 select-none' : 
+                                 'text-slate-300 hover:bg-slate-900/30')"
+                            >
+                              <span class="w-10 shrink-0 text-right pr-3 select-none text-[10px] text-slate-600 bg-[#090D15]/80 font-mono py-0.5">
+                                {{ line.lineNumber ? (line.lineNumber < 10 ? '0' + line.lineNumber : line.lineNumber) : '' }}
+                              </span>
+                              <span class="w-5 shrink-0 text-center select-none font-bold py-0.5" [class.text-emerald-400]="line.type === 'added'">
+                                {{ line.type === 'added' ? '+' : ' ' }}
+                              </span>
+                              <span class="px-2 py-0.5 whitespace-pre flex-1 font-mono text-[11px] overflow-x-auto">
+                                {{ line.content }}
+                              </span>
+                            </div>
+                          }
+                        </div>
+                      </div>
+
+                    </div>
+                  }
+
+                  <!-- VIEW B: UNIFIED DIFF -->
+                  @if (diffViewMode() === 'unified') {
+                    <div class="flex flex-col">
+                      <div class="px-4 py-2 border-b border-slate-800 bg-[#0D121D] flex items-center justify-between text-xs font-mono">
+                        <span class="font-bold text-cyan-300">Unified Diff Stream (Git Patch Standard)</span>
+                        <span class="text-slate-400 text-[11px]">+{{ currentCodeDiff().additions }} / −{{ currentCodeDiff().deletions }}</span>
+                      </div>
+
+                      <div class="max-h-[500px] overflow-y-auto font-mono text-xs divide-y divide-slate-900/40 select-text">
+                        @for (line of currentCodeDiff().lines; track $index) {
+                          <div
+                            [class]="'flex items-stretch min-h-[22px] leading-5 transition-colors ' + 
+                              (line.type === 'removed' ? 'bg-rose-950/30 text-rose-200 border-l-2 border-rose-500' : 
+                               line.type === 'added' ? 'bg-emerald-950/30 text-emerald-200 border-l-2 border-emerald-500' : 
+                               'text-slate-300 hover:bg-slate-900/30')"
+                          >
+                            <span class="w-10 shrink-0 text-right pr-2 select-none text-[10px] text-slate-600 bg-[#090D15]/80 font-mono py-0.5">
+                              {{ line.beforeLineNumber ? (line.beforeLineNumber < 10 ? '0' + line.beforeLineNumber : line.beforeLineNumber) : '' }}
+                            </span>
+                            <span class="w-10 shrink-0 text-right pr-3 select-none text-[10px] text-slate-600 bg-[#090D15]/80 font-mono py-0.5">
+                              {{ line.afterLineNumber ? (line.afterLineNumber < 10 ? '0' + line.afterLineNumber : line.afterLineNumber) : '' }}
+                            </span>
+                            <span
+                              class="w-5 shrink-0 text-center select-none font-bold py-0.5"
+                              [class.text-rose-400]="line.type === 'removed'"
+                              [class.text-emerald-400]="line.type === 'added'"
+                            >
+                              {{ line.type === 'removed' ? '−' : line.type === 'added' ? '+' : ' ' }}
+                            </span>
+                            <span class="px-2 py-0.5 whitespace-pre flex-1 font-mono text-[11px] overflow-x-auto">
+                              {{ line.content }}
+                            </span>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+
+                  <!-- VIEW C: ORIGINAL ONLY -->
+                  @if (diffViewMode() === 'original') {
+                    <div class="flex flex-col">
+                      <div class="px-4 py-2 border-b border-slate-800 bg-[#0D121D] flex items-center justify-between text-xs font-mono">
+                        <span class="font-bold text-rose-300">Original Source Code</span>
+                        <span class="text-slate-500 text-[11px]">{{ inputFileName() }}</span>
+                      </div>
+                      <pre class="p-4 font-mono text-xs leading-relaxed text-slate-200 max-h-[500px] overflow-y-auto"><code>{{ currentCodeDiff().before }}</code></pre>
+                    </div>
+                  }
+
+                  <!-- VIEW D: CORRECTED ONLY -->
+                  @if (diffViewMode() === 'corrected') {
+                    <div class="flex flex-col">
+                      <div class="px-4 py-2 border-b border-slate-800 bg-[#0D121D] flex items-center justify-between text-xs font-mono">
+                        <span class="font-bold text-emerald-300">Guardian-Corrected Code</span>
+                        <button (click)="copyCorrectedCode()" class="text-emerald-400 text-[11px] hover:underline flex items-center gap-1">
+                          Copy Code
+                        </button>
+                      </div>
+                      <pre class="p-4 font-mono text-xs leading-relaxed text-emerald-200/90 max-h-[500px] overflow-y-auto"><code>{{ currentCodeDiff().after }}</code></pre>
+                    </div>
+                  }
+
+                </div>
+
+              </div>
+            }
+
+            <!-- 6. VIOLATIONS DRAWER (Collapsible) -->
+            @if (currentReport().totalViolations > 0) {
+              <div class="card-guardian overflow-hidden">
+                <button
+                  (click)="toggleViolationsExpanded()"
+                  class="w-full p-4 flex items-center justify-between text-xs font-mono font-bold text-left hover:bg-slate-800/40 transition-colors"
+                >
+                  <div class="flex items-center gap-2.5">
+                    <span class="text-rose-400 text-sm">{{ isViolationsExpanded() ? '▾' : '▸' }}</span>
+                    <span class="text-white">{{ currentReport().totalViolations }} {{ currentReport().totalViolations === 1 ? 'Violation Detected' : 'Violations Detected' }}</span>
+                    <span class="badge-tech badge-fail text-[9px]">{{ currentReport().p0Count }} P0 Blocking</span>
+                  </div>
+                  <span class="text-slate-400 font-normal text-[11px]">{{ isViolationsExpanded() ? 'Click to collapse' : 'Click to inspect' }}</span>
+                </button>
+
+                @if (isViolationsExpanded()) {
+                  <div class="p-4 pt-0 space-y-2.5 border-t border-slate-800/80">
+                    @for (v of filteredViolations(); track $index) {
+                      <div class="p-3.5 rounded-lg bg-[#080B12] border border-slate-800 space-y-1.5 text-xs">
+                        <div class="flex items-center justify-between">
+                          <span class="font-mono font-bold text-cyan-300">{{ v.ruleId }}</span>
+                          <span [class]="'badge-tech text-[9px] ' + (v.severity === 'P0_BLOCKING' ? 'badge-fail' : 'badge-warn')">
+                            {{ v.severity === 'P0_BLOCKING' ? '🔴 P0 Blocking' : '🟠 P1 Warning' }}
+                          </span>
+                        </div>
+                        <p class="text-slate-200 leading-relaxed font-sans">{{ v.message }}</p>
+                        @if (v.remediation) {
+                          <div class="text-[11px] font-mono text-emerald-400 bg-emerald-950/20 p-2.5 rounded border border-emerald-500/20">
+                            <strong>Remediation:</strong> {{ v.remediation }}
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- 7. TECHNICAL DETAILS DRAWER (Collapsible) -->
+            <div class="card-guardian overflow-hidden">
+              <button
+                (click)="toggleDetailsExpanded()"
+                class="w-full p-4 flex items-center justify-between text-xs font-mono font-bold text-left hover:bg-slate-800/40 transition-colors"
+              >
+                <div class="flex items-center gap-2.5">
+                  <span class="text-cyan-400 text-sm">{{ isDetailsExpanded() ? '▾' : '▸' }}</span>
+                  <span class="text-slate-300">Analysis Details</span>
+                </div>
+                <span class="text-slate-500 font-normal text-[11px]">Bend/HVM 64 Cores · O(log N) Reduction</span>
+              </button>
+
+              @if (isDetailsExpanded()) {
+                <div class="p-4 pt-0 border-t border-slate-800/80 space-y-4 text-xs font-mono">
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3">
+                    <div class="p-2.5 rounded-lg bg-[#080B12] border border-slate-800">
+                      <span class="text-[10px] text-slate-500 uppercase">Files Analyzed</span>
+                      <div class="text-sm font-bold text-white mt-0.5">{{ auditScope() === 'single_file' ? '1 File' : '8 Files' }}</div>
+                    </div>
+                    <div class="p-2.5 rounded-lg bg-[#080B12] border border-slate-800">
+                      <span class="text-[10px] text-slate-500 uppercase">Lines Scanned</span>
+                      <div class="text-sm font-bold text-cyan-400 mt-0.5">{{ inputSourceCode().split('\n').length }} Lines</div>
+                    </div>
+                    <div class="p-2.5 rounded-lg bg-[#080B12] border border-slate-800">
+                      <span class="text-[10px] text-slate-500 uppercase">Active Rules</span>
+                      <div class="text-sm font-bold text-emerald-400 mt-0.5">{{ activeRulesCount() }} Rules</div>
+                    </div>
+                    <div class="p-2.5 rounded-lg bg-[#080B12] border border-slate-800">
+                      <span class="text-[10px] text-slate-500 uppercase">Reduction Time</span>
+                      <div class="text-sm font-bold text-purple-300 mt-0.5">{{ hvmReductionLatency() }}</div>
+                    </div>
+                  </div>
+
+                  <div class="p-3 rounded-lg bg-[#080B12] border border-slate-800 space-y-1 text-[11px] text-slate-400">
+                    <div><strong>Engine:</strong> Bend / HVM (Higher-Order Virtual Machine) Parallel Tree Reducer</div>
+                    <div><strong>Lexer:</strong> Multithreaded Lexical Analyzer with Pragma Scanner Active</div>
+                    <div><strong>Repository:</strong> {{ inputRepo() }} (Branch: {{ selectedBranch() }})</div>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- 8. SUBTLE TECHNICAL FOOTER -->
+            <div class="pt-2 text-center">
+              <span class="text-[11px] font-mono text-slate-500">
+                Powered by <strong class="text-purple-400">Bend / HVM</strong> · Massively Parallel Architecture & Engineering Quality Gate
+              </span>
+            </div>
+
+          </div>
+        }
+
+        <!-- ===================================================================== -->
+        <!-- VIEW 7: INTEGRATIONS (VCS & Webhook Simulator)                        -->
+        <!-- ===================================================================== -->
+        @if (activeTab() === 'integrations' || activeTab() === 'vcs') {
+          <div class="space-y-6">
+            <div class="card-guardian p-6 space-y-4">
+              <h2 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
+                <svg class="w-4 h-4 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path></svg>
+                Multi-Platform VCS Webhook Gateway Simulator
+              </h2>
+              <p class="text-xs text-slate-400">Simulates webhook ingestion and branch policy evaluation for GitHub, GitLab, and Bitbucket.</p>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                <div>
+                  <label class="block text-xs font-mono text-slate-400 mb-1">Platform</label>
+                  <select
+                    [ngModel]="webhookPlatform()"
+                    (ngModelChange)="webhookPlatform.set($event)"
+                    class="w-full rounded-lg border border-slate-700 bg-[#0E1420] px-3 py-1.5 text-xs text-slate-200 font-mono"
+                  >
+                    <option value="github">GitHub Actions</option>
+                    <option value="gitlab">GitLab CI/CD</option>
+                    <option value="bitbucket">Bitbucket Pipelines</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-mono text-slate-400 mb-1">Event Header</label>
+                  <input
+                    type="text"
+                    [ngModel]="webhookEventType()"
+                    (ngModelChange)="webhookEventType.set($event)"
+                    class="w-full rounded-lg border border-slate-700 bg-[#0E1420] px-3 py-1.5 text-xs text-slate-200 font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-xs font-mono text-slate-400 mb-1">Branch Name</label>
+                  <input
+                    type="text"
+                    [ngModel]="webhookBranch()"
+                    (ngModelChange)="webhookBranch.set($event)"
+                    class="w-full rounded-lg border border-slate-700 bg-[#0E1420] px-3 py-1.5 text-xs text-slate-200 font-mono"
+                  />
+                </div>
+              </div>
+
+              <button (click)="simulateWebhook()" class="btn-guardian btn-guardian-primary text-xs h-9 px-4">
+                Dispatch Webhook Event
+              </button>
+
+              @if (webhookResult()) {
+                <pre class="mt-4 p-4 rounded-xl bg-[#080B12] border border-slate-800 text-xs font-mono text-emerald-400 whitespace-pre-wrap leading-relaxed">{{ webhookResult() }}</pre>
+              }
+            </div>
+
+            <!-- Branch Policies Matrix -->
+            <div class="card-guardian p-6 space-y-4">
+              <h3 class="text-sm font-bold text-white font-mono">Active Branch Policies</h3>
+              <div class="space-y-3">
+                @for (bp of branchPolicies(); track bp.branchPattern) {
+                  <div class="p-4 rounded-xl bg-[#0E1420] border border-slate-800 flex items-center justify-between text-xs font-mono">
+                    <div>
+                      <span class="font-bold text-cyan-400">{{ bp.branchPattern }}</span>
+                      <p class="text-slate-400 font-sans mt-0.5">{{ bp.description }}</p>
+                    </div>
+                    <div class="text-right">
+                      <div>Min Score: <strong class="text-white">{{ bp.minScore }}%</strong></div>
+                      <div>P0 Allowed: <strong [class]="bp.allowP0 ? 'text-amber-400' : 'text-rose-400'">{{ bp.allowP0 ? 'YES' : 'NO' }}</strong></div>
+                    </div>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ===================================================================== -->
+        <!-- VIEW 8: REPORTS (Artifacts & SARIF)                                   -->
+        <!-- ===================================================================== -->
+        @if (activeTab() === 'reports') {
+          <div class="space-y-6">
+            <div>
+              <h2 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                <svg class="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                Compliance Reports & Integration Artifacts
+              </h2>
+              <p class="text-xs text-slate-400 mt-1">Export structured security and quality reports for CI/CD pipelines</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="card-guardian-interactive p-5 space-y-3">
+                <span class="badge-tech badge-cyan text-[10px]">OASIS Standard</span>
+                <h3 class="text-sm font-bold text-white font-mono">SARIF v2.1.0</h3>
+                <p class="text-xs text-slate-400">Static Analysis Results Interchange Format for GitHub Code Scanning.</p>
+                <button (click)="openExport('sarif')" class="btn-guardian btn-guardian-secondary text-xs h-8 px-3 w-full">
+                  Export SARIF &rarr;
+                </button>
+              </div>
+
+              <div class="card-guardian-interactive p-5 space-y-3">
+                <span class="badge-tech badge-hvm text-[10px]">GitLab Native</span>
+                <h3 class="text-sm font-bold text-white font-mono">GitLab Code Quality</h3>
+                <p class="text-xs text-slate-400">JSON artifact rendered in GitLab Merge Request widgets.</p>
+                <button (click)="openExport('gitlab')" class="btn-guardian btn-guardian-secondary text-xs h-8 px-3 w-full">
+                  Export GitLab JSON &rarr;
+                </button>
+              </div>
+
+              <div class="card-guardian-interactive p-5 space-y-3">
+                <span class="badge-tech badge-cyan text-[10px]">Atlassian Native</span>
+                <h3 class="text-sm font-bold text-white font-mono">Bitbucket Insights</h3>
+                <p class="text-xs text-slate-400">Security annotations for Bitbucket Pipelines pull requests.</p>
+                <button (click)="openExport('bitbucket')" class="btn-guardian btn-guardian-secondary text-xs h-8 px-3 w-full">
+                  Export Bitbucket JSON &rarr;
+                </button>
+              </div>
+
+              <div class="card-guardian-interactive p-5 space-y-3">
+                <span class="badge-tech badge-pass text-[10px]">Bot Comments</span>
+                <h3 class="text-sm font-bold text-white font-mono">Markdown PR Summary</h3>
+                <p class="text-xs text-slate-400">Formatted markdown summary table for automated PR bot posting.</p>
+                <button (click)="openExport('markdown')" class="btn-guardian btn-guardian-secondary text-xs h-8 px-3 w-full">
+                  Export Markdown &rarr;
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ===================================================================== -->
+        <!-- VIEW 9: SETTINGS & POLICIES                                           -->
+        <!-- ===================================================================== -->
+        @if (activeTab() === 'settings') {
+          <div class="space-y-6">
+            <div class="card-guardian p-6 space-y-4">
+              <h2 class="text-base font-bold tracking-tight text-white font-mono">Quality Gate Configuration & Governance</h2>
+              <p class="text-xs text-slate-400">Configure gating thresholds and strictness modes</p>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div class="p-4 rounded-xl bg-[#0E1420] border border-slate-800 space-y-2">
+                  <span class="text-xs font-bold text-white font-mono">Minimum Passing Score</span>
+                  <p class="text-xs text-slate-400">Required score to pass the quality gate on production branches.</p>
+                  <div class="text-lg font-bold text-emerald-400 font-mono">80% Threshold</div>
+                </div>
+
+                <div class="p-4 rounded-xl bg-[#0E1420] border border-slate-800 space-y-2">
+                  <span class="text-xs font-bold text-white font-mono">P0 Blocking Invariant</span>
+                  <p class="text-xs text-slate-400">Zero critical infractions permitted before code merge.</p>
+                  <div class="text-lg font-bold text-rose-400 font-mono">0 P0 Allowed</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ===================================================================== -->
+        <!-- VIEW 10: SESSION HISTORY TAB (for existing test suite compatibility)  -->
+        <!-- ===================================================================== -->
+        @if (activeTab() === 'history') {
+          <div class="space-y-6">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-xl font-bold tracking-tight text-white font-mono">Session Audit History</h2>
+                <p class="text-xs text-slate-400 mt-1">Audit telemetry logs recorded during the active session</p>
+              </div>
+              @if (history().length > 0) {
+                <button (click)="exportHistory()" class="btn-guardian btn-guardian-secondary text-xs h-9 px-3">
+                  Export History JSON
+                </button>
+              }
+            </div>
+
+            @if (history().length === 0) {
+              <div class="card-guardian p-12 text-center text-xs font-mono text-slate-400">
+                No session history recorded yet. Run an audit in Scans tab.
+              </div>
+            } @else {
+              <div class="card-guardian divide-y divide-slate-800 overflow-hidden">
+                @for (run of history(); track run.id) {
+                  <div class="p-4 flex items-center justify-between text-xs font-mono hover:bg-slate-800/30 transition-colors">
+                    <div>
+                      <span class="font-bold text-white">{{ run.project }}</span>
+                      <span class="text-slate-500"> · {{ run.date }}</span>
+                      <p class="text-slate-400 font-sans mt-0.5">{{ run.mrTitle }} ({{ run.targetBranch }})</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span class="text-cyan-400 font-bold">Score: {{ run.score }}%</span>
+                      <span [class]="'badge-tech text-[9px] ' + (run.status === 'Full compliance' ? 'badge-pass' : 'badge-fail')">
+                        {{ run.status }}
+                      </span>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+
+      </main>
+    </div>
+  </div>
 
   <!-- Export Dialog Modal -->
   @if (activeExportModal()) {
-    <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900 max-w-2xl w-full p-6 shadow-2xl space-y-4">
-        <div class="flex items-center justify-between">
-          <h3 class="text-base font-bold text-zinc-100 uppercase tracking-wide">
-            Export {{ activeExportModal()?.toUpperCase() }} Artifact
-          </h3>
-          <button (click)="closeExportModal()" class="text-zinc-400 hover:text-zinc-200">&times;</button>
+    <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div class="rounded-2xl border border-slate-700 bg-[#0D131F] max-w-2xl w-full p-6 shadow-2xl space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="badge-tech badge-cyan text-[10px]">Export Artifact</span>
+            <h3 class="text-sm font-bold text-white font-mono uppercase">
+              {{ activeExportModal()?.toUpperCase() }} Report
+            </h3>
+          </div>
+          <button (click)="closeExportModal()" class="text-slate-400 hover:text-white text-lg font-bold">&times;</button>
         </div>
 
-        <pre class="p-4 rounded-lg bg-zinc-950 font-mono text-xs text-zinc-300 max-h-96 overflow-y-auto border border-zinc-800"><code>@if (activeExportModal() === 'sarif') { {{ exportedSarif() }} } @else if (activeExportModal() === 'gitlab') { {{ exportedGitLabJson() }} } @else if (activeExportModal() === 'bitbucket') { {{ exportedBitbucketJson() }} } @else { {{ exportedMarkdown() }} }</code></pre>
+        <pre class="p-4 rounded-xl bg-[#080B12] font-mono text-xs text-slate-300 max-h-96 overflow-y-auto border border-slate-800"><code>@if (activeExportModal() === 'sarif') { {{ exportedSarif() }} } @else if (activeExportModal() === 'gitlab') { {{ exportedGitLabJson() }} } @else if (activeExportModal() === 'bitbucket') { {{ exportedBitbucketJson() }} } @else { {{ exportedMarkdown() }} }</code></pre>
 
-        <div class="flex justify-end">
-          <button (click)="closeExportModal()" class="btn-shadcn btn-shadcn-default text-xs h-8 px-4">
+        <div class="flex justify-end gap-2 pt-2">
+          <button (click)="closeExportModal()" class="btn-guardian btn-guardian-primary text-xs h-9 px-4">
             Close
           </button>
         </div>

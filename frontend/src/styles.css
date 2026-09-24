@@ -4,49 +4,26 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --background: 224 71% 4%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 187 100% 50%;
+    --primary-foreground: 222 47% 8%;
+    --secondary: 217 33% 14%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 14%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 270 95% 65%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 187 100% 50%;
     --radius: 0.5rem;
-  }
-
-  /* Default shadcn dark mode */
-  :root, .dark {
-    --background: 0 0% 5%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 8%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
-    --ring: 0 0% 83.1%;
   }
 
   * {
@@ -54,36 +31,134 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #080B12;
+    color: #F8FAFC;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    letter-spacing: -0.01em;
+  }
+
+  code, pre, kbd, samp, .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   }
 }
 
-/* shadcn UI component classes */
-.btn-shadcn {
-  @apply inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50;
+/* Custom technical scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
 
-.btn-shadcn-default {
-  @apply bg-primary text-primary-foreground shadow hover:bg-primary/90;
+::-webkit-scrollbar-track {
+  background: #080B12;
 }
 
-.btn-shadcn-secondary {
-  @apply bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80;
+::-webkit-scrollbar-thumb {
+  background: #1E293B;
+  border-radius: 3px;
 }
 
-.btn-shadcn-outline {
-  @apply border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground;
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
 }
 
-.btn-shadcn-ghost {
-  @apply hover:bg-accent hover:text-accent-foreground;
+/* Tech Grid Background */
+.bg-tech-grid {
+  background-size: 24px 24px;
+  background-image: 
+    linear-gradient(to right, rgba(56, 189, 248, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(56, 189, 248, 0.03) 1px, transparent 1px);
 }
 
-.card-shadcn {
-  @apply rounded-xl border bg-card text-card-foreground shadow-sm;
+.bg-radial-gradient {
+  background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.07) 0%, transparent 60%);
 }
 
-.badge-shadcn {
-  @apply inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2;
+.bg-hvm-glow {
+  background: radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.08) 0%, transparent 70%);
+}
+
+/* Pipeline Flow Animation */
+@keyframes pipelineFlow {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-pipeline-flow {
+  animation: pipelineFlow 2.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Buttons */
+.btn-guardian {
+  @apply inline-flex items-center justify-center gap-2 font-medium text-xs rounded-lg transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-cyan-400/50 disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-guardian-primary {
+  @apply bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-semibold shadow-[0_0_15px_rgba(6,182,212,0.25)] border border-cyan-400/40;
+}
+
+.btn-guardian-secondary {
+  @apply bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700/80 hover:border-slate-600 shadow-sm;
+}
+
+.btn-guardian-ghost {
+  @apply text-slate-400 hover:text-slate-100 hover:bg-slate-800/60;
+}
+
+.btn-guardian-purple {
+  @apply bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 shadow-[0_0_12px_rgba(168,85,247,0.15)];
+}
+
+/* Cards */
+.card-guardian {
+  @apply rounded-xl border border-slate-800/80 bg-[#111722]/80 backdrop-blur-sm transition-all duration-200;
+}
+
+.card-guardian-interactive {
+  @apply rounded-xl border border-slate-800/80 bg-[#111722]/80 backdrop-blur-sm hover:border-cyan-500/30 hover:shadow-[0_0_20px_rgba(56,189,248,0.06)] transition-all duration-200;
+}
+
+/* Badges */
+.badge-tech {
+  @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium tracking-wide uppercase;
+}
+
+.badge-pass {
+  @apply bg-emerald-500/10 text-emerald-400 border border-emerald-500/25;
+}
+
+.badge-fail {
+  @apply bg-rose-500/10 text-rose-400 border border-rose-500/25;
+}
+
+.badge-warn {
+  @apply bg-amber-500/10 text-amber-400 border border-amber-500/25;
+}
+
+.badge-hvm {
+  @apply bg-purple-500/10 text-purple-300 border border-purple-500/30;
+}
+
+.badge-cyan {
+  @apply bg-cyan-500/10 text-cyan-400 border border-cyan-500/30;
+}
+
+/* Pulse status dot */
+.pulse-dot-green {
+  @apply relative flex h-2 w-2;
+}
+.pulse-dot-green span:first-child {
+  @apply animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75;
+}
+.pulse-dot-green span:last-child {
+  @apply relative inline-flex rounded-full h-2 w-2 bg-emerald-500;
+}
+
+.pulse-dot-purple {
+  @apply relative flex h-2 w-2;
+}
+.pulse-dot-purple span:first-child {
+  @apply animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75;
+}
+.pulse-dot-purple span:last-child {
+  @apply relative inline-flex rounded-full h-2 w-2 bg-purple-500;
 }

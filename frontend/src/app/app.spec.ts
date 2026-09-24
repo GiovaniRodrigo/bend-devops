@@ -112,4 +112,98 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     expect(app.filteredVocabulary().length).toBeGreaterThan(0);
     expect(app.filteredVocabulary()[0].layer).toBe('Domain');
   });
+
+  it('should compute Before & After Code Diff with line alignment and rule explanations', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    
+    // Preset 0 (Compliant): diff is identical
+    app.selectPreset(0);
+    const compliantDiff = app.currentCodeDiff();
+    expect(compliantDiff.isIdentical).toBe(true);
+    expect(compliantDiff.additions).toBe(0);
+    expect(compliantDiff.deletions).toBe(0);
+
+    // Preset 1 (Violations): diff contains additions, deletions and explanations
+    app.selectPreset(1);
+    const violationDiff = app.currentCodeDiff();
+    expect(violationDiff.isIdentical).toBe(false);
+    expect(violationDiff.additions).toBeGreaterThan(0);
+    expect(violationDiff.deletions).toBeGreaterThan(0);
+    expect(violationDiff.affectedRules).toContain('CULT04');
+    expect(violationDiff.explanations.length).toBeGreaterThan(0);
+    expect(violationDiff.splitBefore.length).toBeGreaterThan(0);
+    expect(violationDiff.splitAfter.length).toBeGreaterThan(0);
+  });
+
+  it('should toggle diff view modes between split, unified, original, and corrected', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    expect(app.diffViewMode()).toBe('split');
+
+    app.setDiffViewMode('unified');
+    expect(app.diffViewMode()).toBe('unified');
+
+    app.setDiffViewMode('original');
+    expect(app.diffViewMode()).toBe('original');
+
+    app.setDiffViewMode('corrected');
+    expect(app.diffViewMode()).toBe('corrected');
+
+    app.setDiffViewMode('split');
+    expect(app.diffViewMode()).toBe('split');
+  });
+
+  it('should toggle scope between single_file and branch_changes and select branch files', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    expect(app.auditScope()).toBe('single_file');
+
+    app.setAuditScope('branch_changes');
+    expect(app.auditScope()).toBe('branch_changes');
+
+    app.selectBranchFile(1);
+    expect(app.selectedBranchFileIndex()).toBe(1);
+    expect(app.inputFileName()).toBe('src/Domain/Models/OrderInvoice.cs');
+
+    app.setAuditScope('single_file');
+    expect(app.auditScope()).toBe('single_file');
+  });
+
+  it('should toggle progressive disclosure accordions and diff visibility', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    expect(app.showDiffView()).toBe(true);
+    app.toggleDiffView();
+    expect(app.showDiffView()).toBe(false);
+    app.toggleDiffView();
+    expect(app.showDiffView()).toBe(true);
+
+    expect(app.isViolationsExpanded()).toBe(false);
+    app.toggleViolationsExpanded();
+    expect(app.isViolationsExpanded()).toBe(true);
+
+    expect(app.isDetailsExpanded()).toBe(false);
+    app.toggleDetailsExpanded();
+    expect(app.isDetailsExpanded()).toBe(true);
+
+    expect(app.isAdvancedScopeOpen()).toBe(false);
+    app.toggleAdvancedScope();
+    expect(app.isAdvancedScopeOpen()).toBe(true);
+  });
+
+  it('should execute in-place scope analysis on Analyze button click', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    const prevHistoryLen = app.history().length;
+
+    app.selectPreset(1);
+    app.analyzeCurrentScope();
+
+    expect(app.isAudited()).toBe(true);
+    expect(app.currentReport().isApproved).toBe(false);
+    expect(app.currentReport().totalViolations).toBeGreaterThan(0);
+    expect(app.history().length).toBe(prevHistoryLen + 1);
+  });
 });

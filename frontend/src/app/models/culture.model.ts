@@ -139,3 +139,45 @@ export interface BranchPolicy {
   allowP1: boolean;
   description: string;
 }
+
+export type DiffViewMode = 'split' | 'unified' | 'original' | 'corrected';
+
+export interface DiffLine {
+  type: 'same' | 'added' | 'removed';
+  beforeLineNumber?: number;
+  afterLineNumber?: number;
+  content: string;
+  ruleId?: string;
+}
+
+export interface SplitDiffItem {
+  lineNumber?: number;
+  content: string;
+  type: 'same' | 'added' | 'removed' | 'empty';
+  ruleId?: string;
+  highlight?: boolean;
+}
+
+export interface DiffExplanation {
+  ruleId: string;
+  title: string;
+  description: string;
+  remediation: string;
+  severity: SeverityLevel;
+}
+
+export interface CodeDiff {
+  filePath: string;
+  before: string;
+  after: string;
+  additions: number;
+  deletions: number;
+  modifiedSections: number;
+  affectedRules: string[];
+  lines: DiffLine[];
+  splitBefore: SplitDiffItem[];
+  splitAfter: SplitDiffItem[];
+  isIdentical: boolean;
+  explanations: DiffExplanation[];
+}
+

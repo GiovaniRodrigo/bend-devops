@@ -7,6 +7,8 @@
     "start": "npm --prefix frontend start",
     "build": "npm --prefix frontend run build",
     "test": "./scripts/validate.sh",
+    "test:e2e": "python3 -m unittest tests/e2e/test_playwright_e2e.py",
+    "screenshots": "python3 tests/e2e/capture_screenshots.py",
     "validate": "./scripts/validate.sh",
     "audit": "python3 scripts/culture_guard.py"
   },
