@@ -311,4 +311,70 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     expect(app.selectedCustomRuleIds().size).toBe(app.rules().length);
     expect(app.effectiveRulesCount()).toBe(app.rules().length);
   });
+
+  it('should operate in Real Data mode by default with no fabricated offsets', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    // Real Data Default check
+    expect(app.isMockMode()).toBe(false);
+    expect(app.mockScenario()).toBeNull();
+    expect(app.localRepoName()).toBe('bend-devops');
+    expect(app.availableLocalRepos).toContain('bend-devops');
+    expect(app.availableBranches).toContain('main');
+    expect(app.availableBranches).toContain('develop');
+    expect(app.availableBranches).toContain('feature/order-refactor');
+
+    // Metrics are strictly computed from real executions, not arbitrary offsets (no +842, no || 24)
+    expect(app.totalAuditsExecuted()).toBe(app.history().length);
+    expect(app.totalViolationsBlocked()).toBe(app.history().reduce((sum, h) => sum + h.p0Count, 0));
+  });
+
+  it('should support explicit Mock Mode scenarios and cleanly toggle back to real data', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    // Explicitly enable architecture-violations scenario
+    app.enableMockScenario('architecture-violations');
+    expect(app.isMockMode()).toBe(true);
+    expect(app.mockScenario()).toBe('architecture-violations');
+    expect(app.currentReport().isApproved).toBe(false);
+    expect(app.currentReport().p0Count).toBeGreaterThan(0);
+
+    // Explicitly enable clean-repository scenario
+    app.enableMockScenario('clean-repository');
+    expect(app.isMockMode()).toBe(true);
+    expect(app.mockScenario()).toBe('clean-repository');
+    expect(app.currentReport().isApproved).toBe(true);
+    expect(app.currentReport().score).toBe(100);
+
+    // Explicitly enable empty-repository scenario
+    app.enableMockScenario('empty-repository');
+    expect(app.isMockMode()).toBe(true);
+    expect(app.mockScenario()).toBe('empty-repository');
+    expect(app.currentAuditedFiles().length).toBe(0);
+    expect(app.history().length).toBe(0);
+    expect(app.currentReport().score).toBe(0);
+    expect(app.currentReport().isApproved).toBe(false);
+
+    // Exit Mock Mode back to real data
+    app.disableMockMode();
+    expect(app.isMockMode()).toBe(false);
+    expect(app.mockScenario()).toBeNull();
+  });
+
+  it('should display honest empty states when no audit has been run in empty scenario', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    app.enableMockScenario('empty-repository');
+    app.activeTab.set('results');
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('No Audit Results Available');
+    expect(compiled.textContent).toContain('No repository or branch audits have been recorded in this session yet.');
+  });
 });
+

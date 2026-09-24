@@ -885,8 +885,8 @@ class LegacyConnector:
       });
     });
 
-    const score = Math.max(0, 100 - totalPenalty);
-    const isApproved = p0Count === 0 && score >= 80;
+    const score = files.length === 0 ? 0 : Math.max(0, 100 - totalPenalty);
+    const isApproved = files.length > 0 && p0Count === 0 && score >= 80;
 
     return {
       totalFiles: files.length,

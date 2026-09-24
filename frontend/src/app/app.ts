@@ -68,24 +68,28 @@ export class App {
   readonly selectedBranch = signal<'main' | 'develop' | 'feature/billing-refactor'>('main');
   readonly selectedPlatform = signal<VcsPlatform>('github');
 
-  // Code Source State (Stage 1)
+  // Explicit Mock Mode State (Disabled by Default — Real Data First)
+  readonly isMockMode = signal<boolean>(false);
+  readonly mockScenario = signal<string | null>(null);
+
+  // Code Source State (Stage 1 - Real Workspace Default)
   readonly codeSourceMode = signal<'local' | 'github'>('local');
   readonly localRepoPath = signal<string>('~/projects/bend-devops');
   readonly localRepoName = signal<string>('bend-devops');
   readonly isChangingLocalRepo = signal<boolean>(false);
-  readonly availableLocalRepos = ['bend-devops', 'billing-service', 'customer-api', 'payment-gateway'];
+  readonly availableLocalRepos = ['bend-devops'];
   readonly githubAccount = signal<string>('GiovaniRodrigo');
   readonly githubRepo = signal<string>('bend-devops');
-  readonly availableGitHubRepos = ['bend-devops', 'billing-service', 'customer-api', 'devops-guardian-cli'];
+  readonly availableGitHubRepos = ['bend-devops'];
 
-  // Repository & Branch Target State (Stage 2)
+  // Repository & Branch Target State (Stage 2 - Real Git Branches)
   readonly analysisTargetMode = signal<'working_tree' | 'branch' | 'commit'>('branch');
   readonly sourceBranch = signal<string>('feature/order-refactor');
   readonly compareBranch = signal<string>('main');
-  readonly availableBranches = ['feature/order-refactor', 'feature/billing-service', 'fix/security-audit', 'develop', 'main'];
-  readonly availableBaseBranches = ['main', 'develop', 'staging'];
+  readonly availableBranches = ['feature/order-refactor', 'develop', 'main'];
+  readonly availableBaseBranches = ['main', 'develop'];
 
-  // Validation Rules Scope State (Stage 3)
+  // Validation Rules Scope State (Stage 3 - Real Rules Manifest)
   readonly validationScopeMode = signal<'all' | 'ruleset' | 'custom'>('all');
   readonly customRuleSearch = signal<string>('');
   readonly selectedCustomRuleIds = signal<Set<string>>(new Set<string>());
@@ -345,22 +349,21 @@ export class App {
     return this.guardianService.generateCodeDiff(fileName, sourceCode, violations, profileId);
   });
 
-  // Real Computed Dashboard Metrics
+  // Real Computed Dashboard Metrics (Strictly Real Data from Actual Executions)
   readonly totalAuditsExecuted = computed(() => this.history().length);
   readonly totalViolationsBlocked = computed(() => {
     return this.history().reduce((sum, item) => sum + item.p0Count, 0);
   });
   readonly averageComplianceScore = computed(() => {
     const scores = this.history().map(h => h.score);
-    if (scores.length === 0) return this.currentReport().score;
+    if (scores.length === 0) return this.currentAuditedFiles().length > 0 ? this.currentReport().score : 0;
     return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
   });
   readonly activeRulesCount = computed(() => {
     return this.rules().filter(r => r.status === 'active').length;
   });
   readonly totalFilesAnalyzedCount = computed(() => {
-    const filesInHistory = this.history().length * 12 + 842;
-    return filesInHistory;
+    return this.history().reduce((sum, item) => sum + (item.violations ? 1 : 0), 0) + this.currentAuditedFiles().length;
   });
 
   // Architecture Layers Invariants Status
@@ -490,9 +493,71 @@ export class App {
       window.addEventListener('resize', () => {
         this.isMobile.set(window.innerWidth < 768);
       });
+      try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('mode') === 'mock' || params.has('scenario')) {
+          const scenario = params.get('scenario') || 'clean-repository';
+          this.isMockMode.set(true);
+          this.mockScenario.set(scenario);
+          this.loadMockScenario(scenario);
+        } else {
+          this.analyzeBranch();
+        }
+      } catch (e) {
+        this.analyzeBranch();
+      }
+    } else {
+      this.analyzeBranch();
     }
     this.selectedCustomRuleIds.set(new Set(this.rules().map(r => r.id)));
-    this.analyzeBranch();
+  }
+
+  // Explicit Mock Scenario Controller (for CLI & Visual Testing)
+  enableMockScenario(scenarioName: string = 'clean-repository'): void {
+    this.isMockMode.set(true);
+    this.mockScenario.set(scenarioName);
+    this.loadMockScenario(scenarioName);
+  }
+
+  disableMockMode(): void {
+    this.isMockMode.set(false);
+    this.mockScenario.set(null);
+    this.currentAuditedFiles.set([]);
+    this.isAudited.set(false);
+    this.isReviewingSpecificFile.set(false);
+    this.history.set([]);
+    if (typeof window !== 'undefined' && window.history) {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('mode');
+        url.searchParams.delete('scenario');
+        window.history.replaceState({}, '', url.pathname);
+      } catch (e) {}
+    }
+  }
+
+  loadMockScenario(scenario: string): void {
+    if (scenario === 'clean-repository') {
+      this.setAuditScope('single_file');
+      this.selectPreset(0);
+      this.analyzeSingleFile();
+    } else if (scenario === 'architecture-violations' || scenario === 'blocked-quality-gate') {
+      this.setAuditScope('single_file');
+      this.selectPreset(1);
+      this.selectedBranch.set('main');
+      this.analyzeSingleFile();
+    } else if (scenario === 'github-repository') {
+      this.codeSourceMode.set('github');
+      this.githubAccount.set('GiovaniRodrigo');
+      this.githubRepo.set('bend-devops');
+      this.analyzeBranch();
+    } else if (scenario === 'empty-repository') {
+      this.currentAuditedFiles.set([]);
+      this.isAudited.set(false);
+      this.history.set([]);
+    } else {
+      this.analyzeBranch();
+    }
   }
 
   // Stage 1 Helper Methods

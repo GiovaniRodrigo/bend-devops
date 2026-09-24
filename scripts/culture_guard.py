@@ -577,6 +577,12 @@ def print_report(
     return is_ok
 
 def main():
+    if len(sys.argv) > 1 and sys.argv[1] == "mock":
+        from scripts.guardian_mock import main as mock_main
+        sys.argv.pop(1)
+        mock_main()
+        return
+
     parser = argparse.ArgumentParser(description="Bend DevOps Guardian (Bend Parallel HVM Quality Gate)")
     parser.add_argument("paths", nargs="*", default=["."], help="Files or directories to audit")
     parser.add_argument("--architecture", choices=["layered_mvc", "clean_architecture", "microservices", "cqrs", "rest_api", "frontend_clean"], default="layered_mvc", help="Target architecture profile")
@@ -584,7 +590,26 @@ def main():
     parser.add_argument("--format", choices=["text", "json", "markdown"], default="text", help="Report output format")
     parser.add_argument("--min-score", type=int, default=80, help="Minimum score for approval (default: 80)")
     parser.add_argument("--vcs", choices=["github", "gitlab", "bitbucket"], help="Target VCS hosting platform for CI/CD status posting and reports")
+    parser.add_argument("--mock-scenario", choices=["clean-repository", "architecture-violations", "blocked-quality-gate", "github-repository", "empty-repository", "integration-error"], help="Explicitly run a deterministic mock scenario")
     args = parser.parse_args()
+
+    if args.mock_scenario:
+        from scripts.guardian_mock import generate_scenario_data
+        data = generate_scenario_data(args.mock_scenario)
+        if args.format == "json":
+            print(json.dumps(data, indent=2))
+        else:
+            print("="*70)
+            print(f" ⚠️  BEND DEVOPS GUARDIAN — EXPLICIT MOCK SCENARIO: [{args.mock_scenario.upper()}]")
+            print("="*70)
+            print(f" Scenario:    {data.get('title')}")
+            print(f" Environment: MOCK (Non-production deterministic fixture)")
+            if "report" in data:
+                rep = data["report"]
+                print(f" Status:      {rep.get('status')} (Score: {rep.get('score')}%)")
+                print(f" Violations:  {rep.get('totalViolations')} (P0: {rep.get('p0Count')}, P1: {rep.get('p1Count')})")
+            print("="*70)
+        sys.exit(0)
 
     project_exemptions = load_guardianignore()
 

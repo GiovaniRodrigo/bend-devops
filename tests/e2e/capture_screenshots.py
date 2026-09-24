@@ -166,7 +166,7 @@ def capture_all_screens():
             time.sleep(0.3)
             page.locator("button:has-text('Single File Review')").first.click()
             time.sleep(0.3)
-            page.locator("select").first.select_option(index=3)
+            page.locator("[data-testid='file-preset-select']").select_option(index=3)
             time.sleep(0.3)
             p7 = SCREENSHOTS_DIR / "07_live_auditor_suppression_preset.png"
             page.screenshot(path=str(p7), full_page=True)
@@ -175,7 +175,7 @@ def capture_all_screens():
                 "title": "Live Code Auditor (Single File Review - Supressão @guardian-ignore)",
                 "desc": "Modo de revisão de arquivo avulso com código Python e pragma inline devidamente justificado."
             })
-            page.locator("button:has-text('Analyze File')").first.click()
+            page.locator("button:has-text('Analyze')").first.click()
             time.sleep(0.3)
 
             # 8. Rules Manifests Catalog

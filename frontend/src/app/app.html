@@ -180,6 +180,29 @@
     <!-- 2. MAIN APPLICATION WORKSPACE -->
     <div class="flex-1 flex flex-col min-w-0 bg-[#080B12] bg-tech-grid">
       
+      <!-- EXPLICIT MOCK MODE BANNER (Visible only when mock scenario is requested) -->
+      @if (isMockMode()) {
+        <div class="bg-amber-950/60 border-b border-amber-500/40 px-4 lg:px-8 py-2 text-xs font-mono text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-inner z-30">
+          <div class="flex items-center gap-2.5">
+            <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 text-[11px] flex items-center gap-1.5 shrink-0">
+              <span>⚠️</span>
+              <span>MOCK MODE ACTIVE</span>
+            </span>
+            <span class="text-slate-300 truncate">
+              Scenario fixture: <strong class="text-amber-300">{{ mockScenario() || 'Standard Mock Fixture' }}</strong> &bull; Synthetic test data
+            </span>
+          </div>
+          <div class="flex items-center gap-3 shrink-0 self-end sm:self-auto">
+            <button
+              (click)="disableMockMode()"
+              class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 hover:text-white text-[11px] font-bold border border-amber-500/30 transition-colors"
+            >
+              Exit Mock &amp; Switch to Real Data &rarr;
+            </button>
+          </div>
+        </div>
+      }
+
       <!-- Top Sticky Header -->
       <header class="border-b border-slate-800/80 bg-[#0B0F19]/90 backdrop-blur sticky top-0 z-20 px-4 lg:px-8 py-2.5">
         <div class="flex items-center justify-between gap-4">
@@ -310,14 +333,14 @@
               
               <div class="card-guardian p-4">
                 <p class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Audits</p>
-                <p class="text-2xl font-bold font-mono text-white mt-1">{{ totalAuditsExecuted() || 24 }}</p>
+                <p class="text-2xl font-bold font-mono text-white mt-1">{{ totalAuditsExecuted() }}</p>
                 <p class="text-[11px] text-slate-500 mt-1">Total session executions</p>
               </div>
 
               <div class="card-guardian p-4">
                 <p class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Compliance</p>
-                <p [class]="'text-2xl font-bold font-mono mt-1 ' + (averageComplianceScore() >= 80 ? 'text-emerald-400' : 'text-rose-400')">
-                  {{ averageComplianceScore() }}%
+                <p [class]="'text-2xl font-bold font-mono mt-1 ' + (averageComplianceScore() >= 80 ? 'text-emerald-400' : averageComplianceScore() > 0 ? 'text-rose-400' : 'text-slate-500')">
+                  {{ averageComplianceScore() > 0 ? (averageComplianceScore() + '%') : '—' }}
                 </p>
                 <p class="text-[11px] text-slate-500 mt-1">Average quality score</p>
               </div>
@@ -331,29 +354,38 @@
               </div>
 
               <div class="card-guardian p-4">
-                <p class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Last Audit</p>
-                <p class="text-2xl font-bold font-mono text-cyan-400 mt-1">2 min ago</p>
-                <p class="text-[11px] text-slate-500 mt-1">Duration: 0.04s</p>
+                <p class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Active Rules</p>
+                <p class="text-2xl font-bold font-mono text-cyan-400 mt-1">{{ activeRulesCount() }}</p>
+                <p class="text-[11px] text-slate-500 mt-1">Declarative invariants</p>
               </div>
             </div>
 
             <!-- RECENT AUDIT SUMMARY STRIP -->
-            <div class="card-guardian p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
-              <div class="flex items-center gap-2 text-slate-300">
-                <span class="text-cyan-400 font-semibold">{{ selectedBranch() }}</span>
-                <span class="text-slate-600">&bull;</span>
-                <span [class]="currentReport().isApproved ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'">
-                  {{ currentReport().isApproved ? 'Approved' : 'Blocked' }}
-                </span>
-                <span class="text-slate-600">&bull;</span>
-                <span>{{ currentReport().totalFiles }} files</span>
-                <span class="text-slate-600">&bull;</span>
-                <span class="text-slate-400">1m 42s</span>
+            @if (history().length > 0 || currentAuditedFiles().length > 0) {
+              <div class="card-guardian p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
+                <div class="flex items-center gap-2 text-slate-300">
+                  <span class="text-cyan-400 font-semibold">{{ selectedBranch() }}</span>
+                  <span class="text-slate-600">&bull;</span>
+                  <span [class]="currentReport().isApproved ? 'text-emerald-400 font-semibold' : 'text-rose-400 font-semibold'">
+                    {{ currentReport().isApproved ? 'Approved' : 'Blocked' }}
+                  </span>
+                  <span class="text-slate-600">&bull;</span>
+                  <span>{{ currentReport().totalFiles }} files</span>
+                  <span class="text-slate-600">&bull;</span>
+                  <span class="text-slate-400">{{ history().length > 0 ? history()[0].duration : '0.04s (Bend HVM)' }}</span>
+                </div>
+                <button (click)="activeTab.set('results')" class="text-cyan-400 hover:text-cyan-300 font-semibold hover:underline self-start sm:self-auto">
+                  View Results &rarr;
+                </button>
               </div>
-              <button (click)="activeTab.set('results')" class="text-cyan-400 hover:text-cyan-300 font-semibold hover:underline self-start sm:self-auto">
-                View Results &rarr;
-              </button>
-            </div>
+            } @else {
+              <div class="p-3.5 rounded-lg bg-[#0B0F19] border border-slate-800 flex items-center justify-between text-xs font-mono text-slate-400">
+                <span>No audit runs recorded in this session yet.</span>
+                <button (click)="activeTab.set('analyze')" class="text-cyan-400 hover:text-cyan-300 font-semibold hover:underline">
+                  Execute first audit &rarr;
+                </button>
+              </div>
+            }
 
             <!-- ARCHITECTURE PROFILES (Compact List / Selector) -->
             <div class="card-guardian p-5 space-y-3">
@@ -794,6 +826,7 @@
                   <div class="text-xs font-mono text-slate-300 flex items-center gap-2">
                     <span class="text-slate-500">File:</span>
                     <select
+                      data-testid="file-preset-select"
                       [ngModel]="selectedPresetIndex()"
                       (ngModelChange)="selectPreset($event)"
                       class="rounded-md bg-[#0B0F19] border border-slate-800 px-2 py-1 text-slate-200 text-xs font-mono"
@@ -1025,6 +1058,22 @@
         <!-- VIEW 3: AUDIT RESULTS (Can I Merge This?)                             -->
         <!-- ===================================================================== -->
         @if (activeTab() === 'results' || activeTab() === 'violations') {
+          @if (currentAuditedFiles().length === 0 && history().length === 0) {
+            <div class="card-guardian p-12 text-center space-y-4 max-w-lg mx-auto my-12">
+              <div class="w-12 h-12 rounded-full bg-slate-800/80 border border-slate-700 flex items-center justify-center mx-auto text-slate-400 text-lg font-mono">
+                &empty;
+              </div>
+              <div class="space-y-1">
+                <h3 class="text-base font-bold font-mono text-slate-200">No Audit Results Available</h3>
+                <p class="text-xs text-slate-400 font-mono">No repository or branch audits have been recorded in this session yet.</p>
+              </div>
+              <div class="pt-2">
+                <button (click)="activeTab.set('analyze')" class="btn-guardian btn-guardian-primary h-9 px-4 text-xs font-bold font-mono">
+                  Go to Live Code Auditor &rarr;
+                </button>
+              </div>
+            </div>
+          } @else {
           <div class="space-y-6">
             
             <!-- TOP DOMINANT BANNER -->
@@ -1144,6 +1193,7 @@
             </div>
 
           </div>
+          }
         }
 
         <!-- ===================================================================== -->
@@ -1421,7 +1471,7 @@
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <h2 class="text-2xl font-bold tracking-tight text-white">Session History &amp; Telemetry</h2>
-                <p class="text-xs text-slate-400 font-mono mt-0.5">Audit duration: 0.04s &bull; Files analyzed: 24 &bull; Rules evaluated: 26</p>
+                <p class="text-xs text-slate-400 font-mono mt-0.5">Total runs: {{ history().length }} &bull; Active rules: {{ activeRulesCount() }} &bull; Execution engine: Bend HVM</p>
               </div>
 
               <button (click)="exportHistory()" class="btn-guardian btn-guardian-secondary h-8 px-3 text-xs">
@@ -1431,27 +1481,37 @@
 
             <!-- HISTORY RUNS LIST -->
             <div class="card-guardian overflow-hidden divide-y divide-slate-800">
-              <div *ngFor="let h of history()" class="p-4 hover:bg-slate-800/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono transition-colors">
-                <div class="space-y-1">
-                  <div class="flex items-center gap-2">
-                    <span [class]="'badge-tech text-[10px] ' + (h.p0Count === 0 ? 'badge-pass' : 'badge-fail')">
-                      {{ h.p0Count === 0 ? 'PASS' : 'BLOCKED' }}
-                    </span>
-                    <strong class="text-slate-100 font-semibold">{{ h.project }}</strong>
-                  </div>
-                  <p class="text-[11px] text-slate-400">{{ h.mrTitle }} &bull; {{ h.date }}</p>
-                </div>
-
-                <div class="flex items-center gap-4 shrink-0">
-                  <div class="text-right">
-                    <span class="text-slate-400">Score:</span>
-                    <span [class]="'font-bold ml-1 ' + (h.score >= 80 ? 'text-emerald-400' : 'text-rose-400')">{{ h.score }}%</span>
-                  </div>
-                  <button (click)="activeTab.set('results')" class="text-cyan-400 hover:text-cyan-300 font-semibold">
-                    View Report &rarr;
+              @if (history().length === 0) {
+                <div class="p-8 text-center space-y-2">
+                  <p class="text-sm font-bold text-slate-300 font-mono">No session history recorded yet.</p>
+                  <p class="text-xs text-slate-500 font-mono">All audit executions during this session will be recorded here with duration, telemetry, and violation records.</p>
+                  <button (click)="activeTab.set('analyze')" class="btn-guardian btn-guardian-primary h-8 px-3.5 text-xs font-mono mt-2">
+                    Run First Audit &rarr;
                   </button>
                 </div>
-              </div>
+              } @else {
+                <div *ngFor="let h of history()" class="p-4 hover:bg-slate-800/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono transition-colors">
+                  <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                      <span [class]="'badge-tech text-[10px] ' + (h.p0Count === 0 ? 'badge-pass' : 'badge-fail')">
+                        {{ h.p0Count === 0 ? 'PASS' : 'BLOCKED' }}
+                      </span>
+                      <strong class="text-slate-100 font-semibold">{{ h.project }}</strong>
+                    </div>
+                    <p class="text-[11px] text-slate-400">{{ h.mrTitle }} &bull; {{ h.date }}</p>
+                  </div>
+
+                  <div class="flex items-center gap-4 shrink-0">
+                    <div class="text-right">
+                      <span class="text-slate-400">Score:</span>
+                      <span [class]="'font-bold ml-1 ' + (h.score >= 80 ? 'text-emerald-400' : 'text-rose-400')">{{ h.score }}%</span>
+                    </div>
+                    <button (click)="activeTab.set('results')" class="text-cyan-400 hover:text-cyan-300 font-semibold">
+                      View Report &rarr;
+                    </button>
+                  </div>
+                </div>
+              }
             </div>
 
           </div>
