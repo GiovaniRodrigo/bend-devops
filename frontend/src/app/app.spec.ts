@@ -245,6 +245,25 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     expect(app.localRepoName()).toBe('ai-bend-devops');
   });
 
+  it('should allow user to select and validate local repository directory path', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    expect(app.codeSourceMode()).toBe('local');
+    expect(app.customLocalPathInput()).toBe('/home/isabelle/projects/ai-bend-devops');
+
+    // Test valid local directory path
+    await app.validateAndSetCustomPath('/home/isabelle/projects/ai-bend-devops');
+    expect(app.customLocalPathValidation()?.valid).toBe(true);
+    expect(app.customLocalPathValidation()?.repository?.name).toBe('ai-bend-devops');
+    expect(app.selectedLocalRepoId()).toBe('ai-bend-devops');
+
+    // Test invalid local directory path
+    await app.validateAndSetCustomPath('/nonexistent/random/directory/path');
+    expect(app.customLocalPathValidation()?.valid).toBe(false);
+    expect(app.customLocalPathValidation()?.error).toBeDefined();
+  });
+
   it('should support Stage 2 Target Modes (Branch Comparison, Working Tree, Commit SHA)', async () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;

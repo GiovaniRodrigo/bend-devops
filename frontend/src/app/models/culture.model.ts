@@ -27,6 +27,12 @@ export interface LocalRepositoryInfo {
   isCurrent?: boolean;
 }
 
+export interface LocalRepositoryValidationResult {
+  valid: boolean;
+  repository?: LocalRepositoryInfo;
+  error?: string;
+}
+
 export interface GitHubRepositoryInfo {
   id: string;
   name: string;

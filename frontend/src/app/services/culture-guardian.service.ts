@@ -19,6 +19,7 @@ import {
   VcsPlatform,
   WebhookEventPayload,
   LocalRepositoryInfo,
+  LocalRepositoryValidationResult,
   GitHubRepositoryInfo,
   WorkingTreeInfo,
   CommitValidationResult
@@ -1421,6 +1422,49 @@ namespace Enterprise.Presentation.Pages
     }
     this.isDiscoveringRepos.set(false);
     return this.localRepositories();
+  }
+
+  async validateAndLoadLocalRepositoryPath(dirPath: string): Promise<LocalRepositoryValidationResult> {
+    const trimmed = (dirPath || '').trim();
+    if (!trimmed) {
+      return { valid: false, error: 'Directory path cannot be empty' };
+    }
+
+    try {
+      if (typeof window !== 'undefined' && window.location) {
+        const res = await fetch('/api/repositories/local/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: trimmed })
+        });
+        if (res.ok) {
+          const data: LocalRepositoryValidationResult = await res.json();
+          if (data.valid && data.repository) {
+            const currentList = this.localRepositories();
+            const existingIdx = currentList.findIndex(r => r.path === data.repository!.path || r.id === data.repository!.id);
+            if (existingIdx >= 0) {
+              const updated = [...currentList];
+              updated[existingIdx] = data.repository;
+              this.localRepositories.set(updated);
+            } else {
+              this.localRepositories.set([data.repository, ...currentList]);
+            }
+            return data;
+          }
+          return { valid: false, error: data.error || 'Invalid repository directory' };
+        }
+      }
+    } catch (e) {}
+
+    // Fallback check against already loaded repos
+    const existing = this.localRepositories().find(
+      r => r.path === trimmed || r.id === trimmed || r.name === trimmed || trimmed.endsWith(r.name)
+    );
+    if (existing) {
+      return { valid: true, repository: existing };
+    }
+
+    return { valid: false, error: `Directory not found or not a valid Git repository: ${trimmed}` };
   }
 
   async checkGitHubConnection(token?: string): Promise<{ connected: boolean; repositories: GitHubRepositoryInfo[]; error?: string }> {

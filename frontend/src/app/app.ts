@@ -18,6 +18,7 @@ import {
   VcsPlatform,
   WebhookEventPayload,
   LocalRepositoryInfo,
+  LocalRepositoryValidationResult,
   GitHubRepositoryInfo,
   WorkingTreeInfo,
   CommitValidationResult
@@ -88,6 +89,10 @@ export class App {
   readonly localRepoPath = computed(() => this.selectedLocalRepo() ? this.selectedLocalRepo().path : '/home/isabelle/projects/ai-bend-devops');
   readonly isChangingLocalRepo = signal<boolean>(false);
   readonly availableLocalRepos = computed(() => this.localRepositories().map(r => r.name));
+  readonly customLocalPathInput = signal<string>('/home/isabelle/projects/ai-bend-devops');
+  readonly customLocalPathValidation = signal<LocalRepositoryValidationResult | null>(null);
+  readonly isValidatingCustomLocalPath = signal<boolean>(false);
+  readonly isCustomPathActive = signal<boolean>(false);
 
   // GitHub Repository State
   readonly gitHubRepositories = this.guardianService.gitHubRepositories;
@@ -607,9 +612,11 @@ export class App {
   }
 
   setLocalRepo(repoNameOrId: string): void {
-    const found = this.localRepositories().find(r => r.id === repoNameOrId || r.name === repoNameOrId);
+    const found = this.localRepositories().find(r => r.id === repoNameOrId || r.name === repoNameOrId || r.path === repoNameOrId);
     if (found) {
       this.selectedLocalRepoId.set(found.id);
+      this.customLocalPathInput.set(found.path);
+      this.customLocalPathValidation.set({ valid: true, repository: found });
       this.inputRepo.set(found.name);
       if (found.branches && found.branches.length > 0) {
         this.sourceBranch.set(found.currentBranch || found.branches[0]);
@@ -619,6 +626,26 @@ export class App {
     }
     this.isChangingLocalRepo.set(false);
     this.reanalyzeCurrentScope();
+  }
+
+  async validateAndSetCustomPath(dirPath?: string): Promise<void> {
+    const target = (dirPath !== undefined ? dirPath : this.customLocalPathInput()).trim();
+    this.customLocalPathInput.set(target);
+    this.isValidatingCustomLocalPath.set(true);
+    const res = await this.guardianService.validateAndLoadLocalRepositoryPath(target);
+    this.customLocalPathValidation.set(res);
+    this.isValidatingCustomLocalPath.set(false);
+
+    if (res.valid && res.repository) {
+      this.selectedLocalRepoId.set(res.repository.id);
+      this.inputRepo.set(res.repository.name);
+      if (res.repository.branches && res.repository.branches.length > 0) {
+        this.sourceBranch.set(res.repository.currentBranch || res.repository.branches[0]);
+        this.compareBranch.set(res.repository.branches[0]);
+      }
+      this.guardianService.inspectWorkingTree(res.repository.id);
+      this.reanalyzeCurrentScope();
+    }
   }
 
   setGitHubRepo(repoFullName: string): void {

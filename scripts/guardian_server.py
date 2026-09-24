@@ -156,10 +156,98 @@ def discover_local_repositories() -> List[Dict[str, Any]]:
 
     return repos
 
+CUSTOM_REPOSITORIES: Dict[str, Dict[str, Any]] = {}
+
+def inspect_local_repository_path(path_str: str) -> Dict[str, Any]:
+    """Validates if path_str is an existing Git repository and extracts full metadata."""
+    if not path_str or not path_str.strip():
+        return {"valid": False, "error": "Directory path cannot be empty"}
+    
+    clean_str = os.path.expanduser(path_str.strip())
+    p = Path(clean_str).resolve()
+    
+    if not p.exists():
+        return {"valid": False, "error": f"Directory does not exist: {clean_str}"}
+    if not p.is_dir():
+        return {"valid": False, "error": f"Path is not a directory: {clean_str}"}
+        
+    try:
+        is_git = subprocess.run(
+            ["git", "-C", str(p), "rev-parse", "--is-inside-work-tree"],
+            capture_output=True, text=True, timeout=2
+        ).stdout.strip()
+        if is_git != "true":
+            return {"valid": False, "error": f"Directory is not a Git repository (no .git found): {clean_str}"}
+            
+        top_level = subprocess.run(
+            ["git", "-C", str(p), "rev-parse", "--show-toplevel"],
+            capture_output=True, text=True, timeout=2
+        ).stdout.strip()
+        top_path = Path(top_level)
+        
+        remote = subprocess.run(
+            ["git", "-C", str(top_path), "config", "--get", "remote.origin.url"],
+            capture_output=True, text=True, timeout=2
+        ).stdout.strip()
+        branch = subprocess.run(
+            ["git", "-C", str(top_path), "branch", "--show-current"],
+            capture_output=True, text=True, timeout=2
+        ).stdout.strip() or "main"
+        
+        raw_branches = subprocess.run(
+            ["git", "-C", str(top_path), "branch", "--list"],
+            capture_output=True, text=True, timeout=2
+        ).stdout.splitlines()
+        branches = [b.strip().lstrip("* ") for b in raw_branches if b.strip()]
+        if not branches:
+            branches = [branch]
+            
+        head = subprocess.run(
+            ["git", "-C", str(top_path), "rev-parse", "--short", "HEAD"],
+            capture_output=True, text=True, timeout=2
+        ).stdout.strip()
+        head_msg = subprocess.run(
+            ["git", "-C", str(top_path), "log", "-1", "--format=%s"],
+            capture_output=True, text=True, timeout=2
+        ).stdout.strip()
+        status = subprocess.run(
+            ["git", "-C", str(top_path), "status", "--porcelain"],
+            capture_output=True, text=True, timeout=2
+        ).stdout.strip()
+
+        repo_obj = {
+            "id": top_path.name,
+            "name": top_path.name,
+            "path": str(top_path),
+            "remoteUrl": remote or f"https://github.com/GiovaniRodrigo/{top_path.name}.git",
+            "currentBranch": branch,
+            "branches": branches,
+            "headCommit": head,
+            "headCommitMessage": head_msg,
+            "isClean": len(status) == 0,
+            "isCurrent": str(top_path) == str(REPO_ROOT)
+        }
+        return {"valid": True, "repository": repo_obj}
+    except Exception as e:
+        return {"valid": False, "error": f"Git inspection failed: {str(e)}"}
+
 def get_repository_by_id(repo_id: str) -> Optional[Dict[str, Any]]:
+    # Check custom registry first
+    if repo_id in CUSTOM_REPOSITORIES:
+        return CUSTOM_REPOSITORIES[repo_id]
+    
+    # Check if repo_id is a direct path
+    if "/" in repo_id or repo_id.startswith("~"):
+        res = inspect_local_repository_path(repo_id)
+        if res.get("valid") and "repository" in res:
+            repo_obj = res["repository"]
+            CUSTOM_REPOSITORIES[repo_obj["id"]] = repo_obj
+            CUSTOM_REPOSITORIES[repo_obj["path"]] = repo_obj
+            return repo_obj
+
     repos = discover_local_repositories()
     for r in repos:
-        if r["id"] == repo_id or r["name"] == repo_id:
+        if r["id"] == repo_id or r["name"] == repo_id or r["path"] == repo_id:
             return r
     return None
 
@@ -477,7 +565,18 @@ class GuardianRequestHandler(SimpleHTTPRequestHandler):
         except Exception:
             body = {}
 
-        # 1. API: Commit Validation
+        # 1. API: Local Repository Directory Path Validation
+        if path == "/api/repositories/local/validate":
+            req_path = body.get("path", "")
+            res = inspect_local_repository_path(req_path)
+            if res.get("valid") and "repository" in res:
+                repo_data = res["repository"]
+                CUSTOM_REPOSITORIES[repo_data["id"]] = repo_data
+                CUSTOM_REPOSITORIES[repo_data["path"]] = repo_data
+            self._send_json(res)
+            return
+
+        # 2. API: Commit Validation
         match_commit = re.match(r"^/api/repositories/([^/]+)/commits/validate$", path)
         if match_commit:
             repo_id = match_commit.group(1)
