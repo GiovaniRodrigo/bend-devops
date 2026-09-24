@@ -20,6 +20,8 @@ import {
   WebhookEventPayload,
   LocalRepositoryInfo,
   LocalRepositoryValidationResult,
+  DirectoryItem,
+  DirectoryBrowseResult,
   GitHubRepositoryInfo,
   WorkingTreeInfo,
   CommitValidationResult
@@ -1465,6 +1467,37 @@ namespace Enterprise.Presentation.Pages
     }
 
     return { valid: false, error: `Directory not found or not a valid Git repository: ${trimmed}` };
+  }
+
+  async browseDirectories(dirPath?: string): Promise<DirectoryBrowseResult> {
+    try {
+      if (typeof window !== 'undefined' && window.location) {
+        const url = dirPath ? `/api/system/browse-dirs?path=${encodeURIComponent(dirPath)}` : '/api/system/browse-dirs';
+        const res = await fetch(url);
+        if (res.ok) {
+          const data: DirectoryBrowseResult = await res.json();
+          return data;
+        }
+      }
+    } catch (e) {}
+
+    // Fallback baseline for directories in local environment
+    const repos = this.localRepositories();
+    return {
+      currentPath: dirPath || '/home/isabelle/projects',
+      parentPath: '/home/isabelle',
+      isCurrentPathGit: repos.some(r => r.path === (dirPath || '/home/isabelle/projects')),
+      directories: repos.map(r => ({
+        name: r.name,
+        path: r.path,
+        isGit: true,
+        gitInfo: {
+          branch: r.currentBranch,
+          headCommit: r.headCommit,
+          isClean: r.isClean
+        }
+      }))
+    };
   }
 
   async checkGitHubConnection(token?: string): Promise<{ connected: boolean; repositories: GitHubRepositoryInfo[]; error?: string }> {

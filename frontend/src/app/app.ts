@@ -19,6 +19,8 @@ import {
   WebhookEventPayload,
   LocalRepositoryInfo,
   LocalRepositoryValidationResult,
+  DirectoryItem,
+  DirectoryBrowseResult,
   GitHubRepositoryInfo,
   WorkingTreeInfo,
   CommitValidationResult
@@ -93,6 +95,19 @@ export class App {
   readonly customLocalPathValidation = signal<LocalRepositoryValidationResult | null>(null);
   readonly isValidatingCustomLocalPath = signal<boolean>(false);
   readonly isCustomPathActive = signal<boolean>(false);
+
+  // Folder Browser Modal State
+  readonly isFolderBrowserOpen = signal<boolean>(false);
+  readonly browserCurrentPath = signal<string>('/home/isabelle/projects');
+  readonly browserParentPath = signal<string | null>('/home/isabelle');
+  readonly browserIsCurrentPathGit = signal<boolean>(false);
+  readonly browserDirectories = signal<DirectoryItem[]>([]);
+  readonly isBrowserLoading = signal<boolean>(false);
+  readonly browserSearch = signal<string>('');
+  readonly filteredBrowserDirectories = computed(() => {
+    const q = this.browserSearch().toLowerCase().trim();
+    return this.browserDirectories().filter(d => !q || d.name.toLowerCase().includes(q) || d.path.toLowerCase().includes(q));
+  });
 
   // GitHub Repository State
   readonly gitHubRepositories = this.guardianService.gitHubRepositories;
@@ -645,6 +660,53 @@ export class App {
       }
       this.guardianService.inspectWorkingTree(res.repository.id);
       this.reanalyzeCurrentScope();
+    }
+  }
+
+  // Folder Browser Actions
+  async openFolderBrowser(initialPath?: string): Promise<void> {
+    const targetPath = initialPath || this.customLocalPathInput() || '/home/isabelle/projects';
+    this.isFolderBrowserOpen.set(true);
+    await this.navigateToBrowserPath(targetPath);
+  }
+
+  closeFolderBrowser(): void {
+    this.isFolderBrowserOpen.set(false);
+  }
+
+  async navigateToBrowserPath(path: string): Promise<void> {
+    this.isBrowserLoading.set(true);
+    this.browserCurrentPath.set(path);
+    const res = await this.guardianService.browseDirectories(path);
+    this.browserCurrentPath.set(res.currentPath);
+    this.browserParentPath.set(res.parentPath);
+    this.browserIsCurrentPathGit.set(res.isCurrentPathGit);
+    this.browserDirectories.set(res.directories);
+    this.isBrowserLoading.set(false);
+  }
+
+  async navigateBrowserUp(): Promise<void> {
+    const parent = this.browserParentPath();
+    if (parent) {
+      await this.navigateToBrowserPath(parent);
+    }
+  }
+
+  async selectAndLoadBrowserFolder(path: string): Promise<void> {
+    this.closeFolderBrowser();
+    await this.validateAndSetCustomPath(path);
+  }
+
+  onNativeFolderSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input && input.files && input.files.length > 0) {
+      const file = input.files[0];
+      const relative = file.webkitRelativePath || '';
+      const folderName = relative ? relative.split('/')[0] : '';
+      if (folderName) {
+        const candidatePath = `/home/isabelle/projects/${folderName}`;
+        this.validateAndSetCustomPath(candidatePath);
+      }
     }
   }
 

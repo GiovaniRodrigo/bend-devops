@@ -264,6 +264,30 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     expect(app.customLocalPathValidation()?.error).toBeDefined();
   });
 
+  it('should open folder browser dialog, navigate directories, and select a folder', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    expect(app.isFolderBrowserOpen()).toBe(false);
+
+    // 1. Open Folder Browser Dialog
+    await app.openFolderBrowser('/home/isabelle/projects');
+    expect(app.isFolderBrowserOpen()).toBe(true);
+    expect(app.browserCurrentPath()).toBe('/home/isabelle/projects');
+    expect(app.browserDirectories().length).toBeGreaterThan(0);
+
+    // 2. Filter directories
+    app.browserSearch.set('bend');
+    expect(app.filteredBrowserDirectories().length).toBeGreaterThan(0);
+    app.browserSearch.set('');
+
+    // 3. Select a folder from browser
+    await app.selectAndLoadBrowserFolder('/home/isabelle/projects/ai-bend-devops');
+    expect(app.isFolderBrowserOpen()).toBe(false);
+    expect(app.selectedLocalRepoId()).toBe('ai-bend-devops');
+    expect(app.customLocalPathValidation()?.valid).toBe(true);
+  });
+
   it('should support Stage 2 Target Modes (Branch Comparison, Working Tree, Commit SHA)', async () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;

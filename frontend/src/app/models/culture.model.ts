@@ -33,6 +33,24 @@ export interface LocalRepositoryValidationResult {
   error?: string;
 }
 
+export interface DirectoryItem {
+  name: string;
+  path: string;
+  isGit: boolean;
+  gitInfo?: {
+    branch: string;
+    headCommit: string;
+    isClean: boolean;
+  };
+}
+
+export interface DirectoryBrowseResult {
+  currentPath: string;
+  parentPath: string | null;
+  isCurrentPathGit: boolean;
+  directories: DirectoryItem[];
+}
+
 export interface GitHubRepositoryInfo {
   id: string;
   name: string;

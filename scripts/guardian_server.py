@@ -231,11 +231,78 @@ def inspect_local_repository_path(path_str: str) -> Dict[str, Any]:
     except Exception as e:
         return {"valid": False, "error": f"Git inspection failed: {str(e)}"}
 
+def browse_local_directories(base_path: Optional[str] = None) -> Dict[str, Any]:
+    """Browses directories at base_path and identifies Git repositories."""
+    if not base_path or not base_path.strip():
+        target = REPO_ROOT.parent if REPO_ROOT.parent.exists() else REPO_ROOT
+    else:
+        target = Path(os.path.expanduser(base_path.strip())).resolve()
+    
+    if not target.exists() or not target.is_dir():
+        target = REPO_ROOT.parent if REPO_ROOT.parent.exists() else REPO_ROOT
+
+    parent_dir = str(target.parent) if target.parent != target else None
+    
+    # Check if target itself is a git repository
+    target_git = False
+    try:
+        is_git = subprocess.run(
+            ["git", "-C", str(target), "rev-parse", "--is-inside-work-tree"],
+            capture_output=True, text=True, timeout=1
+        ).stdout.strip()
+        target_git = is_git == "true"
+    except Exception:
+        pass
+
+    dirs = []
+    try:
+        for item in sorted(target.iterdir()):
+            if item.is_dir() and not item.name.startswith("."):
+                is_item_git = (item / ".git").exists()
+                git_info = None
+                if is_item_git:
+                    try:
+                        branch = subprocess.run(
+                            ["git", "-C", str(item), "branch", "--show-current"],
+                            capture_output=True, text=True, timeout=1
+                        ).stdout.strip() or "main"
+                        head = subprocess.run(
+                            ["git", "-C", str(item), "rev-parse", "--short", "HEAD"],
+                            capture_output=True, text=True, timeout=1
+                        ).stdout.strip()
+                        status = subprocess.run(
+                            ["git", "-C", str(item), "status", "--porcelain"],
+                            capture_output=True, text=True, timeout=1
+                        ).stdout.strip()
+                        git_info = {
+                            "branch": branch,
+                            "headCommit": head,
+                            "isClean": len(status) == 0
+                        }
+                    except Exception:
+                        pass
+
+                dirs.append({
+                    "name": item.name,
+                    "path": str(item),
+                    "isGit": is_item_git,
+                    "gitInfo": git_info
+                })
+    except Exception:
+        pass
+
+    return {
+        "currentPath": str(target),
+        "parentPath": parent_dir,
+        "isCurrentPathGit": target_git,
+        "directories": dirs
+    }
+
 def get_repository_by_id(repo_id: str) -> Optional[Dict[str, Any]]:
     # Check custom registry first
     if repo_id in CUSTOM_REPOSITORIES:
         return CUSTOM_REPOSITORIES[repo_id]
-    
+
     # Check if repo_id is a direct path
     if "/" in repo_id or repo_id.startswith("~"):
         res = inspect_local_repository_path(repo_id)
@@ -544,7 +611,14 @@ class GuardianRequestHandler(SimpleHTTPRequestHandler):
             self._send_json({"profiles": profiles, "count": len(profiles)})
             return
 
-        # 8. API: Mock Scenarios (only when requested)
+        # 8. API: Browse Local Directories
+        if path == "/api/system/browse-dirs":
+            req_path = query.get("path", [None])[0]
+            res = browse_local_directories(req_path)
+            self._send_json(res)
+            return
+
+        # 9. API: Mock Scenarios (only when requested)
         if path == "/api/mock/scenario":
             scenario = query.get("name", ["clean-repository"])[0]
             data = generate_scenario_data(scenario)
