@@ -1432,6 +1432,8 @@ namespace Enterprise.Presentation.Pages
       return { valid: false, errorType: 'EMPTY_PATH', error: 'Directory path cannot be empty' };
     }
 
+    let isBackendOffline = false;
+
     try {
       if (typeof window !== 'undefined' && window.location) {
         const res = await fetch('/api/repositories/local/validate', {
@@ -1439,7 +1441,9 @@ namespace Enterprise.Presentation.Pages
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ path: trimmed })
         });
-        if (res.ok) {
+        
+        const contentType = res.headers.get('content-type') || '';
+        if (res.ok && contentType.includes('application/json')) {
           const data: LocalRepositoryValidationResult = await res.json();
           if (data.valid && data.repository) {
             const currentList = this.localRepositories();
@@ -1460,9 +1464,13 @@ namespace Enterprise.Presentation.Pages
             errorType: data.errorType || 'NOT_GIT',
             error: data.error || 'Invalid repository directory'
           };
+        } else if (!contentType.includes('application/json')) {
+          isBackendOffline = true;
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      isBackendOffline = true;
+    }
 
     // Fallback check against already loaded repos strictly matching exact path, id, or name (unit testing only)
     const existing = this.localRepositories().find(
@@ -1482,8 +1490,10 @@ namespace Enterprise.Presentation.Pages
       valid: false,
       selectedPath: trimmed,
       isSubdirectory: false,
-      errorType: 'NOT_FOUND',
-      error: `Directory not found or not a valid Git repository: ${trimmed}`
+      errorType: isBackendOffline ? 'BACKEND_OFFLINE' : 'NOT_FOUND',
+      error: isBackendOffline
+        ? `Guardian backend API is not reachable to inspect "${trimmed}". Ensure python backend is running ('python3 scripts/guardian_server.py --port 8000') or served through guardian_server.`
+        : `Directory not found or not a valid Git repository: ${trimmed}`
     };
   }
 
