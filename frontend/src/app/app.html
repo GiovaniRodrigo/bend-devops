@@ -489,7 +489,9 @@
                       <input type="radio" [checked]="codeSourceMode() === 'local'" class="text-cyan-500 focus:ring-cyan-500" />
                       <span class="text-xs font-bold text-white font-mono">Local Repository</span>
                     </div>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Git Detected</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      {{ localRepositories().length }} Detected
+                    </span>
                   </div>
                   <p class="text-[11px] text-slate-400 font-mono mt-2">Direct filesystem workspace analysis</p>
                 </div>
@@ -504,7 +506,9 @@
                       <input type="radio" [checked]="codeSourceMode() === 'github'" class="text-cyan-500 focus:ring-cyan-500" />
                       <span class="text-xs font-bold text-white font-mono">GitHub Repository</span>
                     </div>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">OAuth Connected</span>
+                    <span [class]="'text-[10px] font-mono px-1.5 py-0.5 rounded border ' + (isGitHubConnected() ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20')">
+                      {{ isGitHubConnected() ? 'Connected' : 'Auth Required' }}
+                    </span>
                   </div>
                   <p class="text-[11px] text-slate-400 font-mono mt-2">Cloud repository &amp; PR integration</p>
                 </div>
@@ -513,62 +517,80 @@
               <!-- Local Repository Sub-Panel -->
               @if (codeSourceMode() === 'local') {
                 <div class="p-3 rounded-lg bg-[#080B12] border border-slate-800/80 space-y-2">
-                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono">
-                    <div class="flex items-center gap-2 min-w-0">
-                      <span class="text-slate-500 shrink-0">Path:</span>
-                      <span class="text-slate-200 font-bold bg-[#0B0F19] px-2.5 py-1 rounded border border-slate-800 truncate">{{ localRepoPath() }}</span>
-                      <span class="text-emerald-400 text-[11px] shrink-0 font-medium">&check; repository: {{ localRepoName() }} (.git)</span>
+                  @if (localRepositories().length === 0) {
+                    <div class="p-3 rounded bg-rose-950/20 border border-rose-500/20 text-xs font-mono text-rose-300">
+                      <strong>No Git repositories found</strong>. Please ensure the workspace contains an initialized Git repository.
                     </div>
-                    <div class="flex items-center gap-2 shrink-0">
-                      @if (!isChangingLocalRepo()) {
-                        <button (click)="isChangingLocalRepo.set(true)" class="btn-guardian btn-guardian-secondary h-7 px-2.5 text-[11px]">
-                          Change Repository
-                        </button>
-                      } @else {
-                        <select
-                          [ngModel]="localRepoName()"
-                          (ngModelChange)="setLocalRepo($event)"
-                          class="rounded bg-[#0B0F19] border border-slate-700 px-2 py-1 text-slate-200 text-xs font-mono"
-                        >
-                          <option *ngFor="let repo of availableLocalRepos" [value]="repo">{{ repo }}</option>
-                        </select>
-                        <button (click)="isChangingLocalRepo.set(false)" class="text-xs text-cyan-400 hover:underline">Done</button>
-                      }
-                    </div>
-                  </div>
+                  } @else {
+                    @if (selectedLocalRepo(); as repo) {
+                      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono">
+                        <div class="flex items-center gap-2 min-w-0 flex-1">
+                          <span class="text-slate-500 shrink-0">Repository:</span>
+                          <select
+                            [ngModel]="selectedLocalRepoId()"
+                            (ngModelChange)="setLocalRepo($event)"
+                            class="rounded-lg bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-slate-200 text-xs font-mono flex-1 max-w-md truncate"
+                          >
+                            <option *ngFor="let repoItem of localRepositories()" [value]="repoItem.id">
+                              {{ repoItem.name }} ({{ repoItem.path }})
+                            </option>
+                          </select>
+                        </div>
+                        <div class="flex items-center gap-2 text-[11px] text-slate-400 shrink-0">
+                          <span>HEAD: <strong class="text-cyan-400">{{ repo.headCommit }}</strong></span>
+                          <span class="text-slate-600">&bull;</span>
+                          <span [class]="repo.isClean ? 'text-emerald-400' : 'text-amber-400'">
+                            {{ repo.isClean ? 'Working tree clean' : 'Uncommitted changes' }}
+                          </span>
+                        </div>
+                      </div>
+                    }
+                  }
                 </div>
               }
 
               <!-- GitHub Repository Sub-Panel -->
               @if (codeSourceMode() === 'github') {
-                <div class="p-3 rounded-lg bg-[#080B12] border border-slate-800/80 space-y-2.5 text-xs font-mono">
-                  <div class="flex items-center justify-between text-[11px]">
-                    <span class="text-emerald-400 font-medium">&bull; Connected as @{{ githubAccount() }}</span>
-                    <span class="text-slate-500">Synced via GitHub REST API v3</span>
-                  </div>
-                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label class="block text-slate-400 mb-1 text-[11px]">Organization / Account</label>
-                      <select
-                        [ngModel]="githubAccount()"
-                        (ngModelChange)="githubAccount.set($event)"
-                        class="w-full rounded bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-slate-200"
-                      >
-                        <option value="GiovaniRodrigo">@GiovaniRodrigo (Personal)</option>
-                        <option value="bend-devops-org">@bend-devops-org (Enterprise)</option>
-                      </select>
+                <div class="p-3 rounded-lg bg-[#080B12] border border-slate-800/80 space-y-3 text-xs font-mono">
+                  @if (!isGitHubConnected()) {
+                    <div class="p-3.5 rounded-lg bg-amber-950/20 border border-amber-500/30 space-y-2.5">
+                      <div class="flex items-center gap-2 text-amber-400 font-bold">
+                        <span>⚠️ GitHub connection required</span>
+                      </div>
+                      <p class="text-slate-300 text-[11px]">
+                        GitHub API integration is not authenticated. Provide a Personal Access Token or set GITHUB_TOKEN environment variable to query remote repositories.
+                      </p>
+                      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
+                        <input
+                          type="password"
+                          [ngModel]="githubTokenInput()"
+                          (ngModelChange)="githubTokenInput.set($event)"
+                          placeholder="GitHub Personal Access Token (ghp_...)"
+                          class="flex-1 rounded bg-[#0B0F19] border border-slate-700 px-3 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 font-mono"
+                        />
+                        <button (click)="connectGitHub()" class="btn-guardian btn-guardian-primary h-8 px-4 text-xs font-bold shrink-0">
+                          Connect GitHub &rarr;
+                        </button>
+                      </div>
                     </div>
-                    <div>
-                      <label class="block text-slate-400 mb-1 text-[11px]">Repository</label>
-                      <select
-                        [ngModel]="githubRepo()"
-                        (ngModelChange)="setGitHubRepo($event)"
-                        class="w-full rounded bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-slate-200"
-                      >
-                        <option *ngFor="let repo of availableGitHubRepos" [value]="repo">{{ githubAccount() }}/{{ repo }}</option>
-                      </select>
+                  } @else {
+                    <div class="space-y-2">
+                      <div class="flex items-center justify-between text-[11px]">
+                        <span class="text-emerald-400 font-medium">&bull; GitHub connected</span>
+                        <span class="text-slate-500">{{ gitHubRepositories().length }} repositories available</span>
+                      </div>
+                      <div>
+                        <label class="block text-slate-400 mb-1 text-[11px]">Select GitHub Repository</label>
+                        <select
+                          [ngModel]="selectedGitHubRepoFullName()"
+                          (ngModelChange)="setGitHubRepo($event)"
+                          class="w-full rounded bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-slate-200"
+                        >
+                          <option *ngFor="let repo of gitHubRepositories()" [value]="repo.fullName">{{ repo.fullName }}</option>
+                        </select>
+                      </div>
                     </div>
-                  </div>
+                  }
                 </div>
               }
             </div>
@@ -580,7 +602,7 @@
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-2">
                   <span class="flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-mono font-bold">2</span>
-                  <h3 class="text-xs font-mono uppercase tracking-wider text-slate-200 font-bold">Repository &amp; Branch Configuration</h3>
+                  <h3 class="text-xs font-mono uppercase tracking-wider text-slate-200 font-bold">Repository &amp; Branch Target</h3>
                 </div>
                 <span class="text-[11px] font-mono text-slate-400">Target: <strong class="text-white">{{ activeRepoName() }}</strong></span>
               </div>
@@ -597,7 +619,7 @@
                       (change)="setAnalysisTargetMode('branch')"
                       class="text-cyan-500 focus:ring-cyan-500"
                     />
-                    <span>Branch Comparison (PR / Branch vs Base)</span>
+                    <span>Branch Comparison</span>
                   </label>
                   <label class="flex items-center gap-2 cursor-pointer">
                     <input
@@ -622,37 +644,96 @@
                 </div>
               </div>
 
-              <!-- Source Branch vs Base Branch -->
-              <div class="grid grid-cols-1 sm:grid-cols-11 gap-2 items-center text-xs font-mono pt-1">
-                <div class="sm:col-span-5">
-                  <label class="block text-slate-400 mb-1 text-[11px]">Source Branch (Changes under review)</label>
-                  <select
-                    [ngModel]="sourceBranch()"
-                    (ngModelChange)="setSourceBranch($event)"
-                    class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-slate-200"
-                  >
-                    <option *ngFor="let b of availableBranches" [value]="b">{{ b }}</option>
-                  </select>
-                </div>
-
-                <div class="sm:col-span-1 flex items-center justify-center pt-4 sm:pt-4 text-cyan-400 font-bold select-none">
-                  &rarr;
-                </div>
-
-                <div class="sm:col-span-5">
-                  <div class="flex items-center justify-between mb-1">
-                    <label class="text-slate-400 text-[11px]">Base Branch (Comparison / Target policy)</label>
-                    <span class="text-[10px] text-emerald-400 font-semibold">Strict Gate (0 P0)</span>
+              <!-- TARGET 1: Working Tree Mode -->
+              @if (analysisTargetMode() === 'working_tree') {
+                <div class="p-3.5 rounded-lg bg-[#080B12] border border-slate-800 space-y-2 text-xs font-mono">
+                  <div class="flex items-center justify-between">
+                    <span class="text-slate-400">Working Tree Status:</span>
+                    <span [class]="workingTreeInfo().isClean ? 'px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold' : 'px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold'">
+                      {{ workingTreeInfo().isClean ? 'Working tree clean' : (workingTreeInfo().changedFiles.length + ' uncommitted changes') }}
+                    </span>
                   </div>
-                  <select
-                    [ngModel]="compareBranch()"
-                    (ngModelChange)="setCompareBranch($event)"
-                    class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-slate-200"
-                  >
-                    <option *ngFor="let b of availableBaseBranches" [value]="b">{{ b }}</option>
-                  </select>
+                  @if (workingTreeInfo().isClean) {
+                    <p class="text-[11px] text-slate-400">No uncommitted changes detected in repository workspace. All changes are committed to HEAD.</p>
+                  } @else {
+                    <div class="space-y-1 pt-1">
+                      <div *ngFor="let cf of workingTreeInfo().changedFiles" class="flex items-center justify-between text-[11px] text-slate-300 bg-[#0B0F19] p-1.5 rounded border border-slate-800">
+                        <span>{{ cf.name }}</span>
+                        <span class="text-slate-500">{{ cf.status }} (+{{ cf.additions }} / -{{ cf.deletions }})</span>
+                      </div>
+                    </div>
+                  }
                 </div>
-              </div>
+              }
+
+              <!-- TARGET 2: Specific Commit SHA Mode -->
+              @if (analysisTargetMode() === 'commit') {
+                <div class="p-3.5 rounded-lg bg-[#080B12] border border-slate-800 space-y-2.5 text-xs font-mono">
+                  <div>
+                    <label class="block text-slate-400 mb-1 text-[11px]">Commit SHA to Validate</label>
+                    <div class="flex items-center gap-2">
+                      <input
+                        type="text"
+                        [ngModel]="commitShaInput()"
+                        (ngModelChange)="validateCommitInput($event)"
+                        placeholder="Enter commit hash (e.g. ab28967)"
+                        class="flex-1 rounded bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-slate-200 text-xs font-mono placeholder:text-slate-600"
+                      />
+                      <button (click)="validateCommitInput(commitShaInput())" class="btn-guardian btn-guardian-secondary h-8 px-3 text-xs font-bold">
+                        Verify SHA
+                      </button>
+                    </div>
+                  </div>
+                  @if (commitValidation()) {
+                    <div [class]="'p-2 rounded text-[11px] ' + (commitValidation()?.valid ? 'bg-emerald-950/20 border border-emerald-500/20 text-emerald-300' : 'bg-rose-950/20 border border-rose-500/20 text-rose-300')">
+                      @if (commitValidation()?.valid) {
+                        <span>&check; Commit found: <strong>{{ commitValidation()?.shortSha }}</strong> — {{ commitValidation()?.message }} (by {{ commitValidation()?.author }})</span>
+                      } @else {
+                        <span>&cross; {{ commitValidation()?.error || 'Commit not found' }}</span>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- TARGET 3: Branch Comparison Mode -->
+              @if (analysisTargetMode() === 'branch') {
+                <div class="space-y-2">
+                  <div class="grid grid-cols-1 sm:grid-cols-11 gap-2 items-center text-xs font-mono pt-1">
+                    <div class="sm:col-span-5">
+                      <label class="block text-slate-400 mb-1 text-[11px]">Source Branch (Changes under review)</label>
+                      <select
+                        [ngModel]="sourceBranch()"
+                        (ngModelChange)="setSourceBranch($event)"
+                        class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-slate-200"
+                      >
+                        <option *ngFor="let b of availableBranches()" [value]="b">{{ b }}</option>
+                      </select>
+                    </div>
+
+                    <div class="sm:col-span-1 flex items-center justify-center pt-4 sm:pt-4 text-cyan-400 font-bold select-none">
+                      &rarr;
+                    </div>
+
+                    <div class="sm:col-span-5">
+                      <div class="flex items-center justify-between mb-1">
+                        <label class="text-slate-400 text-[11px]">Base Branch (Comparison policy)</label>
+                        <span class="text-[10px] text-emerald-400 font-semibold">Strict Gate</span>
+                      </div>
+                      <select
+                        [ngModel]="compareBranch()"
+                        (ngModelChange)="setCompareBranch($event)"
+                        class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-slate-200"
+                      >
+                        <option *ngFor="let b of availableBaseBranches()" [value]="b">{{ b }}</option>
+                      </select>
+                    </div>
+                  </div>
+                  @if (availableBranches().length <= 1) {
+                    <p class="text-[11px] text-slate-500 font-mono">Single branch ({{ availableBranches()[0] }}) detected in selected repository.</p>
+                  }
+                </div>
+              }
             </div>
 
             <!-- ================================================================= -->

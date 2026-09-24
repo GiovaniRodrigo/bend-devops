@@ -224,56 +224,53 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     expect(app.history().length).toBe(prevHistoryLen + 1);
   });
 
-  it('should support Stage 1 Code Source switching between Local and GitHub repository', () => {
+  it('should support Stage 1 Code Source switching between Local and GitHub repository', async () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
 
     expect(app.codeSourceMode()).toBe('local');
-    expect(app.localRepoName()).toBe('bend-devops');
-    expect(app.activeRepoName()).toBe('bend-devops');
+    expect(app.localRepoName()).toBe('ai-bend-devops');
+    expect(app.activeRepoName()).toBe('ai-bend-devops');
+    expect(app.availableLocalRepos()).toContain('ai-bend-devops');
 
     // Switch to GitHub repository
     app.setCodeSourceMode('github');
     expect(app.codeSourceMode()).toBe('github');
-    expect(app.githubAccount()).toBe('GiovaniRodrigo');
-    expect(app.githubRepo()).toBe('bend-devops');
-    expect(app.activeRepoName()).toBe('GiovaniRodrigo/bend-devops');
+    // Without token, isGitHubConnected is false
+    expect(app.isGitHubConnected()).toBe(false);
 
-    // Change GitHub repository
-    app.setGitHubRepo('billing-service');
-    expect(app.githubRepo()).toBe('billing-service');
-    expect(app.activeRepoName()).toBe('GiovaniRodrigo/billing-service');
-
-    // Switch back to Local repository and change local repo
+    // Switch back to Local repository
     app.setCodeSourceMode('local');
-    app.setLocalRepo('customer-api');
-    expect(app.localRepoName()).toBe('customer-api');
-    expect(app.localRepoPath()).toBe('~/projects/customer-api');
-    expect(app.activeRepoName()).toBe('customer-api');
+    expect(app.codeSourceMode()).toBe('local');
+    expect(app.localRepoName()).toBe('ai-bend-devops');
   });
 
-  it('should support Stage 2 Repository and Branch target configuration', () => {
+  it('should support Stage 2 Target Modes (Branch Comparison, Working Tree, Commit SHA)', async () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
 
+    // Target 1: Branch Mode
     expect(app.analysisTargetMode()).toBe('branch');
-    expect(app.sourceBranch()).toBe('feature/order-refactor');
-    expect(app.compareBranch()).toBe('main');
+    expect(app.availableBranches()).toContain('main');
 
-    // Switch target mode
+    // Target 2: Working Tree Mode
     app.setAnalysisTargetMode('working_tree');
     expect(app.analysisTargetMode()).toBe('working_tree');
+    expect(app.workingTreeInfo()).toBeDefined();
 
+    // Target 3: Commit SHA Validation
     app.setAnalysisTargetMode('commit');
     expect(app.analysisTargetMode()).toBe('commit');
 
-    // Change source and compare branches
-    app.setSourceBranch('feature/billing-service');
-    expect(app.sourceBranch()).toBe('feature/billing-service');
+    // Validate real HEAD commit
+    await app.validateCommitInput('ab28967');
+    expect(app.commitValidation()?.valid).toBe(true);
+    expect(app.commitValidation()?.shortSha).toBe('ab28967');
 
-    app.setCompareBranch('develop');
-    expect(app.compareBranch()).toBe('develop');
-    expect(app.selectedBranch()).toBe('develop');
+    // Validate non-existent fake commit
+    await app.validateCommitInput('nonexistent999999');
+    expect(app.commitValidation()?.valid).toBe(false);
+    expect(app.commitValidation()?.error).toContain('Commit not found');
   });
 
   it('should support Stage 3 Architecture Validation scope (All, Rule Set, Custom) and dynamic rule counts', () => {
@@ -319,11 +316,9 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     // Real Data Default check
     expect(app.isMockMode()).toBe(false);
     expect(app.mockScenario()).toBeNull();
-    expect(app.localRepoName()).toBe('bend-devops');
-    expect(app.availableLocalRepos).toContain('bend-devops');
-    expect(app.availableBranches).toContain('main');
-    expect(app.availableBranches).toContain('develop');
-    expect(app.availableBranches).toContain('feature/order-refactor');
+    expect(app.localRepoName()).toBe('ai-bend-devops');
+    expect(app.availableLocalRepos()).toContain('ai-bend-devops');
+    expect(app.availableBranches()).toContain('main');
 
     // Metrics are strictly computed from real executions, not arbitrary offsets (no +842, no || 24)
     expect(app.totalAuditsExecuted()).toBe(app.history().length);

@@ -20,6 +20,11 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
+from scripts.guardian_server import GuardianRequestHandler
+
 DIST_DIR = BASE_DIR / "frontend" / "dist" / "frontend" / "browser"
 SCREENSHOTS_DIR = BASE_DIR / "tests" / "screenshots"
 
@@ -37,8 +42,9 @@ class StaticHttpServer:
         self.thread = None
 
     def start(self):
-        handler = lambda *args, **kwargs: http.server.SimpleHTTPRequestHandler(*args, directory=str(self.directory), **kwargs)
-        self.server = socketserver.TCPServer(('127.0.0.1', self.port), handler)
+        GuardianRequestHandler.is_mock_mode = False
+        GuardianRequestHandler.mock_scenario = None
+        self.server = socketserver.TCPServer(('127.0.0.1', self.port), GuardianRequestHandler)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
         time.sleep(0.5)

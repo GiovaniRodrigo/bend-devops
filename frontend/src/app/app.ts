@@ -16,7 +16,11 @@ import {
   FileAuditInfo,
   LayerVocabularyItem,
   VcsPlatform,
-  WebhookEventPayload
+  WebhookEventPayload,
+  LocalRepositoryInfo,
+  GitHubRepositoryInfo,
+  WorkingTreeInfo,
+  CommitValidationResult
 } from './models/culture.model';
 
 export type TabId = 
@@ -72,22 +76,55 @@ export class App {
   readonly isMockMode = signal<boolean>(false);
   readonly mockScenario = signal<string | null>(null);
 
-  // Code Source State (Stage 1 - Real Workspace Default)
+  // Code Source State (Stage 1 - Real Discovery)
   readonly codeSourceMode = signal<'local' | 'github'>('local');
-  readonly localRepoPath = signal<string>('~/projects/bend-devops');
-  readonly localRepoName = signal<string>('bend-devops');
+  readonly localRepositories = this.guardianService.localRepositories;
+  readonly isDiscoveringRepos = this.guardianService.isDiscoveringRepos;
+  readonly selectedLocalRepoId = signal<string>('ai-bend-devops');
+  readonly selectedLocalRepo = computed(() => {
+    return this.localRepositories().find(r => r.id === this.selectedLocalRepoId()) || this.localRepositories()[0];
+  });
+  readonly localRepoName = computed(() => this.selectedLocalRepo() ? this.selectedLocalRepo().name : 'ai-bend-devops');
+  readonly localRepoPath = computed(() => this.selectedLocalRepo() ? this.selectedLocalRepo().path : '/home/isabelle/projects/ai-bend-devops');
   readonly isChangingLocalRepo = signal<boolean>(false);
-  readonly availableLocalRepos = ['bend-devops'];
-  readonly githubAccount = signal<string>('GiovaniRodrigo');
-  readonly githubRepo = signal<string>('bend-devops');
-  readonly availableGitHubRepos = ['bend-devops'];
+  readonly availableLocalRepos = computed(() => this.localRepositories().map(r => r.name));
+
+  // GitHub Repository State
+  readonly gitHubRepositories = this.guardianService.gitHubRepositories;
+  readonly isGitHubConnected = this.guardianService.isGitHubConnected;
+  readonly gitHubStatusMessage = this.guardianService.gitHubStatusMessage;
+  readonly githubTokenInput = signal<string>('');
+  readonly selectedGitHubRepoFullName = signal<string>('');
+  readonly githubAccount = computed(() => {
+    const parts = this.selectedGitHubRepoFullName().split('/');
+    return parts.length > 1 ? parts[0] : 'GiovaniRodrigo';
+  });
+  readonly githubRepo = computed(() => {
+    const parts = this.selectedGitHubRepoFullName().split('/');
+    return parts.length > 1 ? parts[1] : (this.selectedGitHubRepoFullName() || 'bend-devops');
+  });
+  readonly availableGitHubRepos = computed(() => this.gitHubRepositories().map(r => r.fullName));
 
   // Repository & Branch Target State (Stage 2 - Real Git Branches)
   readonly analysisTargetMode = signal<'working_tree' | 'branch' | 'commit'>('branch');
-  readonly sourceBranch = signal<string>('feature/order-refactor');
+  readonly availableBranches = computed(() => {
+    if (this.codeSourceMode() === 'local') {
+      const repo = this.selectedLocalRepo();
+      return repo && repo.branches && repo.branches.length > 0 ? repo.branches : ['main'];
+    } else {
+      const gh = this.gitHubRepositories().find(r => r.fullName === this.selectedGitHubRepoFullName());
+      return gh ? [gh.defaultBranch] : ['main'];
+    }
+  });
+  readonly availableBaseBranches = computed(() => this.availableBranches());
+  readonly sourceBranch = signal<string>('main');
   readonly compareBranch = signal<string>('main');
-  readonly availableBranches = ['feature/order-refactor', 'develop', 'main'];
-  readonly availableBaseBranches = ['main', 'develop'];
+
+  // Working Tree & Commit Validation State
+  readonly workingTreeInfo = this.guardianService.workingTreeInfo;
+  readonly commitShaInput = signal<string>('ab28967');
+  readonly commitValidation = signal<CommitValidationResult | null>(null);
+  readonly isCommitValidating = signal<boolean>(false);
 
   // Validation Rules Scope State (Stage 3 - Real Rules Manifest)
   readonly validationScopeMode = signal<'all' | 'ruleset' | 'custom'>('all');
@@ -100,7 +137,7 @@ export class App {
   readonly inputSourceCode = signal<string>('');
   readonly hasTestFileChecked = signal<boolean>(true);
   readonly inputAuthor = signal<string>('DevOps Engineer');
-  readonly inputRepo = signal<string>('GiovaniRodrigo/bend-devops');
+  readonly inputRepo = signal<string>('ai-bend-devops');
   readonly inputPrNumber = signal<string>('42');
   // Scope & Progressive Disclosure State
   readonly auditScope = signal<AuditScope>('branch_analysis');
@@ -501,6 +538,8 @@ export class App {
           this.mockScenario.set(scenario);
           this.loadMockScenario(scenario);
         } else {
+          this.guardianService.discoverLocalRepositories();
+          this.guardianService.inspectWorkingTree();
           this.analyzeBranch();
         }
       } catch (e) {
@@ -548,8 +587,6 @@ export class App {
       this.analyzeSingleFile();
     } else if (scenario === 'github-repository') {
       this.codeSourceMode.set('github');
-      this.githubAccount.set('GiovaniRodrigo');
-      this.githubRepo.set('bend-devops');
       this.analyzeBranch();
     } else if (scenario === 'empty-repository') {
       this.currentAuditedFiles.set([]);
@@ -564,26 +601,62 @@ export class App {
   setCodeSourceMode(mode: 'local' | 'github'): void {
     this.codeSourceMode.set(mode);
     this.inputRepo.set(this.activeRepoName());
+    if (mode === 'github' && !this.isGitHubConnected()) {
+      this.guardianService.checkGitHubConnection();
+    }
   }
 
-  setLocalRepo(repo: string): void {
-    this.localRepoName.set(repo);
-    this.localRepoPath.set(`~/projects/${repo}`);
-    this.inputRepo.set(repo);
+  setLocalRepo(repoNameOrId: string): void {
+    const found = this.localRepositories().find(r => r.id === repoNameOrId || r.name === repoNameOrId);
+    if (found) {
+      this.selectedLocalRepoId.set(found.id);
+      this.inputRepo.set(found.name);
+      if (found.branches && found.branches.length > 0) {
+        this.sourceBranch.set(found.currentBranch || found.branches[0]);
+        this.compareBranch.set(found.branches[0]);
+      }
+      this.guardianService.inspectWorkingTree(found.id);
+    }
     this.isChangingLocalRepo.set(false);
     this.reanalyzeCurrentScope();
   }
 
-  setGitHubRepo(repo: string): void {
-    this.githubRepo.set(repo);
-    this.inputRepo.set(`${this.githubAccount()}/${repo}`);
+  setGitHubRepo(repoFullName: string): void {
+    this.selectedGitHubRepoFullName.set(repoFullName);
+    this.inputRepo.set(repoFullName);
     this.reanalyzeCurrentScope();
+  }
+
+  async connectGitHub(token?: string): Promise<void> {
+    const t = token || this.githubTokenInput();
+    const res = await this.guardianService.checkGitHubConnection(t);
+    if (res.connected && res.repositories.length > 0) {
+      this.selectedGitHubRepoFullName.set(res.repositories[0].fullName);
+      this.inputRepo.set(res.repositories[0].fullName);
+      this.reanalyzeCurrentScope();
+    }
   }
 
   // Stage 2 Helper Methods
   setAnalysisTargetMode(mode: 'working_tree' | 'branch' | 'commit'): void {
     this.analysisTargetMode.set(mode);
+    if (mode === 'working_tree') {
+      this.guardianService.inspectWorkingTree(this.selectedLocalRepoId());
+    } else if (mode === 'commit') {
+      this.validateCommitInput(this.commitShaInput());
+    }
     this.reanalyzeCurrentScope();
+  }
+
+  async validateCommitInput(sha: string): Promise<void> {
+    this.commitShaInput.set(sha);
+    this.isCommitValidating.set(true);
+    const res = await this.guardianService.validateCommitSha(this.selectedLocalRepoId(), sha);
+    this.commitValidation.set(res);
+    this.isCommitValidating.set(false);
+    if (res.valid) {
+      this.reanalyzeCurrentScope();
+    }
   }
 
   setSourceBranch(branch: string): void {

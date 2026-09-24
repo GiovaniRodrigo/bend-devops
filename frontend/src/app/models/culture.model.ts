@@ -14,6 +14,52 @@ export type SeverityLevel = 'P0_BLOCKING' | 'P1_WARNING' | 'P2_INFO';
 
 export type VcsPlatform = 'github' | 'gitlab' | 'bitbucket' | 'local';
 
+export interface LocalRepositoryInfo {
+  id: string;
+  name: string;
+  path: string;
+  remoteUrl: string;
+  currentBranch: string;
+  branches: string[];
+  headCommit: string;
+  headCommitMessage?: string;
+  isClean: boolean;
+  isCurrent?: boolean;
+}
+
+export interface GitHubRepositoryInfo {
+  id: string;
+  name: string;
+  fullName: string;
+  owner: string;
+  defaultBranch: string;
+  url: string;
+}
+
+export interface WorkingTreeInfo {
+  isClean: boolean;
+  changedFiles: {
+    name: string;
+    status: 'modified' | 'added' | 'deleted' | 'untracked';
+    additions: number;
+    deletions: number;
+  }[];
+  totalAdditions: number;
+  totalDeletions: number;
+  diff: string;
+  error?: string;
+}
+
+export interface CommitValidationResult {
+  valid: boolean;
+  sha?: string;
+  shortSha?: string;
+  author?: string;
+  date?: string;
+  message?: string;
+  error?: string;
+}
+
 export type ArchitectureProfileId = 
   | 'clean_architecture'
   | 'layered_mvc'
