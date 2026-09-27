@@ -73,6 +73,31 @@ python3 scripts/culture_guard.py --vcs gitlab
 python3 scripts/culture_guard.py --vcs bitbucket
 ```
 
+### 3.5. Rule Management CLI Commands (`guardian rules`)
+```bash
+# List all resolved rules across all tiers
+python3 scripts/culture_guard.py rules list
+
+# Inspect rule specification
+python3 scripts/culture_guard.py rules show CULT01
+
+# Search rules by keyword
+python3 scripts/culture_guard.py rules search secret
+
+# Validate a custom rule against schema and ReDoS safety
+python3 scripts/culture_guard.py rules validate backend/rules/custom/my_rule.json
+
+# Test a rule against an inline code snippet
+python3 scripts/culture_guard.py rules test CULT01 --code "def fn(): pass"
+
+# Clone an existing rule
+python3 scripts/culture_guard.py rules clone ARCH-LAYER-01 ARCH-LAYER-01-CUSTOM --name "Custom Presentation Boundary"
+
+# Export and import rule manifests
+python3 scripts/culture_guard.py rules export all --out rules_backup.json
+python3 scripts/culture_guard.py rules import rules_backup.json --overwrite
+```
+
 ---
 
 ## 🅰️ 4. Running the Angular Web Dashboard
@@ -101,14 +126,14 @@ bend run-rs backend/tests/test_rules.bend
 # 2. Bend Parallel Engine Integration Tests
 bend run-rs backend/tests/test_engine.bend
 
-# 3. Python False-Positive & Token Filter Tests
-python3 -m unittest discover -s tests -p "test_*.py"
+# 3. Python Rule Registry, API, CLI & False-Positive Tests
+python3 -m pytest tests/ -v
 
 # 4. Multi-Platform VCS Adapter Tests
-python3 -m unittest discover -s tests/vcs -p "test_*.py"
+python3 -m pytest tests/vcs/ -v
 
-# 5. Angular Vitest Tests
-cd frontend && npm test -- --watch=false
+# 5. Angular Production Build
+cd frontend && npm run build
 ```
 
 ---
@@ -116,6 +141,9 @@ cd frontend && npm test -- --watch=false
 ## 🔗 Related Documentation
 - [Clean Architecture & System Design](./ARCHITECTURE.md)
 - [4-Tier Pipeline Specification](./PIPELINE.md)
+- [Extensible Custom Rules Guide](./CUSTOM-RULES.md)
+- [Rule Authoring & Schema Reference](./RULE-AUTHORING.md)
+- [Rule REST API Reference](./RULE-API.md)
 - [Multi-Platform VCS Integrations](./INTEGRATIONS.md)
 - [Engineering Standards & Rules Catalog](./RULES.md)
 - [Contributor Guidelines](./CONTRIBUTING.md)

@@ -223,25 +223,59 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     expect(app.history().length).toBe(prevHistoryLen + 1);
   });
 
-  it('should support Stage 1 Code Source switching between Local and GitHub repository', async () => {
+  it('should support Stage 1 Code Source switching between Local and Nuvem repository with turn on/off switch', async () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
+    app.activeTab.set('analyze');
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
 
     expect(app.codeSourceMode()).toBe('local');
     expect(app.localRepoName()).toBe('ai-bend-devops');
     expect(app.activeRepoName()).toBe('ai-bend-devops');
     expect(app.availableLocalRepos()).toContain('ai-bend-devops');
 
-    // Switch to GitHub repository
-    app.setCodeSourceMode('github');
-    expect(app.codeSourceMode()).toBe('github');
-    // Without token, isGitHubConnected is false
-    expect(app.isGitHubConnected()).toBe(false);
+    // Verify DOM contains Local and Nuvem switch options and toggle switch
+    const localOption = compiled.querySelector('[data-testid="code-source-local"]') as HTMLButtonElement;
+    const nuvemOption = compiled.querySelector('[data-testid="code-source-nuvem"]') as HTMLButtonElement;
+    const toggleSwitch = compiled.querySelector('[data-testid="code-source-toggle-switch"]') as HTMLButtonElement;
+    expect(localOption).toBeTruthy();
+    expect(nuvemOption).toBeTruthy();
+    expect(toggleSwitch).toBeTruthy();
+    expect(localOption?.textContent).toContain('Local');
+    expect(localOption?.textContent).toContain('ON');
+    expect(nuvemOption?.textContent).toContain('Nuvem');
+    expect(nuvemOption?.textContent).toContain('OFF');
 
-    // Switch back to Local repository
-    app.setCodeSourceMode('local');
+    // Click toggle switch to switch to Nuvem
+    toggleSwitch.click();
+    fixture.detectChanges();
+    expect(app.codeSourceMode()).toBe('github');
+    expect(app.isGitHubConnected()).toBe(false);
+    expect(localOption?.textContent).toContain('OFF');
+    expect(nuvemOption?.textContent).toContain('ON');
+
+    // Click toggle switch again to switch back to Local
+    toggleSwitch.click();
+    fixture.detectChanges();
     expect(app.codeSourceMode()).toBe('local');
     expect(app.localRepoName()).toBe('ai-bend-devops');
+    expect(localOption?.textContent).toContain('ON');
+    expect(nuvemOption?.textContent).toContain('OFF');
+
+    // Click Nuvem button directly
+    nuvemOption.click();
+    fixture.detectChanges();
+    expect(app.codeSourceMode()).toBe('github');
+    expect(localOption?.textContent).toContain('OFF');
+    expect(nuvemOption?.textContent).toContain('ON');
+
+    // Click Local button directly
+    localOption.click();
+    fixture.detectChanges();
+    expect(app.codeSourceMode()).toBe('local');
+    expect(localOption?.textContent).toContain('ON');
+    expect(nuvemOption?.textContent).toContain('OFF');
   });
 
   it('should allow user to select and validate local repository directory path', async () => {
@@ -450,5 +484,119 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     expect(compiled.textContent).toContain('No Audit Results Available');
     expect(compiled.textContent).toContain('No repository or branch audits have been recorded in this session yet.');
   });
+
+  it('should list detected violations in Branch Analysis Result and allow file review by violation file name', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    await app.analyzeBranch();
+    expect(app.auditScope()).toBe('branch_analysis');
+    expect(app.branchViolations().length).toBeGreaterThan(0);
+    expect(app.currentReport().totalViolations).toBeGreaterThan(0);
+
+    const firstViolation = app.branchViolations()[0];
+    expect(firstViolation.ruleId).toBeDefined();
+    expect(firstViolation.fileName).toBeDefined();
+
+    // Review file by violation file name
+    app.reviewFileByName(firstViolation.fileName);
+    expect(app.isReviewingSpecificFile()).toBe(true);
+    expect(app.inputFileName()).toBe(firstViolation.fileName);
+
+    app.closeFileReview();
+    expect(app.isReviewingSpecificFile()).toBe(false);
+  });
+
+  it('should toggle light and dark themes with correct document classes', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    const initial = app.theme();
+    app.toggleTheme();
+    const next = app.theme();
+    expect(next).not.toBe(initial);
+
+    app.applyTheme('light');
+    expect(document.documentElement.classList.contains('light')).toBe(true);
+    expect(document.documentElement.classList.contains('dark')).toBe(false);
+
+    app.applyTheme('dark');
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(document.documentElement.classList.contains('light')).toBe(false);
+  });
+
+  it('should synchronize active repository path and only execute evaluation when Analyze Branch is clicked', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    // Initial default repo
+    expect(app.activeRepoPath()).toBe('/home/isabelle/projects/ai-bend-devops');
+
+    // Switch to another path or validate custom path -> should update selection WITHOUT auto-running audit
+    await app.validateAndSetCustomPath('/home/isabelle/projects/ai-bend-devops');
+    expect(app.selectedRepositoryPath()).toBe('/home/isabelle/projects/ai-bend-devops');
+    expect(app.activeRepoPath()).toBe('/home/isabelle/projects/ai-bend-devops');
+    expect(app.activeRepoName()).toBe('ai-bend-devops');
+    expect(app.activeTargetScopeDescription()).toContain('Branch:');
+    expect(app.currentAuditedFiles().length).toBe(0);
+
+    // Explicitly click/run Analyze Branch
+    await app.analyzeBranch();
+    expect(app.currentAuditedFiles().length).toBeGreaterThan(0);
+    expect(app.currentReport()).toBeDefined();
+
+    // Verify Audit Results view reflects the path and audited files
+    app.activeTab.set('results');
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('/home/isabelle/projects/ai-bend-devops');
+  });
+
+  it('should faithfully update progress bar percentage and step descriptions during analysis', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.activeTab.set('analyze');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(app.isAnalyzing()).toBe(false);
+    expect(app.analysisProgress()).toBe(0);
+
+    // Launch audit
+    const analyzePromise = app.analyzeBranch();
+    
+    // Check that analyzing state is active
+    expect(app.isAnalyzing()).toBe(true);
+    expect(app.analysisProgress()).toBeGreaterThanOrEqual(10);
+    expect(app.analysisProgressStep()).toBeTruthy();
+
+    await analyzePromise;
+    expect(app.analysisProgress()).toBe(100);
+    expect(app.analysisProgressStep()).toContain('completed');
+  });
+
+  it('should produce 0 violations and 100% score when all custom rules are unselected', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.activeTab.set('analyze');
+    await fixture.whenStable();
+
+    // Switch to custom rules mode and clear all rules
+    app.setValidationScopeMode('custom');
+    app.clearAllCustomRules();
+    expect(app.selectedCustomRuleIds().size).toBe(0);
+    expect(app.effectiveRulesCount()).toBe(0);
+
+    // Execute audit with 0 selected rules
+    await app.analyzeBranch();
+    expect(app.currentReport().totalViolations).toBe(0);
+    expect(app.currentReport().p0Count).toBe(0);
+    expect(app.currentReport().score).toBe(100);
+    expect(app.currentReport().isApproved).toBe(true);
+    expect(app.branchViolations().length).toBe(0);
+    expect(app.displayBranchFiles().every(f => f.status === 'passed')).toBe(true);
+  });
 });
+
 

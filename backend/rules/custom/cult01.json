@@ -1,0 +1,80 @@
+{
+  "id": "CULT01",
+  "version": "1.0.0",
+  "name": "Zero Lazy Code & Complete Implementation",
+  "description": "Prohibits incomplete code in pull requests, including TODOs, FIXMEs, empty pass statements, or stubs without a functional body.",
+  "type": "pattern",
+  "category": "culture",
+  "severity": "P0",
+  "penaltyPoints": 35,
+  "penalty_points": 35,
+  "status": "ACTIVE",
+  "enabled": true,
+  "tier": "custom",
+  "layer": null,
+  "architectures": [
+    "clean_architecture",
+    "layered_mvc",
+    "microservices",
+    "cqrs_event_sourcing",
+    "rest_api",
+    "frontend_clean"
+  ],
+  "languages": [
+    "csharp",
+    "python",
+    "typescript",
+    "php",
+    "golang",
+    "java",
+    "rust"
+  ],
+  "scope": {
+    "include": [
+      "**/*"
+    ],
+    "exclude": [
+      "tests/**",
+      "test/**",
+      "node_modules/**"
+    ],
+    "target_layer": null
+  },
+  "condition": {
+    "pattern": "(?i)#\\s*TODO",
+    "patterns": [
+      "(?i)#\\s*TODO",
+      "(?i)//\\s*TODO",
+      "(?i)#\\s*FIXME",
+      "(?i)//\\s*FIXME",
+      "(?i)to\\s+be\\s+implemented",
+      "(?i)implement\\s+later",
+      "^\\s*pass\\s*$",
+      "raise\\s+NotImplementedError"
+    ],
+    "naming_convention": null,
+    "source_layer": null,
+    "forbidden_layer": null,
+    "forbidden_targets": [],
+    "required_path_prefix": null,
+    "ast_selector": null
+  },
+  "message": "Prohibits incomplete code in pull requests, including TODOs, FIXMEs, empty pass statements, or stubs without a functional body.",
+  "suggestion": "Implement the logic completely or formally document the pending item in spec.md before submitting code.",
+  "rationale": "Engineering standards require complete implementations without hidden operational gaps.",
+  "remediation": "Implement the logic completely or formally document the pending item in spec.md before submitting code.",
+  "suppression": {
+    "allowed": true,
+    "pragma": "@guardian-ignore",
+    "requires_reason": true,
+    "minimum_reason_length": 8
+  },
+  "tests": [],
+  "metadata": {
+    "author": "system",
+    "created_at": "2026-09-26T02:22:36.635044+00:00",
+    "updated_at": "2026-09-27T20:31:04.166767+00:00",
+    "executions_count": 0,
+    "violations_count": 0
+  }
+}

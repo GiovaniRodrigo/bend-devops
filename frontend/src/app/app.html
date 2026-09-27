@@ -165,7 +165,7 @@
       </nav>
 
       <!-- Sidebar Status Footer -->
-      <div class="p-3 border-t border-slate-800/80 bg-[#080B12]/80" *ngIf="!isSidebarCollapsed()">
+      <div class="p-3 border-t border-slate-800/80 bg-[#080B12]/80 space-y-2" *ngIf="!isSidebarCollapsed()">
         <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[#111722] border border-slate-800 text-[11px] font-mono">
           <div class="flex items-center gap-2">
             <span class="pulse-dot-green"><span></span><span></span></span>
@@ -173,6 +173,17 @@
           </div>
           <span class="text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 text-[10px]">Bend HVM</span>
         </div>
+
+        <button
+          (click)="toggleTheme()"
+          class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-[#111722] hover:bg-slate-800/60 border border-slate-800 text-[11px] font-mono text-slate-300 transition-colors"
+        >
+          <span class="flex items-center gap-2">
+            <span *ngIf="theme() === 'dark'">☀️ Modo Claro</span>
+            <span *ngIf="theme() === 'light'">🌙 Modo Escuro</span>
+          </span>
+          <span class="text-[10px] uppercase font-bold text-cyan-400 font-mono">{{ theme() }}</span>
+        </button>
       </div>
     </aside>
     }
@@ -236,6 +247,33 @@
             <button (click)="openExport('sarif')" class="btn-guardian btn-guardian-secondary h-8 px-3 text-xs">
               <svg class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
               <span>SARIF Export</span>
+            </button>
+
+            <!-- Light / Dark Mode Toggle Button -->
+            <button
+              (click)="toggleTheme()"
+              [title]="theme() === 'dark' ? 'Ativar Modo Claro' : 'Ativar Modo Escuro'"
+              class="btn-guardian btn-guardian-secondary h-8 px-2.5 text-xs flex items-center gap-1.5"
+            >
+              @if (theme() === 'dark') {
+                <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="5"></circle>
+                  <line x1="12" y1="1" x2="12" y2="3"></line>
+                  <line x1="12" y1="21" x2="12" y2="23"></line>
+                  <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                  <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                  <line x1="1" y1="12" x2="3" y2="12"></line>
+                  <line x1="21" y1="12" x2="23" y2="12"></line>
+                  <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                  <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                </svg>
+                <span class="hidden sm:inline">Modo Claro</span>
+              } @else {
+                <svg class="w-3.5 h-3.5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                </svg>
+                <span class="hidden sm:inline">Modo Escuro</span>
+              }
             </button>
 
             <button (click)="activeTab.set('analyze')" class="btn-guardian btn-guardian-primary h-8 px-3.5 text-xs">
@@ -466,545 +504,507 @@
             </div>
 
             <!-- ================================================================= -->
-            <!-- STAGE 1: CODE SOURCE                                             -->
+            <!-- CONFIGURATION DECK: 3-COLUMN RESPONSIVE SETUP TOOLBAR             -->
+            <!-- (Source -> Target -> Rules unified for low cognitive load)        -->
             <!-- ================================================================= -->
-            <div class="card-guardian p-4 space-y-3">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <span class="flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-mono font-bold">1</span>
-                  <h3 class="text-xs font-mono uppercase tracking-wider text-slate-200 font-bold">Code Source</h3>
-                </div>
-                <span class="text-[11px] font-mono text-slate-400">Select source repository location</span>
-              </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-3.5 items-stretch">
 
-              <!-- Source Toggle Cards -->
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <!-- Local Repository Option -->
-                <div
-                  (click)="setCodeSourceMode('local')"
-                  [class]="'p-3.5 rounded-xl border cursor-pointer transition-all ' + (codeSourceMode() === 'local' ? 'bg-cyan-950/20 border-cyan-500/50 shadow-md ring-1 ring-cyan-500/30' : 'bg-[#0B0F19] border-slate-800 hover:border-slate-700 opacity-75 hover:opacity-100')"
-                >
-                  <div class="flex items-start justify-between">
+              <!-- =============================================================== -->
+              <!-- CARD 1: CODE SOURCE                                             -->
+              <!-- =============================================================== -->
+              <div class="card-guardian p-4 flex flex-col justify-between space-y-3">
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
-                      <input type="radio" [checked]="codeSourceMode() === 'local'" class="text-cyan-500 focus:ring-cyan-500" />
-                      <span class="text-xs font-bold text-white font-mono">Local Repository</span>
-                    </div>
-                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      {{ localRepositories().length }} Detected
-                    </span>
-                  </div>
-                  <p class="text-[11px] text-slate-400 font-mono mt-2">Direct filesystem workspace analysis</p>
-                </div>
-
-                <!-- GitHub Repository Option -->
-                <div
-                  (click)="setCodeSourceMode('github')"
-                  [class]="'p-3.5 rounded-xl border cursor-pointer transition-all ' + (codeSourceMode() === 'github' ? 'bg-cyan-950/20 border-cyan-500/50 shadow-md ring-1 ring-cyan-500/30' : 'bg-[#0B0F19] border-slate-800 hover:border-slate-700 opacity-75 hover:opacity-100')"
-                >
-                  <div class="flex items-start justify-between">
-                    <div class="flex items-center gap-2">
-                      <input type="radio" [checked]="codeSourceMode() === 'github'" class="text-cyan-500 focus:ring-cyan-500" />
-                      <span class="text-xs font-bold text-white font-mono">GitHub Repository</span>
-                    </div>
-                    <span [class]="'text-[10px] font-mono px-1.5 py-0.5 rounded border ' + (isGitHubConnected() ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20')">
-                      {{ isGitHubConnected() ? 'Connected' : 'Auth Required' }}
-                    </span>
-                  </div>
-                  <p class="text-[11px] text-slate-400 font-mono mt-2">Cloud repository &amp; PR integration</p>
-                </div>
-              </div>
-
-              <!-- Local Repository Sub-Panel -->
-              @if (codeSourceMode() === 'local') {
-                <div class="p-3.5 rounded-lg bg-[#080B12] border border-slate-800/80 space-y-3 font-mono text-xs">
-                  
-                  <!-- Hidden native directory input for OS folder picker -->
-                  <input
-                    type="file"
-                    #nativeDirectoryInput
-                    webkitdirectory
-                    directory
-                    (change)="onNativeDirectoryPicked($event)"
-                    class="hidden"
-                    data-testid="native-directory-input"
-                  />
-
-                  @if (customLocalPathValidation()?.valid === false) {
-                    <!-- Invalid / Non-Git Directory State -->
-                    <div class="p-3.5 rounded-lg bg-rose-950/20 border border-rose-500/30 space-y-2.5">
-                      <div class="flex items-center gap-2 text-rose-400 font-bold">
-                        <span>⚠️ This directory is not a Git repository.</span>
-                      </div>
-                      <p class="text-slate-300 text-[11px]">
-                        {{ customLocalPathValidation()?.error || 'Please select a directory containing an initialized Git repository (.git).' }}
-                      </p>
-                      <div class="flex items-center gap-2 pt-1">
-                        <button
-                          type="button"
-                          (click)="triggerNativeDirectoryPicker(nativeDirectoryInput)"
-                          class="btn-guardian btn-guardian-primary h-7 px-3 text-xs flex items-center gap-1.5"
-                          data-testid="select-another-directory-button"
-                        >
-                          <span>📁 Select another directory</span>
-                        </button>
-                        <button
-                          type="button"
-                          (click)="toggleManualPathInput()"
-                          class="text-slate-400 hover:text-slate-200 text-[11px] underline ml-2"
-                        >
-                          {{ isManualPathVisible() ? 'Hide manual path' : 'Enter path manually' }}
-                        </button>
-                      </div>
-                    </div>
-                  } @else if (selectedLocalRepo(); as repo) {
-                    <!-- Subdirectory Notice Banner if user selected a subdirectory -->
-                    @if (isSubdirectoryDetected()) {
-                      <div class="p-3 rounded-lg bg-cyan-950/30 border border-cyan-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                        <div class="space-y-0.5">
-                          <div class="flex items-center gap-1.5 text-cyan-300 font-semibold">
-                            <span>ℹ️ This directory is inside a Git repository.</span>
-                          </div>
-                          <p class="text-slate-400 text-[11px]">
-                            Repository root: <strong class="text-slate-200 select-all">{{ subdirectoryRoot() }}</strong>
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          (click)="useRepositoryRoot()"
-                          class="btn-guardian btn-guardian-primary h-7 px-3 text-xs font-semibold shrink-0"
-                          data-testid="use-repository-root-button"
-                        >
-                          Use Repository Root
-                        </button>
-                      </div>
-                    }
-
-                    <!-- Valid Detected Repository State -->
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div class="space-y-1 min-w-0">
-                        <div class="flex items-center gap-2">
-                          <span class="text-emerald-400 font-bold">✓</span>
-                          <strong class="text-white text-sm font-semibold tracking-wide">{{ repo.name }}</strong>
-                          <span class="badge-tech badge-pass text-[10px] py-0 px-1.5">Git</span>
-                        </div>
-                        <p class="text-[11px] text-slate-400 truncate select-all">{{ repo.path }}</p>
-                        <div class="flex flex-wrap items-center gap-2.5 text-[11px] text-slate-400 pt-0.5">
-                          <span>Branch: <strong class="text-cyan-400">{{ repo.currentBranch }}</strong></span>
-                          <span>&bull;</span>
-                          <span>HEAD: <strong class="text-slate-300">{{ repo.headCommit }}</strong></span>
-                          <span>&bull;</span>
-                          <span [class]="repo.isClean ? 'text-emerald-400' : 'text-amber-400'">
-                            {{ repo.isClean ? 'Working tree clean' : 'Uncommitted changes' }}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div class="flex items-center gap-2 shrink-0">
-                        <button
-                          type="button"
-                          (click)="triggerNativeDirectoryPicker(nativeDirectoryInput)"
-                          [disabled]="isValidatingCustomLocalPath()"
-                          class="btn-guardian btn-guardian-secondary h-8 px-3 text-xs flex items-center gap-1.5"
-                          data-testid="change-local-repo-button"
-                          title="Open native operating system directory picker"
-                        >
-                          @if (isValidatingCustomLocalPath()) {
-                            <span class="inline-block w-3 h-3 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></span>
-                            <span>Checking...</span>
-                          } @else {
-                            <span>📁 Change Repository</span>
-                          }
-                        </button>
-                        <button
-                          type="button"
-                          (click)="toggleManualPathInput()"
-                          class="p-1.5 rounded bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition"
-                          title="Toggle manual path input"
-                        >
-                          ✏️
-                        </button>
-                      </div>
-                    </div>
-                  } @else {
-                    <!-- Initial State Before Selection -->
-                    <div class="flex items-center justify-between gap-3 py-1">
-                      <p class="text-slate-400 text-xs">No local repository selected.</p>
-                      <button
-                        type="button"
-                        (click)="triggerNativeDirectoryPicker(nativeDirectoryInput)"
-                        class="btn-guardian btn-guardian-primary h-8 px-4 text-xs font-semibold flex items-center gap-1.5"
-                        data-testid="select-local-repo-button"
-                      >
-                        📁 Select Repository...
-                      </button>
-                    </div>
-                  }
-
-                  <!-- Optional Manual Path Input (Toggleable / Test automation friendly) -->
-                  @if (isManualPathVisible()) {
-                    <div class="pt-2.5 border-t border-slate-800/60 flex items-center gap-2">
-                      <span class="text-slate-500 shrink-0">Path:</span>
-                      <input
-                        type="text"
-                        [ngModel]="customLocalPathInput()"
-                        (ngModelChange)="customLocalPathInput.set($event)"
-                        (keydown.enter)="validateAndSetCustomPath()"
-                        placeholder="/home/user/projects/my-repo"
-                        class="flex-1 rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-1.5 text-slate-200 text-xs font-mono outline-none focus:border-cyan-500"
-                        data-testid="local-repo-dir-input"
-                      />
-                      <button
-                        type="button"
-                        (click)="validateAndSetCustomPath()"
-                        [disabled]="isValidatingCustomLocalPath()"
-                        class="btn-guardian btn-guardian-primary h-8 px-3 text-xs font-mono"
-                        data-testid="validate-dir-button"
-                      >
-                        Load
-                      </button>
-                    </div>
-                  }
-
-                </div>
-              }
-
-              <!-- GitHub Repository Sub-Panel -->
-              @if (codeSourceMode() === 'github') {
-                <div class="p-3 rounded-lg bg-[#080B12] border border-slate-800/80 space-y-3 text-xs font-mono">
-                  @if (!isGitHubConnected()) {
-                    <div class="p-3.5 rounded-lg bg-amber-950/20 border border-amber-500/30 space-y-2.5">
-                      <div class="flex items-center gap-2 text-amber-400 font-bold">
-                        <span>⚠️ GitHub connection required</span>
-                      </div>
-                      <p class="text-slate-300 text-[11px]">
-                        GitHub API integration is not authenticated. Provide a Personal Access Token or set GITHUB_TOKEN environment variable to query remote repositories.
-                      </p>
-                      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
-                        <input
-                          type="password"
-                          [ngModel]="githubTokenInput()"
-                          (ngModelChange)="githubTokenInput.set($event)"
-                          placeholder="GitHub Personal Access Token (ghp_...)"
-                          class="flex-1 rounded bg-[#0B0F19] border border-slate-700 px-3 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 font-mono"
-                        />
-                        <button (click)="connectGitHub()" class="btn-guardian btn-guardian-primary h-8 px-4 text-xs font-bold shrink-0">
-                          Connect GitHub &rarr;
-                        </button>
-                      </div>
-                    </div>
-                  } @else {
-                    <div class="space-y-2">
-                      <div class="flex items-center justify-between text-[11px]">
-                        <span class="text-emerald-400 font-medium">&bull; GitHub connected</span>
-                        <span class="text-slate-500">{{ gitHubRepositories().length }} repositories available</span>
-                      </div>
+                      <span class="flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-mono font-bold">1</span>
                       <div>
-                        <label class="block text-slate-400 mb-1 text-[11px]">Select GitHub Repository</label>
-                        <select
-                          [ngModel]="selectedGitHubRepoFullName()"
-                          (ngModelChange)="setGitHubRepo($event)"
-                          class="w-full rounded bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-slate-200"
-                        >
-                          <option *ngFor="let repo of gitHubRepositories()" [value]="repo.fullName">{{ repo.fullName }}</option>
-                        </select>
+                        <h3 class="text-xs font-mono uppercase tracking-wider text-slate-200 font-bold">Code Source</h3>
+                        <p class="text-[11px] font-mono text-slate-400">Origem: Local ou Nuvem</p>
                       </div>
                     </div>
-                  }
-                </div>
-              }
-            </div>
 
-            <!-- ================================================================= -->
-            <!-- STAGE 2: REPOSITORY & BRANCH CONFIGURATION                       -->
-            <!-- ================================================================= -->
-            <div class="card-guardian p-4 space-y-3">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <span class="flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-mono font-bold">2</span>
-                  <h3 class="text-xs font-mono uppercase tracking-wider text-slate-200 font-bold">Repository &amp; Branch Target</h3>
-                </div>
-                <span class="text-[11px] font-mono text-slate-400">Target: <strong class="text-white">{{ activeRepoName() }}</strong></span>
-              </div>
+                    <!-- ON / OFF Switch Component (Local vs Nuvem) -->
+                    <div class="flex items-center gap-2 bg-[#080B12] p-1 px-2 rounded-xl border border-slate-800" data-testid="code-source-switch-container">
+                      <button
+                        type="button"
+                        (click)="setCodeSourceMode('local')"
+                        [class]="'text-[11px] font-mono font-bold transition-all px-2 py-0.5 rounded cursor-pointer flex items-center gap-1 ' + (codeSourceMode() === 'local' ? 'text-cyan-300 bg-cyan-950/60 border border-cyan-500/40 shadow-sm' : 'text-slate-400 hover:text-slate-200')"
+                        data-testid="code-source-local"
+                      >
+                        <span>💻 Local</span>
+                        <span class="text-[9px] font-mono uppercase px-1 py-0.2 rounded" [class]="codeSourceMode() === 'local' ? 'bg-cyan-500/20 text-cyan-300' : 'bg-slate-800 text-slate-500'">
+                          {{ codeSourceMode() === 'local' ? 'ON' : 'OFF' }}
+                        </span>
+                      </button>
 
-              <!-- Analysis Target Selection -->
-              <div class="space-y-1.5">
-                <label class="block text-[11px] font-mono text-slate-400 uppercase tracking-wider">Analysis Target</label>
-                <div class="flex flex-wrap gap-4 text-xs font-mono text-slate-300">
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="analysisTargetMode"
-                      [checked]="analysisTargetMode() === 'branch'"
-                      (change)="setAnalysisTargetMode('branch')"
-                      class="text-cyan-500 focus:ring-cyan-500"
-                    />
-                    <span>Branch Comparison</span>
-                  </label>
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="analysisTargetMode"
-                      [checked]="analysisTargetMode() === 'working_tree'"
-                      (change)="setAnalysisTargetMode('working_tree')"
-                      class="text-cyan-500 focus:ring-cyan-500"
-                    />
-                    <span>Current Working Tree (Uncommitted changes)</span>
-                  </label>
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="analysisTargetMode"
-                      [checked]="analysisTargetMode() === 'commit'"
-                      (change)="setAnalysisTargetMode('commit')"
-                      class="text-cyan-500 focus:ring-cyan-500"
-                    />
-                    <span>Specific Commit SHA</span>
-                  </label>
-                </div>
-              </div>
+                      <!-- Turn ON/OFF Toggle Switch -->
+                      <button
+                        type="button"
+                        role="switch"
+                        (click)="toggleCodeSourceMode()"
+                        [attr.aria-checked]="codeSourceMode() === 'github'"
+                        class="relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border border-slate-700 bg-slate-900 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
+                        [class]="codeSourceMode() === 'github' ? 'bg-cyan-600 border-cyan-400' : 'bg-slate-800 border-slate-600'"
+                        data-testid="code-source-toggle-switch"
+                        [title]="'Alternar origem: ' + (codeSourceMode() === 'local' ? 'Local (clique para Nuvem)' : 'Nuvem (clique para Local)')"
+                      >
+                        <span
+                          class="pointer-events-none inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out mt-0.5 ml-0.5"
+                          [class]="codeSourceMode() === 'github' ? 'translate-x-5 bg-cyan-100' : 'translate-x-0 bg-slate-200'"
+                        ></span>
+                      </button>
 
-              <!-- TARGET 1: Working Tree Mode -->
-              @if (analysisTargetMode() === 'working_tree') {
-                <div class="p-3.5 rounded-lg bg-[#080B12] border border-slate-800 space-y-2 text-xs font-mono">
-                  <div class="flex items-center justify-between">
-                    <span class="text-slate-400">Working Tree Status:</span>
-                    <span [class]="workingTreeInfo().isClean ? 'px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold' : 'px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold'">
-                      {{ workingTreeInfo().isClean ? 'Working tree clean' : (workingTreeInfo().changedFiles.length + ' uncommitted changes') }}
-                    </span>
-                  </div>
-                  @if (workingTreeInfo().isClean) {
-                    <p class="text-[11px] text-slate-400">No uncommitted changes detected in repository workspace. All changes are committed to HEAD.</p>
-                  } @else {
-                    <div class="space-y-1 pt-1">
-                      <div *ngFor="let cf of workingTreeInfo().changedFiles" class="flex items-center justify-between text-[11px] text-slate-300 bg-[#0B0F19] p-1.5 rounded border border-slate-800">
-                        <span>{{ cf.name }}</span>
-                        <span class="text-slate-500">{{ cf.status }} (+{{ cf.additions }} / -{{ cf.deletions }})</span>
-                      </div>
-                    </div>
-                  }
-                </div>
-              }
-
-              <!-- TARGET 2: Specific Commit SHA Mode -->
-              @if (analysisTargetMode() === 'commit') {
-                <div class="p-3.5 rounded-lg bg-[#080B12] border border-slate-800 space-y-2.5 text-xs font-mono">
-                  <div>
-                    <label class="block text-slate-400 mb-1 text-[11px]">Commit SHA to Validate</label>
-                    <div class="flex items-center gap-2">
-                      <input
-                        type="text"
-                        [ngModel]="commitShaInput()"
-                        (ngModelChange)="validateCommitInput($event)"
-                        placeholder="Enter commit hash (e.g. ab28967)"
-                        class="flex-1 rounded bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-slate-200 text-xs font-mono placeholder:text-slate-600"
-                      />
-                      <button (click)="validateCommitInput(commitShaInput())" class="btn-guardian btn-guardian-secondary h-8 px-3 text-xs font-bold">
-                        Verify SHA
+                      <button
+                        type="button"
+                        (click)="setCodeSourceMode('github')"
+                        [class]="'text-[11px] font-mono font-bold transition-all px-2 py-0.5 rounded cursor-pointer flex items-center gap-1 ' + (codeSourceMode() === 'github' ? 'text-cyan-300 bg-cyan-950/60 border border-cyan-500/40 shadow-sm' : 'text-slate-400 hover:text-slate-200')"
+                        data-testid="code-source-nuvem"
+                      >
+                        <span>☁️ Nuvem</span>
+                        <span class="text-[9px] font-mono uppercase px-1 py-0.2 rounded" [class]="codeSourceMode() === 'github' ? 'bg-cyan-500/20 text-cyan-300' : 'bg-slate-800 text-slate-500'">
+                          {{ codeSourceMode() === 'github' ? 'ON' : 'OFF' }}
+                        </span>
                       </button>
                     </div>
                   </div>
-                  @if (commitValidation()) {
-                    <div [class]="'p-2 rounded text-[11px] ' + (commitValidation()?.valid ? 'bg-emerald-950/20 border border-emerald-500/20 text-emerald-300' : 'bg-rose-950/20 border border-rose-500/20 text-rose-300')">
-                      @if (commitValidation()?.valid) {
-                        <span>&check; Commit found: <strong>{{ commitValidation()?.shortSha }}</strong> — {{ commitValidation()?.message }} (by {{ commitValidation()?.author }})</span>
+
+                  <!-- Local Repository Sub-Panel -->
+                  @if (codeSourceMode() === 'local') {
+                    <div class="p-3 rounded-lg bg-[#080B12] border border-slate-800/80 space-y-2.5 font-mono text-xs">
+                      
+                      <!-- Hidden native directory input for OS folder picker -->
+                      <input
+                        type="file"
+                        #nativeDirectoryInput
+                        webkitdirectory
+                        directory
+                        (change)="onNativeDirectoryPicked($event)"
+                        class="hidden"
+                        data-testid="native-directory-input"
+                      />
+
+                      @if (customLocalPathValidation()?.valid === false) {
+                        <!-- Invalid / Non-Git Directory State -->
+                        <div class="p-2.5 rounded-lg bg-rose-950/20 border border-rose-500/30 space-y-2">
+                          <div class="flex items-center gap-1.5 text-rose-400 font-bold text-[11px]">
+                            <span>⚠️ Not a Git repository</span>
+                          </div>
+                          <p class="text-slate-300 text-[10px]">
+                            {{ customLocalPathValidation()?.error || 'Please select a directory containing a .git folder.' }}
+                          </p>
+                          <div class="flex items-center gap-2 pt-0.5">
+                            <button
+                              type="button"
+                              (click)="triggerNativeDirectoryPicker(nativeDirectoryInput)"
+                              class="btn-guardian btn-guardian-primary h-6 px-2.5 text-[11px] flex items-center gap-1"
+                              data-testid="select-another-directory-button"
+                            >
+                              <span>📁 Select another</span>
+                            </button>
+                            <button
+                              type="button"
+                              (click)="toggleManualPathInput()"
+                              class="text-slate-400 hover:text-slate-200 text-[10px] underline ml-1"
+                            >
+                              {{ isManualPathVisible() ? 'Hide path' : 'Manual path' }}
+                            </button>
+                          </div>
+                        </div>
+                      } @else if (selectedLocalRepo(); as repo) {
+                        <!-- Subdirectory Notice Banner if user selected a subdirectory -->
+                        @if (isSubdirectoryDetected()) {
+                          <div class="p-2.5 rounded-lg bg-cyan-950/30 border border-cyan-500/40 space-y-1.5 text-[11px]">
+                            <div class="text-cyan-300 font-semibold flex items-center gap-1">
+                              <span>ℹ️ Inside Git repository</span>
+                            </div>
+                            <p class="text-slate-400 text-[10px] truncate">Root: <strong class="text-slate-200 select-all">{{ subdirectoryRoot() }}</strong></p>
+                            <button
+                              type="button"
+                              (click)="useRepositoryRoot()"
+                              class="btn-guardian btn-guardian-primary h-6 px-2.5 text-[10px] font-semibold"
+                              data-testid="use-repository-root-button"
+                            >
+                              Use Repository Root
+                            </button>
+                          </div>
+                        }
+
+                        <!-- Valid Detected Repository State -->
+                        <div class="space-y-1.5">
+                          <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-1.5 min-w-0">
+                              <span class="text-emerald-400 font-bold">✓</span>
+                              <strong class="text-white text-xs font-semibold truncate">{{ repo.name }}</strong>
+                              <span class="badge-tech badge-pass text-[9px] py-0 px-1">Git</span>
+                            </div>
+                            <div class="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                (click)="triggerNativeDirectoryPicker(nativeDirectoryInput)"
+                                [disabled]="isValidatingCustomLocalPath()"
+                                class="btn-guardian btn-guardian-secondary h-7 px-2 text-[11px] flex items-center gap-1"
+                                data-testid="change-local-repo-button"
+                                title="Open operating system directory picker"
+                              >
+                                @if (isValidatingCustomLocalPath()) {
+                                  <span class="inline-block w-2.5 h-2.5 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></span>
+                                } @else {
+                                  <span>📁 Change</span>
+                                }
+                              </button>
+                              <button
+                                type="button"
+                                (click)="toggleManualPathInput()"
+                                class="p-1 rounded bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition text-[11px]"
+                                title="Toggle manual path input"
+                              >
+                                ✏️
+                              </button>
+                            </div>
+                          </div>
+                          <p class="text-[10px] text-slate-400 truncate select-all">{{ repo.path }}</p>
+                          <div class="flex flex-wrap items-center gap-2 text-[10px] text-slate-400 pt-0.5">
+                            <span>Branch: <strong class="text-cyan-400">{{ repo.currentBranch }}</strong></span>
+                            <span>&bull;</span>
+                            <span [class]="repo.isClean ? 'text-emerald-400' : 'text-amber-400'">
+                              {{ repo.isClean ? 'Clean' : 'Uncommitted' }}
+                            </span>
+                          </div>
+                        </div>
                       } @else {
-                        <span>&cross; {{ commitValidation()?.error || 'Commit not found' }}</span>
+                        <!-- Initial State Before Selection -->
+                        <div class="flex items-center justify-between gap-2 py-1">
+                          <p class="text-slate-400 text-[11px]">No repository selected.</p>
+                          <button
+                            type="button"
+                            (click)="triggerNativeDirectoryPicker(nativeDirectoryInput)"
+                            class="btn-guardian btn-guardian-primary h-7 px-3 text-[11px] font-semibold flex items-center gap-1"
+                            data-testid="select-local-repo-button"
+                          >
+                            📁 Select Repo...
+                          </button>
+                        </div>
+                      }
+
+                      <!-- Optional Manual Path Input -->
+                      @if (isManualPathVisible()) {
+                        <div class="pt-2 border-t border-slate-800/60 flex items-center gap-1.5">
+                          <input
+                            type="text"
+                            [ngModel]="customLocalPathInput()"
+                            (ngModelChange)="customLocalPathInput.set($event)"
+                            (keydown.enter)="validateAndSetCustomPath()"
+                            placeholder="/home/user/projects/my-repo"
+                            class="flex-1 rounded bg-[#0B0F19] border border-slate-800 px-2 py-1 text-slate-200 text-[11px] font-mono outline-none focus:border-cyan-500"
+                            data-testid="local-repo-dir-input"
+                          />
+                          <button
+                            type="button"
+                            (click)="validateAndSetCustomPath()"
+                            [disabled]="isValidatingCustomLocalPath()"
+                            class="btn-guardian btn-guardian-primary h-7 px-2.5 text-[11px] font-mono"
+                            data-testid="validate-dir-button"
+                          >
+                            Load
+                          </button>
+                        </div>
+                      }
+
+                    </div>
+                  }
+
+                  <!-- GitHub Repository Sub-Panel -->
+                  @if (codeSourceMode() === 'github') {
+                    <div class="p-3 rounded-lg bg-[#080B12] border border-slate-800/80 space-y-2 text-xs font-mono">
+                      @if (!isGitHubConnected()) {
+                        <div class="p-2.5 rounded-lg bg-amber-950/20 border border-amber-500/30 space-y-2 text-[11px]">
+                          <div class="text-amber-400 font-bold">⚠️ GitHub connection required</div>
+                          <div class="flex items-center gap-1.5">
+                            <input
+                              type="password"
+                              [ngModel]="githubTokenInput()"
+                              (ngModelChange)="githubTokenInput.set($event)"
+                              placeholder="ghp_token..."
+                              class="flex-1 rounded bg-[#0B0F19] border border-slate-700 px-2 py-1 text-[11px] text-slate-200 placeholder:text-slate-500 font-mono"
+                            />
+                            <button (click)="connectGitHub()" class="btn-guardian btn-guardian-primary h-7 px-2.5 text-[11px] font-bold shrink-0">
+                              Connect &rarr;
+                            </button>
+                          </div>
+                        </div>
+                      } @else {
+                        <div class="space-y-1.5">
+                          <label class="block text-slate-400 text-[10px]">Select Remote Repository</label>
+                          <select
+                            [ngModel]="selectedGitHubRepoFullName()"
+                            (ngModelChange)="setGitHubRepo($event)"
+                            class="w-full rounded bg-[#0B0F19] border border-slate-800 px-2 py-1 text-slate-200 text-[11px]"
+                          >
+                            <option *ngFor="let repo of gitHubRepositories()" [value]="repo.fullName">{{ repo.fullName }}</option>
+                          </select>
+                        </div>
                       }
                     </div>
                   }
                 </div>
-              }
 
-              <!-- TARGET 3: Branch Comparison Mode -->
-              @if (analysisTargetMode() === 'branch') {
-                <div class="space-y-2">
-                  @if (availableBranches().length === 0) {
-                    <div class="p-3 rounded-lg bg-slate-900/60 border border-slate-800 text-[11px] text-slate-400 font-mono">
-                      No branches found for the selected repository. Please select a valid Git repository with initialized branches.
-                    </div>
-                  } @else {
-                    <div class="grid grid-cols-1 sm:grid-cols-11 gap-2 items-center text-xs font-mono pt-1">
-                      <div class="sm:col-span-5">
-                        <label class="block text-slate-400 mb-1 text-[11px]">Source Branch (Changes under review)</label>
-                        <select
-                          [ngModel]="sourceBranch()"
-                          (ngModelChange)="setSourceBranch($event)"
-                          class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-slate-200"
-                        >
-                          <option *ngFor="let b of availableBranches()" [value]="b">{{ b }}</option>
-                        </select>
-                      </div>
-
-                      <div class="sm:col-span-1 flex items-center justify-center pt-4 sm:pt-4 text-cyan-400 font-bold select-none">
-                        &rarr;
-                      </div>
-
-                      <div class="sm:col-span-5">
-                        <div class="flex items-center justify-between mb-1">
-                          <label class="text-slate-400 text-[11px]">Base Branch (Comparison policy)</label>
-                          <span class="text-[10px] text-emerald-400 font-semibold">Strict Gate</span>
-                        </div>
-                        <select
-                          [ngModel]="compareBranch()"
-                          (ngModelChange)="setCompareBranch($event)"
-                          class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-slate-200"
-                        >
-                          <option *ngFor="let b of availableBaseBranches()" [value]="b">{{ b }}</option>
-                        </select>
-                      </div>
-                    </div>
-                    @if (availableBranches().length === 1) {
-                      <p class="text-[11px] text-slate-500 font-mono">Single branch ({{ availableBranches()[0] }}) detected in selected repository.</p>
-                    }
-                  }
-                </div>
-              }
-            </div>
-
-            <!-- ================================================================= -->
-            <!-- STAGE 3: ARCHITECTURE VALIDATION CONFIGURATION                    -->
-            <!-- ================================================================= -->
-            <div class="card-guardian p-4 space-y-3">
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <span class="flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-mono font-bold">3</span>
-                  <h3 class="text-xs font-mono uppercase tracking-wider text-slate-200 font-bold">Architecture Validation Rules</h3>
-                </div>
-                <span class="badge-tech text-[10px] badge-cyan">
-                  {{ effectiveRulesCount() }} rules enabled
-                </span>
-              </div>
-
-              <!-- Mode Options Radio Cards -->
-              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <!-- Option A: All Architecture Rules (Default / Recommended) -->
-                <div
-                  (click)="setValidationScopeMode('all')"
-                  [class]="'p-3 rounded-xl border cursor-pointer transition-all ' + (validationScopeMode() === 'all' ? 'bg-cyan-950/20 border-cyan-500/50 shadow-md ring-1 ring-cyan-500/30' : 'bg-[#0B0F19] border-slate-800 hover:border-slate-700 opacity-75 hover:opacity-100')"
-                >
-                  <div class="flex items-center gap-2">
-                    <input type="radio" [checked]="validationScopeMode() === 'all'" class="text-cyan-500 focus:ring-cyan-500" />
-                    <span class="text-xs font-bold text-white font-mono">All Architecture Rules</span>
-                  </div>
-                  <p class="text-[10px] text-emerald-400 font-mono mt-1 font-semibold">&starf; Recommended (Full Quality Gate)</p>
-                  <p class="text-[11px] text-slate-400 font-mono mt-1">Evaluates all {{ allActiveRulesCount() }} active rules across all categories</p>
-                </div>
-
-                <!-- Option B: Rule Set Profile -->
-                <div
-                  (click)="setValidationScopeMode('ruleset')"
-                  [class]="'p-3 rounded-xl border cursor-pointer transition-all ' + (validationScopeMode() === 'ruleset' ? 'bg-cyan-950/20 border-cyan-500/50 shadow-md ring-1 ring-cyan-500/30' : 'bg-[#0B0F19] border-slate-800 hover:border-slate-700 opacity-75 hover:opacity-100')"
-                >
-                  <div class="flex items-center gap-2">
-                    <input type="radio" [checked]="validationScopeMode() === 'ruleset'" class="text-cyan-500 focus:ring-cyan-500" />
-                    <span class="text-xs font-bold text-white font-mono">Rule Set Profile</span>
-                  </div>
-                  <p class="text-[10px] text-cyan-300 font-mono mt-1 font-medium">Preset Architectural Standard</p>
-                  <p class="text-[11px] text-slate-400 font-mono mt-1">Apply specific profile rules (e.g. Clean Architecture, DDD)</p>
-                </div>
-
-                <!-- Option C: Custom Rules -->
-                <div
-                  (click)="setValidationScopeMode('custom')"
-                  [class]="'p-3 rounded-xl border cursor-pointer transition-all ' + (validationScopeMode() === 'custom' ? 'bg-cyan-950/20 border-cyan-500/50 shadow-md ring-1 ring-cyan-500/30' : 'bg-[#0B0F19] border-slate-800 hover:border-slate-700 opacity-75 hover:opacity-100')"
-                >
-                  <div class="flex items-center gap-2">
-                    <input type="radio" [checked]="validationScopeMode() === 'custom'" class="text-cyan-500 focus:ring-cyan-500" />
-                    <span class="text-xs font-bold text-white font-mono">Custom Rules</span>
-                  </div>
-                  <p class="text-[10px] text-purple-400 font-mono mt-1 font-medium">Granular Selection</p>
-                  <p class="text-[11px] text-slate-400 font-mono mt-1">Search &amp; select individual rules ({{ selectedCustomRuleIds().size }} of {{ allActiveRulesCount() }})</p>
+                <!-- Footer Status Indicator -->
+                <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                  <span class="flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full" [class]="codeSourceMode() === 'local' ? 'bg-emerald-400' : 'bg-cyan-400'"></span>
+                    <span>{{ codeSourceMode() === 'local' ? 'Local Filesystem' : 'GitHub Remote' }}</span>
+                  </span>
+                  <span class="text-slate-500">{{ codeSourceMode() === 'local' ? (localRepositories().length + ' repos') : (gitHubRepositories().length + ' repos') }}</span>
                 </div>
               </div>
 
-              <!-- MODE A SUB-CONTENT: All Architecture Rules Overview & Category Badges -->
-              @if (validationScopeMode() === 'all') {
-                <div class="p-3 rounded-lg bg-[#080B12] border border-slate-800/80 space-y-2 text-xs font-mono">
-                  <div class="flex items-center justify-between">
-                    <span class="text-slate-300 font-medium">All {{ allActiveRulesCount() }} active rules will be verified in parallel (Bend HVM):</span>
-                    <span class="text-emerald-400 font-bold">&check; 100% Coverage</span>
-                  </div>
-                  <div class="flex flex-wrap gap-1.5 pt-1">
-                    <span class="px-2 py-0.5 rounded bg-slate-800/80 text-cyan-300 text-[10px] border border-slate-700 font-mono">Clean Architecture</span>
-                    <span class="px-2 py-0.5 rounded bg-slate-800/80 text-cyan-300 text-[10px] border border-slate-700 font-mono">Layer Invariants</span>
-                    <span class="px-2 py-0.5 rounded bg-slate-800/80 text-cyan-300 text-[10px] border border-slate-700 font-mono">Security &amp; Secrets</span>
-                    <span class="px-2 py-0.5 rounded bg-slate-800/80 text-cyan-300 text-[10px] border border-slate-700 font-mono">TDD &amp; Test Policy</span>
-                    <span class="px-2 py-0.5 rounded bg-slate-800/80 text-cyan-300 text-[10px] border border-slate-700 font-mono">Contract &amp; Types</span>
-                    <span class="px-2 py-0.5 rounded bg-slate-800/80 text-cyan-300 text-[10px] border border-slate-700 font-mono">Domain Isolation</span>
-                  </div>
-                </div>
-              }
-
-              <!-- MODE B SUB-CONTENT: Rule Set Profile Selector -->
-              @if (validationScopeMode() === 'ruleset') {
-                <div class="p-3 rounded-lg bg-[#080B12] border border-slate-800/80 space-y-3 text-xs font-mono">
-                  <div>
-                    <label class="block text-slate-400 mb-1 text-[11px]">Select Architecture Profile</label>
-                    <select
-                      [ngModel]="selectedProfile()"
-                      (ngModelChange)="selectedProfile.set($event); reanalyzeCurrentScope()"
-                      class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-slate-200"
-                    >
-                      <option *ngFor="let prof of architectureProfiles()" [value]="prof.id">{{ prof.name }} ({{ prof.category }})</option>
-                    </select>
-                  </div>
-                  <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800/60">
-                    <span>Enforces boundaries for: <strong class="text-slate-200">{{ selectedProfileName() }}</strong></span>
-                    <span class="text-cyan-400 font-bold">{{ profileRulesCount() }} rules active</span>
-                  </div>
-                </div>
-              }
-
-              <!-- MODE C SUB-CONTENT: Custom Rules Searchable List -->
-              @if (validationScopeMode() === 'custom') {
-                <div class="p-3 rounded-lg bg-[#080B12] border border-slate-800/80 space-y-2.5 text-xs font-mono">
-                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div class="flex items-center gap-2 flex-1 max-w-sm">
-                      <input
-                        type="text"
-                        [ngModel]="customRuleSearch()"
-                        (ngModelChange)="customRuleSearch.set($event)"
-                        placeholder="Search custom rules..."
-                        class="w-full rounded bg-[#0B0F19] border border-slate-800 px-2.5 py-1 text-slate-200 text-xs placeholder:text-slate-600"
-                      />
-                    </div>
+              <!-- =============================================================== -->
+              <!-- CARD 2: REPOSITORY & BRANCH TARGET                              -->
+              <!-- =============================================================== -->
+              <div class="card-guardian p-4 flex flex-col justify-between space-y-3">
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between gap-2">
                     <div class="flex items-center gap-2">
-                      <span class="text-slate-400 text-[11px] mr-1">{{ selectedCustomRuleIds().size }} of {{ allActiveRulesCount() }} selected</span>
-                      <button (click)="selectAllCustomRules()" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px]">
-                        Select All
-                      </button>
-                      <button (click)="clearAllCustomRules()" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 text-[11px]">
-                        Clear All
-                      </button>
+                      <span class="flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-mono font-bold">2</span>
+                      <h3 class="text-xs font-mono uppercase tracking-wider text-slate-200 font-bold">Target Scope</h3>
                     </div>
+                    <span class="text-[10px] font-mono text-cyan-300 bg-cyan-500/10 px-1.5 py-0.5 rounded border border-cyan-500/20 truncate max-w-[120px]">{{ activeRepoName() }}</span>
                   </div>
 
-                  <!-- Rule Checkboxes List -->
-                  <div class="max-h-52 overflow-y-auto space-y-1 pr-1 border border-slate-800/60 rounded p-2 bg-[#0B0F19]">
-                    <div
-                      *ngFor="let r of filteredCustomRulesList()"
-                      (click)="toggleCustomRule(r.id)"
-                      class="flex items-center justify-between p-1.5 rounded hover:bg-slate-800/50 cursor-pointer"
-                    >
-                      <div class="flex items-center gap-2 min-w-0">
-                        <input
-                          type="checkbox"
-                          [checked]="isCustomRuleSelected(r.id)"
-                          (click)="$event.stopPropagation(); toggleCustomRule(r.id)"
-                          class="rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-cyan-500"
-                        />
-                        <span class="font-bold text-slate-200 truncate">{{ r.id }}</span>
-                        <span class="text-slate-400 truncate text-[11px]">- {{ r.name }}</span>
-                      </div>
-                      <div class="flex items-center gap-1.5 shrink-0">
-                        <span [class]="'text-[9px] px-1.5 py-0.5 rounded font-bold ' + (r.severity === 'P0_BLOCKING' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20')">
-                          {{ r.severity }}
+                  <!-- Analysis Target Radio Modes -->
+                  <div class="flex flex-wrap gap-2 text-[11px] font-mono text-slate-300 bg-[#080B12] p-1.5 rounded-lg border border-slate-800">
+                    <label class="flex items-center gap-1 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="analysisTargetMode"
+                        [checked]="analysisTargetMode() === 'branch'"
+                        (change)="setAnalysisTargetMode('branch')"
+                        class="text-cyan-500 focus:ring-cyan-500 h-3.5 w-3.5"
+                      />
+                      <span>Branch</span>
+                    </label>
+                    <label class="flex items-center gap-1 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="analysisTargetMode"
+                        [checked]="analysisTargetMode() === 'working_tree'"
+                        (change)="setAnalysisTargetMode('working_tree')"
+                        class="text-cyan-500 focus:ring-cyan-500 h-3.5 w-3.5"
+                      />
+                      <span>Working Tree</span>
+                    </label>
+                    <label class="flex items-center gap-1 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="analysisTargetMode"
+                        [checked]="analysisTargetMode() === 'commit'"
+                        (change)="setAnalysisTargetMode('commit')"
+                        class="text-cyan-500 focus:ring-cyan-500 h-3.5 w-3.5"
+                      />
+                      <span>Commit SHA</span>
+                    </label>
+                  </div>
+
+                  <!-- TARGET 1: Branch Comparison Mode -->
+                  @if (analysisTargetMode() === 'branch') {
+                    <div class="space-y-2 font-mono text-xs">
+                      @if (availableBranches().length === 0) {
+                        <div class="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800 text-[10px] text-slate-400">
+                          No branches found for selected repository.
+                        </div>
+                      } @else {
+                        <div class="space-y-2">
+                          <div>
+                            <label class="block text-slate-400 mb-0.5 text-[10px]">Source Branch (Changes under review)</label>
+                            <select
+                              [ngModel]="sourceBranch()"
+                              (ngModelChange)="setSourceBranch($event)"
+                              class="w-full rounded bg-[#0B0F19] border border-slate-800 px-2 py-1 text-slate-200 text-[11px]"
+                            >
+                              <option *ngFor="let b of availableBranches()" [value]="b">{{ b }}</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <div class="flex items-center justify-between mb-0.5">
+                              <label class="text-slate-400 text-[10px]">Base Branch (Comparison policy)</label>
+                              <span class="text-[9px] text-emerald-400 font-semibold">Strict Gate</span>
+                            </div>
+                            <select
+                              [ngModel]="compareBranch()"
+                              (ngModelChange)="setCompareBranch($event)"
+                              class="w-full rounded bg-[#0B0F19] border border-slate-800 px-2 py-1 text-slate-200 text-[11px]"
+                            >
+                              <option *ngFor="let b of availableBaseBranches()" [value]="b">{{ b }}</option>
+                            </select>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <!-- TARGET 2: Working Tree Mode -->
+                  @if (analysisTargetMode() === 'working_tree') {
+                    <div class="p-2.5 rounded-lg bg-[#080B12] border border-slate-800 space-y-1.5 text-xs font-mono">
+                      <div class="flex items-center justify-between text-[11px]">
+                        <span class="text-slate-400">Status:</span>
+                        <span [class]="workingTreeInfo().isClean ? 'px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold text-[10px]' : 'px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 font-bold text-[10px]'">
+                          {{ workingTreeInfo().isClean ? 'Clean' : (workingTreeInfo().changedFiles.length + ' uncommitted') }}
                         </span>
                       </div>
+                      <p class="text-[10px] text-slate-400">
+                        {{ workingTreeInfo().isClean ? 'Working tree clean. All changes committed to HEAD.' : (workingTreeInfo().changedFiles.length + ' modified files detected in workspace.') }}
+                      </p>
+                    </div>
+                  }
+
+                  <!-- TARGET 3: Specific Commit SHA Mode -->
+                  @if (analysisTargetMode() === 'commit') {
+                    <div class="p-2.5 rounded-lg bg-[#080B12] border border-slate-800 space-y-2 text-xs font-mono">
+                      <div>
+                        <label class="block text-slate-400 mb-1 text-[10px]">Commit SHA</label>
+                        <div class="flex items-center gap-1.5">
+                          <input
+                            type="text"
+                            [ngModel]="commitShaInput()"
+                            (ngModelChange)="validateCommitInput($event)"
+                            placeholder="ab28967"
+                            class="flex-1 rounded bg-[#0B0F19] border border-slate-800 px-2 py-1 text-slate-200 text-[11px] font-mono"
+                          />
+                          <button (click)="validateCommitInput(commitShaInput())" class="btn-guardian btn-guardian-secondary h-7 px-2 text-[11px] font-bold">
+                            Verify
+                          </button>
+                        </div>
+                      </div>
+                      @if (commitValidation()) {
+                        <div [class]="'p-1.5 rounded text-[10px] ' + (commitValidation()?.valid ? 'bg-emerald-950/20 border border-emerald-500/20 text-emerald-300' : 'bg-rose-950/20 border border-rose-500/20 text-rose-300')">
+                          {{ commitValidation()?.valid ? ('✓ ' + commitValidation()?.shortSha + ' — ' + commitValidation()?.message) : ('✗ ' + (commitValidation()?.error || 'Commit not found')) }}
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+
+                <!-- Footer Target Context -->
+                <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                  <span>Scope: <strong class="text-white">{{ analysisTargetMode() }}</strong></span>
+                  <span class="text-cyan-400 truncate">{{ sourceBranch() }} &rarr; {{ compareBranch() }}</span>
+                </div>
+              </div>
+
+              <!-- =============================================================== -->
+              <!-- CARD 3: ARCHITECTURE VALIDATION RULES                           -->
+              <!-- =============================================================== -->
+              <div class="card-guardian p-4 flex flex-col justify-between space-y-3">
+                <div class="space-y-2.5">
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                      <span class="flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-mono font-bold">3</span>
+                      <h3 class="text-xs font-mono uppercase tracking-wider text-slate-200 font-bold">Architecture Rules</h3>
+                    </div>
+                    <span class="badge-tech text-[10px] badge-cyan">
+                      {{ effectiveRulesCount() }} active
+                    </span>
+                  </div>
+
+                  <!-- Mode Options Selection -->
+                  <div class="space-y-1.5">
+                    <!-- Option A: All Architecture Rules -->
+                    <div
+                      (click)="setValidationScopeMode('all')"
+                      [class]="'p-2 rounded-lg border cursor-pointer transition-all ' + (validationScopeMode() === 'all' ? 'bg-cyan-950/20 border-cyan-500/50 ring-1 ring-cyan-500/30' : 'bg-[#0B0F19] border-slate-800 hover:border-slate-700 opacity-80 hover:opacity-100')"
+                    >
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5">
+                          <input type="radio" [checked]="validationScopeMode() === 'all'" class="text-cyan-500 focus:ring-cyan-500 h-3.5 w-3.5" />
+                          <span class="text-xs font-bold text-white font-mono">All Architecture Rules</span>
+                        </div>
+                        <span class="text-[9px] text-emerald-400 font-mono font-semibold">★ Full Gate</span>
+                      </div>
+                      <p class="text-[10px] text-slate-400 font-mono mt-0.5">Evaluates all {{ allActiveRulesCount() }} active rules</p>
+                    </div>
+
+                    <!-- Option B: Rule Set Profile -->
+                    <div
+                      (click)="setValidationScopeMode('ruleset')"
+                      [class]="'p-2 rounded-lg border cursor-pointer transition-all ' + (validationScopeMode() === 'ruleset' ? 'bg-cyan-950/20 border-cyan-500/50 ring-1 ring-cyan-500/30' : 'bg-[#0B0F19] border-slate-800 hover:border-slate-700 opacity-80 hover:opacity-100')"
+                    >
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5">
+                          <input type="radio" [checked]="validationScopeMode() === 'ruleset'" class="text-cyan-500 focus:ring-cyan-500 h-3.5 w-3.5" />
+                          <span class="text-xs font-bold text-white font-mono">Rule Set Profile</span>
+                        </div>
+                        <span class="text-[9px] text-cyan-300 font-mono">Profile</span>
+                      </div>
+                      @if (validationScopeMode() === 'ruleset') {
+                        <div class="pt-1.5">
+                          <select
+                            [ngModel]="selectedProfile()"
+                            (ngModelChange)="selectedProfile.set($event); reanalyzeCurrentScope()"
+                            class="w-full rounded bg-[#080B12] border border-slate-800 px-2 py-1 text-slate-200 text-[11px]"
+                          >
+                            <option *ngFor="let prof of architectureProfiles()" [value]="prof.id">{{ prof.name }}</option>
+                          </select>
+                        </div>
+                      }
+                    </div>
+
+                    <!-- Option C: Custom Rules -->
+                    <div
+                      (click)="setValidationScopeMode('custom')"
+                      [class]="'p-2 rounded-lg border cursor-pointer transition-all ' + (validationScopeMode() === 'custom' ? 'bg-cyan-950/20 border-cyan-500/50 ring-1 ring-cyan-500/30' : 'bg-[#0B0F19] border-slate-800 hover:border-slate-700 opacity-80 hover:opacity-100')"
+                    >
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1.5">
+                          <input type="radio" [checked]="validationScopeMode() === 'custom'" class="text-cyan-500 focus:ring-cyan-500 h-3.5 w-3.5" />
+                          <span class="text-xs font-bold text-white font-mono">Custom Rules</span>
+                        </div>
+                        <span class="text-[9px] text-purple-400 font-mono">{{ selectedCustomRuleIds().size }} / {{ allActiveRulesCount() }}</span>
+                      </div>
+                      @if (validationScopeMode() === 'custom') {
+                        <div class="pt-1.5 space-y-1.5">
+                          <div class="flex items-center gap-1">
+                            <input
+                              type="text"
+                              [ngModel]="customRuleSearch()"
+                              (ngModelChange)="customRuleSearch.set($event)"
+                              placeholder="Search..."
+                              class="flex-1 rounded bg-[#080B12] border border-slate-800 px-2 py-0.5 text-slate-200 text-[10px]"
+                            />
+                            <button (click)="$event.stopPropagation(); selectAllCustomRules()" class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-200 text-[9px]">All</button>
+                            <button (click)="$event.stopPropagation(); clearAllCustomRules()" class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 text-[9px]">None</button>
+                          </div>
+                          <div class="max-h-24 overflow-y-auto space-y-0.5 border border-slate-800/60 rounded p-1 bg-[#080B12]">
+                            <div
+                              *ngFor="let r of filteredCustomRulesList()"
+                              (click)="$event.stopPropagation(); toggleCustomRule(r.id)"
+                              class="flex items-center justify-between p-1 rounded hover:bg-slate-800/50 cursor-pointer text-[10px]"
+                            >
+                              <div class="flex items-center gap-1.5 truncate">
+                                <input
+                                  type="checkbox"
+                                  [checked]="isCustomRuleSelected(r.id)"
+                                  (click)="$event.stopPropagation(); toggleCustomRule(r.id)"
+                                  class="rounded bg-slate-900 border-slate-700 text-cyan-500 h-3 w-3"
+                                />
+                                <span class="font-bold text-slate-200">{{ r.id }}</span>
+                              </div>
+                              <span class="text-[8px] text-slate-500">{{ r.severity }}</span>
+                            </div>
+                          </div>
+                        </div>
+                      }
                     </div>
                   </div>
                 </div>
-              }
+
+                <!-- Footer Rule Summary -->
+                <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] font-mono text-slate-400">
+                  <span class="text-emerald-400 font-semibold">&check; 100% Deterministic</span>
+                  <span class="text-slate-500">Bend HVM Lexer</span>
+                </div>
+              </div>
+
             </div>
 
             <!-- ================================================================= -->
@@ -1054,13 +1054,71 @@
               <div class="flex items-center gap-2">
                 <button
                   (click)="analyzeCurrentScope()"
-                  class="btn-guardian btn-guardian-primary h-10 px-5 text-xs font-bold shadow-lg shadow-cyan-500/10 flex items-center gap-2"
+                  [disabled]="isAnalyzing()"
+                  class="btn-guardian btn-guardian-primary h-10 px-5 text-xs font-bold shadow-lg shadow-cyan-500/10 flex items-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed"
+                  data-testid="analyze-button"
                 >
-                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                  <span>{{ ctaButtonText() }}</span>
+                  <svg *ngIf="!isAnalyzing()" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                  <svg *ngIf="isAnalyzing()" class="w-4 h-4 animate-spin text-cyan-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                  <span>{{ isAnalyzing() ? ('Analyzing... ' + analysisProgress() + '%') : ctaButtonText() }}</span>
                 </button>
               </div>
             </div>
+
+            <!-- REAL MULTI-STAGE PROGRESS BAR (Faithful percentage & live step description) -->
+            @if (isAnalyzing()) {
+              <div class="card-guardian p-4 border-cyan-500/50 bg-gradient-to-r from-cyan-950/40 via-[#111722] to-[#0D131F] shadow-lg shadow-cyan-950/30 space-y-3" data-testid="analysis-progress-card">
+                <div class="flex items-center justify-between text-xs font-mono">
+                  <div class="flex items-center gap-2.5">
+                    <span class="pulse-dot-green"><span></span><span></span></span>
+                    <span class="text-cyan-300 font-bold uppercase tracking-wider">Auditing Architecture &amp; Invariants</span>
+                    <span class="text-slate-500">&bull;</span>
+                    <span class="text-slate-300 font-medium truncate">{{ analysisProgressStep() }}</span>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <span class="text-xs font-mono text-cyan-400 font-bold text-base">{{ analysisProgress() }}%</span>
+                  </div>
+                </div>
+
+                <!-- Progress Track & Animated Fill -->
+                <div class="w-full bg-slate-900/90 rounded-full h-3.5 p-0.5 border border-slate-700/80 overflow-hidden relative shadow-inner">
+                  <div
+                    class="h-full rounded-full bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 transition-all duration-300 ease-out flex items-center justify-end pr-1 shadow-[0_0_12px_rgba(6,182,212,0.6)]"
+                    [style.width.%]="analysisProgress()"
+                    role="progressbar"
+                    [attr.aria-valuenow]="analysisProgress()"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                  >
+                    <span class="h-1.5 w-1.5 rounded-full bg-white animate-ping"></span>
+                  </div>
+                </div>
+
+                <!-- Execution Phase Milestones -->
+                <div class="grid grid-cols-5 gap-1.5 text-[10px] font-mono pt-1 text-slate-400">
+                  <div class="flex items-center gap-1 truncate" [class.text-cyan-300]="analysisProgress() >= 15" [class.font-bold]="analysisProgress() >= 15">
+                    <span [class]="analysisProgress() >= 15 ? 'text-emerald-400' : 'text-slate-600'">{{ analysisProgress() >= 15 ? '✓' : '○' }}</span>
+                    <span class="truncate">1. Discovery</span>
+                  </div>
+                  <div class="flex items-center gap-1 truncate" [class.text-cyan-300]="analysisProgress() >= 35" [class.font-bold]="analysisProgress() >= 35">
+                    <span [class]="analysisProgress() >= 35 ? 'text-emerald-400' : 'text-slate-600'">{{ analysisProgress() >= 35 ? '✓' : '○' }}</span>
+                    <span class="truncate">2. AST &amp; Rules</span>
+                  </div>
+                  <div class="flex items-center gap-1 truncate" [class.text-cyan-300]="analysisProgress() >= 70" [class.font-bold]="analysisProgress() >= 70">
+                    <span [class]="analysisProgress() >= 70 ? 'text-emerald-400' : 'text-slate-600'">{{ analysisProgress() >= 70 ? '✓' : '○' }}</span>
+                    <span class="truncate">3. HVM (64T)</span>
+                  </div>
+                  <div class="flex items-center gap-1 truncate" [class.text-cyan-300]="analysisProgress() >= 88" [class.font-bold]="analysisProgress() >= 88">
+                    <span [class]="analysisProgress() >= 88 ? 'text-emerald-400' : 'text-slate-600'">{{ analysisProgress() >= 88 ? '✓' : '○' }}</span>
+                    <span class="truncate">4. Invariants</span>
+                  </div>
+                  <div class="flex items-center gap-1 truncate" [class.text-cyan-300]="analysisProgress() >= 96" [class.font-bold]="analysisProgress() >= 96">
+                    <span [class]="analysisProgress() >= 96 ? 'text-emerald-400' : 'text-slate-600'">{{ analysisProgress() >= 96 ? '✓' : '○' }}</span>
+                    <span class="truncate">5. Verdict</span>
+                  </div>
+                </div>
+              </div>
+            }
 
             <!-- BODY: BRANCH SUMMARY OR FILE DIFF REVIEW -->
             @if (auditScope() === 'branch_analysis' && !isReviewingSpecificFile()) {
@@ -1093,31 +1151,124 @@
                     Changed Files in Branch (Click to review Before/After diff)
                   </div>
                   
-                  <div *ngFor="let f of displayBranchFiles(); let i = index" class="p-3 rounded-lg bg-[#0B0F19] border border-slate-800/80 hover:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div class="flex items-center gap-2.5 min-w-0">
-                      <span [class]="'h-2 w-2 rounded-full shrink-0 ' + (f.status === 'passed' ? 'bg-emerald-400' : 'bg-rose-400')"></span>
-                      <span class="text-xs font-mono text-slate-200 truncate font-medium">{{ f.name }}</span>
-                      <span class="text-[11px] font-mono text-emerald-400 shrink-0">+{{ f.additions }}</span>
-                      <span class="text-[11px] font-mono text-rose-400 shrink-0">-{{ f.deletions }}</span>
+                  @if (displayBranchFiles().length === 0) {
+                    <div class="p-6 text-center border border-dashed border-slate-800 rounded-lg bg-[#0B0F19]/40 space-y-2">
+                      <p class="text-xs font-mono text-slate-300 font-medium">Ready for evaluation.</p>
+                      <p class="text-[11px] font-mono text-slate-400">Click <strong class="text-cyan-400">"{{ ctaButtonText() }}"</strong> above to execute the architecture audit for this scope.</p>
+                    </div>
+                  } @else {
+                    <div *ngFor="let f of displayBranchFiles(); let i = index" class="p-3 rounded-lg bg-[#0B0F19] border border-slate-800/80 hover:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div class="flex items-center gap-2.5 min-w-0">
+                        <span [class]="'h-2 w-2 rounded-full shrink-0 ' + (f.status === 'passed' ? 'bg-emerald-400' : 'bg-rose-400')"></span>
+                        <span class="text-xs font-mono text-slate-200 truncate font-medium">{{ f.name }}</span>
+                        <span class="text-[11px] font-mono text-emerald-400 shrink-0">+{{ f.additions }}</span>
+                        <span class="text-[11px] font-mono text-rose-400 shrink-0">-{{ f.deletions }}</span>
+                      </div>
+
+                      <div class="flex items-center gap-3 shrink-0 self-end sm:self-auto">
+                        @if (f.violationsCount > 0) {
+                          <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                            {{ f.violationsCount }} violations
+                          </span>
+                        } @else {
+                          <span class="text-[10px] font-mono text-emerald-400">Clean</span>
+                        }
+
+                        <button
+                          (click)="startFileReview(i)"
+                          class="btn-guardian btn-guardian-secondary h-7 px-2.5 text-xs"
+                        >
+                          Review {{ f.name.includes('/') ? f.name.split('/').pop() : f.name }} &rarr;
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+
+                <!-- Detected Violations Breakdown Section -->
+                <div class="space-y-2.5 pt-3 border-t border-slate-800/80">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold">
+                        Detected Violations & Invariants
+                      </span>
+                      <span [class]="'text-[10px] font-mono font-bold px-2 py-0.5 rounded ' + (currentReport().totalViolations > 0 ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20')">
+                        {{ currentReport().totalViolations }} {{ currentReport().totalViolations === 1 ? 'violation' : 'violations' }}
+                      </span>
                     </div>
 
-                    <div class="flex items-center gap-3 shrink-0 self-end sm:self-auto">
-                      @if (f.violationsCount > 0) {
-                        <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">
-                          {{ f.violationsCount }} violations
-                        </span>
-                      } @else {
-                        <span class="text-[10px] font-mono text-emerald-400">Clean</span>
-                      }
-
-                      <button
-                        (click)="startFileReview(i)"
-                        class="btn-guardian btn-guardian-secondary h-7 px-2.5 text-xs"
-                      >
-                        Review {{ f.name.includes('/') ? f.name.split('/').pop() : f.name }} &rarr;
-                      </button>
-                    </div>
+                    @if (currentReport().totalViolations > 0) {
+                      <div class="flex items-center gap-2 text-[10px] font-mono">
+                        @if (currentReport().p0Count > 0) {
+                          <span class="text-rose-400 font-bold bg-rose-950/40 px-1.5 py-0.5 rounded border border-rose-800/40">
+                            {{ currentReport().p0Count }} P0 Blocker{{ currentReport().p0Count > 1 ? 's' : '' }}
+                          </span>
+                        }
+                        @if (currentReport().p1Count > 0) {
+                          <span class="text-amber-400 font-bold bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-800/40">
+                            {{ currentReport().p1Count }} P1 Warning{{ currentReport().p1Count > 1 ? 's' : '' }}
+                          </span>
+                        }
+                        @if (currentReport().p2Count > 0) {
+                          <span class="text-cyan-400 font-bold bg-cyan-950/40 px-1.5 py-0.5 rounded border border-cyan-800/40">
+                            {{ currentReport().p2Count }} P2 Info
+                          </span>
+                        }
+                      </div>
+                    }
                   </div>
+
+                  @if (branchViolations().length === 0) {
+                    <div class="p-4 rounded-lg bg-emerald-950/10 border border-emerald-500/20 flex items-center gap-3">
+                      <div class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0">
+                        &check;
+                      </div>
+                      <div>
+                        <p class="text-xs font-mono font-semibold text-emerald-300">Zero architectural violations detected</p>
+                        <p class="text-[11px] font-mono text-slate-400">All branch files adhere to domain boundaries, culture rules, and clean architecture standards.</p>
+                      </div>
+                    </div>
+                  } @else {
+                    <div class="space-y-2">
+                      <div *ngFor="let v of branchViolations(); let vIdx = index" class="p-3 rounded-lg bg-[#0B0F19] border border-slate-800/80 hover:border-slate-700 space-y-2">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div class="flex items-center gap-2 min-w-0 flex-wrap">
+                            <span [class]="'badge-tech text-[10px] ' + (v.severity === 'P0_BLOCKING' || v.severity === 'P0' ? 'badge-fail' : v.severity === 'P1_WARNING' || v.severity === 'P1' ? 'badge-warn' : 'badge-cyan')">
+                              {{ v.severity }}
+                            </span>
+                            <span class="text-xs font-mono font-bold text-slate-200">{{ v.ruleId }}</span>
+                            <span class="text-[11px] font-mono text-slate-400">&bull; {{ v.fileName }}:{{ v.line || 1 }}</span>
+                            @if (v.penalty) {
+                              <span class="text-[10px] font-mono text-rose-400">(-{{ v.penalty }} pts)</span>
+                            }
+                          </div>
+
+                          <button
+                            (click)="reviewFileByName(v.fileName)"
+                            class="btn-guardian btn-guardian-secondary h-6 px-2 text-[11px] font-mono self-start sm:self-auto shrink-0"
+                          >
+                            Review File &rarr;
+                          </button>
+                        </div>
+
+                        <p class="text-xs font-mono text-slate-300 leading-relaxed">{{ v.message }}</p>
+
+                        @if (v.remediation) {
+                          <div class="p-2 rounded bg-cyan-950/20 border border-cyan-800/30 text-[11px] font-mono text-cyan-300 flex items-start gap-1.5">
+                            <span class="font-bold text-cyan-400 shrink-0">Remediation:</span>
+                            <span>{{ v.remediation }}</span>
+                          </div>
+                        }
+
+                        @if (v.snippet) {
+                          <div class="text-[11px] font-mono">
+                            <span class="text-slate-500 text-[10px]">Infraction snippet:</span>
+                            <pre class="mt-1 p-2 rounded bg-[#070A11] border border-slate-800 text-rose-300 text-[11px] overflow-x-auto">{{ v.snippet }}</pre>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
                 </div>
               </div>
 
@@ -1285,29 +1436,96 @@
             <!-- TOP DOMINANT BANNER -->
             <div [class]="'rounded-2xl border p-6 lg:p-8 ' + (currentReport().isApproved ? 'bg-emerald-950/20 border-emerald-500/40 shadow-lg' : 'bg-rose-950/20 border-rose-500/40 shadow-lg')">
               <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
+                <div class="space-y-1.5">
+                  <div class="flex items-center gap-3">
+                    <span [class]="'text-xs font-mono font-bold px-2 py-0.5 rounded uppercase ' + (currentReport().isApproved ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30')">
+                      {{ currentReport().isApproved ? 'Gate Passed' : 'Gate Blocked' }}
+                    </span>
+                    <span class="text-xs font-mono text-slate-400">
+                      Repo: <strong class="text-white">{{ activeRepoName() }}</strong>
+                    </span>
+                  </div>
                   <h1 [class]="'text-3xl font-black font-mono ' + (currentReport().isApproved ? 'text-emerald-400' : 'text-rose-400')">
                     {{ currentReport().isApproved ? 'APPROVED' : 'BLOCKED' }}
                   </h1>
-                  <p class="text-sm text-slate-200 font-mono mt-1">
-                    {{ currentReport().isApproved ? '0 blocking violations &bull; Ready to merge into ' + selectedBranch() : currentReport().p0Count + ' blocking violations prevent merge into ' + selectedBranch() }}
+                  <p class="text-sm text-slate-200 font-mono">
+                    {{ currentReport().isApproved ? '0 blocking violations &bull; Ready to merge into ' + activeTargetBranch() : currentReport().p0Count + ' blocking violations prevent merge into ' + activeTargetBranch() }}
                   </p>
-                  <p class="text-xs text-slate-400 font-mono mt-1">
-                    Target Branch: <span class="text-cyan-400">{{ selectedBranch() }}</span> &bull; Compliance Score: <span class="font-bold text-white">{{ currentReport().score }}%</span>
-                  </p>
+                  <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 font-mono pt-1">
+                    <span>Directory: <span class="text-cyan-400 font-semibold select-all">{{ activeRepoPath() }}</span></span>
+                    <span>&bull;</span>
+                    <span>Target: <span class="text-cyan-400">{{ activeTargetScopeDescription() }}</span></span>
+                    <span>&bull;</span>
+                    <span>Files Audited: <span class="font-bold text-white">{{ currentReport().totalFiles }}</span></span>
+                    <span>&bull;</span>
+                    <span>Compliance Score: <span class="font-bold text-white">{{ currentReport().score }}%</span></span>
+                  </div>
                 </div>
 
                 <!-- Export & Remediation Actions -->
-                <div class="flex items-center gap-2 shrink-0">
-                  <button (click)="openExport('markdown')" class="btn-guardian btn-guardian-secondary h-9 px-3 text-xs">
+                <div class="flex items-center gap-2 shrink-0 self-start md:self-auto">
+                  <button (click)="openExport('markdown')" class="btn-guardian btn-guardian-secondary h-9 px-3 text-xs font-mono">
                     Markdown PR Summary
                   </button>
-                  <button (click)="activeTab.set('analyze')" class="btn-guardian btn-guardian-primary h-9 px-3.5 text-xs">
+                  <button (click)="activeTab.set('analyze')" class="btn-guardian btn-guardian-primary h-9 px-3.5 text-xs font-mono font-bold">
                     Review Violations &rarr;
                   </button>
                 </div>
               </div>
             </div>
+
+            <!-- CONTEXT SUMMARY CARD -->
+            <div class="card-guardian p-4 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono">
+              <div class="space-y-1">
+                <span class="text-slate-400 text-[11px] block">Active Repository</span>
+                <span class="font-bold text-white truncate block" [title]="activeRepoPath()">{{ activeRepoName() }}</span>
+                <span class="text-[10px] text-cyan-400 truncate block">{{ activeRepoPath() }}</span>
+              </div>
+              <div class="space-y-1">
+                <span class="text-slate-400 text-[11px] block">Scope / Target</span>
+                <span class="font-bold text-cyan-300 block truncate">{{ activeTargetScopeDescription() }}</span>
+                <span class="text-[10px] text-slate-400 block">Branch: {{ activeTargetBranch() }}</span>
+              </div>
+              <div class="space-y-1">
+                <span class="text-slate-400 text-[11px] block">Profile / Policy</span>
+                <span class="font-bold text-purple-300 block truncate">{{ selectedProfileName() }}</span>
+                <span class="text-[10px] text-emerald-400 block">&check; Strict Gating</span>
+              </div>
+              <div class="space-y-1">
+                <span class="text-slate-400 text-[11px] block">Engine Latency</span>
+                <span class="font-bold text-emerald-400 block">0.04s</span>
+                <span class="text-[10px] text-slate-400 block">Parallel HVM (64 threads)</span>
+              </div>
+            </div>
+
+            <!-- AUDITED FILES IN DIRECTORY SCOPE -->
+            @if (displayBranchFiles().length > 0) {
+              <div class="card-guardian p-4 space-y-3">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-mono font-bold uppercase text-slate-300">Audited Files in Scope</span>
+                    <span class="badge-tech text-[10px] badge-cyan">{{ displayBranchFiles().length }} files</span>
+                  </div>
+                  <span class="text-[11px] font-mono text-slate-400 truncate max-w-[280px]">Directory: {{ activeRepoPath() }}</span>
+                </div>
+                <div class="space-y-1.5">
+                  <div *ngFor="let file of displayBranchFiles(); let i = index" class="p-2.5 rounded-lg bg-[#0B0F19] border border-slate-800/80 flex items-center justify-between gap-3 text-xs font-mono hover:border-slate-700 transition">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <span [class]="'badge-tech text-[9px] ' + (file.status === 'passed' ? 'badge-pass' : 'badge-fail')">
+                        {{ file.status === 'passed' ? 'PASSED' : 'BLOCKED' }}
+                      </span>
+                      <span class="text-slate-200 font-semibold truncate">{{ file.name }}</span>
+                      @if (file.violationsCount > 0) {
+                        <span class="text-rose-400 text-[11px] font-bold">({{ file.violationsCount }} violations)</span>
+                      }
+                    </div>
+                    <button (click)="reviewFileByName(file.name); activeTab.set('analyze')" class="text-cyan-400 hover:text-cyan-300 text-[11px] font-bold shrink-0">
+                      Review Diff &rarr;
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
 
             <!-- SEVERITY FILTER BAR -->
             <div class="card-guardian p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1403,73 +1621,305 @@
         }
 
         <!-- ===================================================================== -->
-        <!-- VIEW 4: RULES MANIFESTS (Compact Rows & Drawer Detail)                -->
+        <!-- VIEW 4: RULES MANIFESTS & CUSTOM RULE ENGINE                          -->
         <!-- ===================================================================== -->
         @if (activeTab() === 'rules') {
           <div class="space-y-5">
             
-            <!-- Header & Search Filter -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <!-- Header & Action Toolbar -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div>
-                <h2 class="text-2xl font-bold tracking-tight text-white">Rules Manifests</h2>
-                <p class="text-xs text-slate-400 font-mono mt-0.5">26 declarative engineering &amp; architecture standards</p>
+                <div class="flex items-center gap-2.5">
+                  <h2 class="text-2xl font-bold tracking-tight text-white font-mono">Rules Manifests &amp; Engine</h2>
+                  <span class="badge-tech badge-cyan text-[10px]">{{ rules().length }} Rules Active</span>
+                </div>
+                <p class="text-xs text-slate-400 font-mono mt-0.5">Extensible declarative architecture &amp; custom rule management with deterministic precedence</p>
               </div>
 
-              <!-- Search input -->
-              <div class="flex items-center gap-3">
-                <input
-                  type="text"
-                  [ngModel]="searchQuery()"
-                  (ngModelChange)="searchQuery.set($event)"
-                  placeholder="Search rules (ID, name, description)..."
-                  class="rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 w-64 focus:outline-none focus:border-cyan-400"
-                />
+              <!-- Action Toolbar Buttons -->
+              <div class="flex flex-wrap items-center gap-2">
+                <button
+                  (click)="openCreateRuleWizard()"
+                  class="btn-guardian btn-guardian-primary h-8 px-3 text-xs font-bold font-mono flex items-center gap-1.5 shadow-lg shadow-cyan-500/10"
+                >
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  <span>+ Add Rule</span>
+                </button>
+
+                <button
+                  (click)="openImportModal()"
+                  class="btn-guardian btn-guardian-secondary h-8 px-3 text-xs font-mono flex items-center gap-1.5"
+                  title="Import Rules from JSON"
+                >
+                  <svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  <span>Import JSON</span>
+                </button>
+
+                <button
+                  (click)="exportAllRulesManifest()"
+                  class="btn-guardian btn-guardian-secondary h-8 px-3 text-xs font-mono flex items-center gap-1.5"
+                  title="Export All Rules as JSON Manifest"
+                >
+                  <svg class="w-3.5 h-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                  <span>Export All</span>
+                </button>
+
+                <button
+                  (click)="openAuditTrail()"
+                  class="btn-guardian btn-guardian-secondary h-8 px-3 text-xs font-mono flex items-center gap-1.5"
+                  title="View Rule Mutation Audit Trail"
+                >
+                  <svg class="w-3.5 h-3.5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                  <span>Audit Trail</span>
+                </button>
               </div>
             </div>
 
-            <!-- RULES LIST (Compact Rows) -->
-            <div class="card-guardian overflow-hidden divide-y divide-slate-800">
-              <div *ngFor="let r of filteredRules()" class="p-3.5 hover:bg-slate-800/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors text-xs font-mono">
-                <div class="flex items-center gap-3 min-w-0">
-                  <span [class]="'badge-tech text-[10px] ' + (r.severity === 'P0_BLOCKING' ? 'badge-fail' : r.severity === 'P1_WARNING' ? 'badge-warn' : 'badge-cyan')">
-                    {{ r.severity }}
-                  </span>
-                  <strong class="text-slate-100 font-bold">{{ r.id }}</strong>
-                  <span class="text-slate-300 truncate">{{ r.name }}</span>
-                  <span class="text-slate-500 hidden md:inline">({{ r.languages.join(', ') }})</span>
+            <!-- MULTI-CRITERIA FILTER BAR -->
+            <div class="card-guardian p-4 space-y-3 font-mono text-xs">
+              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
+                
+                <!-- Search Input -->
+                <div class="sm:col-span-2">
+                  <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Search Rules</label>
+                  <input
+                    type="text"
+                    [ngModel]="searchQuery()"
+                    (ngModelChange)="searchQuery.set($event)"
+                    placeholder="Search rules by ID, name, keyword..."
+                    class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+                  />
                 </div>
 
-                <div class="flex items-center gap-3 shrink-0 self-end sm:self-auto">
-                  <button
-                    (click)="toggleRuleStatus(r.id)"
-                    [class]="'text-[11px] font-semibold px-2 py-0.5 rounded transition-colors ' + (r.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-400 border border-slate-700')"
-                  >
-                    {{ r.status === 'active' ? '✓ Enforced' : 'Disabled' }}
-                  </button>
-
-                  <button
-                    (click)="openRuleDrawer(r)"
-                    class="text-cyan-400 hover:text-cyan-300 font-semibold"
-                  >
-                    Details &rarr;
-                  </button>
+                <!-- Tier Filter -->
+                <div>
+                  <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Tier Precedence</label>
+                  <select [ngModel]="selectedRuleTierFilter()" (ngModelChange)="selectedRuleTierFilter.set($event)" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-400">
+                    <option value="all">All Tiers</option>
+                    <option value="builtin">Built-in</option>
+                    <option value="organization">Organization</option>
+                    <option value="project">Project</option>
+                    <option value="custom">Custom</option>
+                  </select>
                 </div>
+
+                <!-- Type Filter -->
+                <div>
+                  <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Rule Type</label>
+                  <select [ngModel]="selectedRuleTypeFilter()" (ngModelChange)="selectedRuleTypeFilter.set($event)" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-400">
+                    <option value="all">All Types</option>
+                    <option value="pattern">Pattern (Regex)</option>
+                    <option value="naming">Naming Convention</option>
+                    <option value="dependency">Dependency Boundary</option>
+                    <option value="architecture">Architecture Invariant</option>
+                    <option value="file_folder">File / Folder Path</option>
+                    <option value="ast">AST Selector</option>
+                    <option value="language_specific">Language Specific</option>
+                  </select>
+                </div>
+
+                <!-- Severity Filter -->
+                <div>
+                  <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Severity</label>
+                  <select [ngModel]="selectedSeverityFilter()" (ngModelChange)="selectedSeverityFilter.set($event)" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-400">
+                    <option value="all">All Severities</option>
+                    <option value="P0_BLOCKING">P0 (Blocking)</option>
+                    <option value="P1_WARNING">P1 (Warning)</option>
+                    <option value="P2_INFO">P2 (Info)</option>
+                    <option value="P3">P3</option>
+                    <option value="INFO">INFO</option>
+                  </select>
+                </div>
+
+                <!-- Language Filter -->
+                <div>
+                  <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Language</label>
+                  <select [ngModel]="selectedRuleLanguageFilter()" (ngModelChange)="selectedRuleLanguageFilter.set($event)" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-400">
+                    <option value="all">All Languages</option>
+                    <option value="Python">Python</option>
+                    <option value="TypeScript">TypeScript</option>
+                    <option value="C#">C#</option>
+                    <option value="PHP">PHP</option>
+                    <option value="Go">Go</option>
+                    <option value="Java">Java</option>
+                    <option value="Rust">Rust</option>
+                    <option value="Bend">Bend</option>
+                  </select>
+                </div>
+
+                <!-- Status Filter -->
+                <div>
+                  <label class="block text-[10px] uppercase tracking-wider text-slate-400 mb-1 font-semibold">Status</label>
+                  <select [ngModel]="selectedRuleStatusFilter()" (ngModelChange)="selectedRuleStatusFilter.set($event)" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-400">
+                    <option value="all">All Statuses</option>
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="DRAFT">DRAFT</option>
+                    <option value="TESTING">TESTING</option>
+                    <option value="VALIDATED">VALIDATED</option>
+                    <option value="DEPRECATED">DEPRECATED</option>
+                    <option value="ARCHIVED">ARCHIVED</option>
+                  </select>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- RULES TABLE -->
+            <div class="card-guardian overflow-hidden font-mono text-xs">
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="bg-slate-900/80 border-b border-slate-800 text-slate-400 text-[10px] uppercase tracking-wider font-semibold">
+                      <th class="p-3">ID &amp; Name</th>
+                      <th class="p-3">Tier</th>
+                      <th class="p-3">Type</th>
+                      <th class="p-3">Severity</th>
+                      <th class="p-3">Status</th>
+                      <th class="p-3 hidden md:table-cell">Languages</th>
+                      <th class="p-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-800/80">
+                    @if (filteredRules().length === 0) {
+                      <tr>
+                        <td colspan="7" class="p-8 text-center text-slate-400">
+                          <p class="text-sm font-bold text-slate-300">No rules match the current filters.</p>
+                          <p class="text-xs text-slate-500 mt-1">Try adjusting the search term or category filters.</p>
+                        </td>
+                      </tr>
+                    } @else {
+                      <tr *ngFor="let r of filteredRules()" class="hover:bg-slate-800/30 transition-colors group">
+                        
+                        <!-- ID & Name -->
+                        <td class="p-3">
+                          <div class="space-y-0.5">
+                            <div class="flex items-center gap-2">
+                              <strong class="text-slate-100 font-bold group-hover:text-cyan-300 transition-colors">{{ r.id }}</strong>
+                              <span class="text-[10px] text-slate-500">v{{ r.version || '1.0.0' }}</span>
+                            </div>
+                            <p class="text-[11px] text-slate-300 truncate max-w-xs sm:max-w-md">{{ r.name }}</p>
+                          </div>
+                        </td>
+
+                        <!-- Tier -->
+                        <td class="p-3">
+                          <span [class]="'text-[10px] font-bold px-2 py-0.5 rounded border ' + (r.tier === 'custom' ? 'bg-purple-500/10 text-purple-300 border-purple-500/20' : r.tier === 'organization' ? 'bg-blue-500/10 text-blue-300 border-blue-500/20' : r.tier === 'project' ? 'bg-amber-500/10 text-amber-300 border-amber-500/20' : 'bg-slate-800 text-slate-300 border-slate-700')">
+                            {{ r.tier || 'builtin' }}
+                          </span>
+                        </td>
+
+                        <!-- Type -->
+                        <td class="p-3">
+                          <span class="text-[11px] text-slate-300">{{ r.type || 'pattern' }}</span>
+                        </td>
+
+                        <!-- Severity -->
+                        <td class="p-3">
+                          <span [class]="'badge-tech text-[10px] ' + (r.severity === 'P0_BLOCKING' || r.severity === 'P0' ? 'badge-fail' : r.severity === 'P1_WARNING' || r.severity === 'P1' ? 'badge-warn' : 'badge-cyan')">
+                            {{ r.severity }}
+                          </span>
+                        </td>
+
+                        <!-- Status -->
+                        <td class="p-3">
+                          <span [class]="'text-[10px] font-bold px-2 py-0.5 rounded border ' + (r.status === 'active' || r.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' : r.status === 'TESTING' ? 'bg-amber-500/10 text-amber-300 border-amber-500/20' : 'bg-slate-800 text-slate-400 border-slate-700')">
+                            {{ r.status || (r.enabled ? 'ACTIVE' : 'INACTIVE') }}
+                          </span>
+                        </td>
+
+                        <!-- Languages -->
+                        <td class="p-3 hidden md:table-cell">
+                          <span class="text-[11px] text-slate-400 truncate max-w-[140px] block">
+                            {{ (r.languages || []).join(', ') }}
+                          </span>
+                        </td>
+
+                        <!-- Actions -->
+                        <td class="p-3 text-right">
+                          <div class="flex items-center justify-end gap-1.5">
+                            
+                            <!-- Test Rule Button -->
+                            <button
+                              (click)="openTestConsole(r)"
+                              class="p-1.5 rounded hover:bg-slate-800 text-cyan-400 hover:text-cyan-300 transition-colors"
+                              title="Test Rule in Sandbox"
+                            >
+                              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                            </button>
+
+                            <!-- Details Button -->
+                            <button
+                              (click)="openRuleDrawer(r)"
+                              class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
+                              title="View Full Details"
+                            >
+                              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                            </button>
+
+                            <!-- Edit Rule Button -->
+                            <button
+                              (click)="openEditRuleWizard(r)"
+                              class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
+                              title="Edit Rule"
+                            >
+                              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            </button>
+
+                            <!-- Clone Rule Button -->
+                            <button
+                              (click)="openCloneModal(r)"
+                              class="p-1.5 rounded hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
+                              title="Clone / Copy Rule"
+                            >
+                              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            </button>
+
+                            <!-- Enable / Disable Switch -->
+                            <button
+                              (click)="toggleRuleActive(r)"
+                              [class]="'px-2 py-0.5 rounded text-[10px] font-bold border transition-colors ' + (r.status === 'active' || r.status === 'ACTIVE' || r.enabled ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-slate-800 text-slate-400 border-slate-700')"
+                              title="Toggle Enforced / Disabled Status"
+                            >
+                              {{ (r.status === 'active' || r.status === 'ACTIVE' || r.enabled) ? 'ON' : 'OFF' }}
+                            </button>
+
+                            <!-- Delete Rule Button -->
+                            @if (r.tier !== 'builtin') {
+                              <button
+                                (click)="openDeleteConfirm(r)"
+                                class="p-1.5 rounded hover:bg-rose-950/40 text-rose-400 hover:text-rose-300 transition-colors"
+                                title="Delete Rule"
+                              >
+                                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                              </button>
+                            }
+
+                          </div>
+                        </td>
+
+                      </tr>
+                    }
+                  </tbody>
+                </table>
               </div>
             </div>
 
             <!-- RULE DETAIL DRAWER / MODAL -->
             @if (selectedRuleForDrawer(); as selectedRule) {
-              <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                <div class="card-guardian max-w-xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+              <div class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div class="card-guardian max-w-5xl lg:max-w-6xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
                   <div class="flex items-start justify-between gap-3 pb-3 border-b border-slate-800">
                     <div>
                       <div class="flex items-center gap-2">
-                        <span [class]="'badge-tech text-[10px] ' + (selectedRule.severity === 'P0_BLOCKING' ? 'badge-fail' : 'badge-warn')">
+                        <span [class]="'badge-tech text-[10px] ' + (selectedRule.severity === 'P0_BLOCKING' || selectedRule.severity === 'P0' ? 'badge-fail' : 'badge-warn')">
                           {{ selectedRule.severity }}
+                        </span>
+                        <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                          Tier: {{ selectedRule.tier || 'builtin' }}
                         </span>
                         <h3 class="text-base font-bold font-mono text-white">{{ selectedRule.id }}</h3>
                       </div>
-                      <p class="text-xs text-slate-300 font-mono mt-1">{{ selectedRule.name }}</p>
+                      <p class="text-xs text-slate-300 font-mono mt-1 font-semibold">{{ selectedRule.name }}</p>
                     </div>
                     <button (click)="closeRuleDrawer()" class="text-slate-400 hover:text-white text-lg font-mono">&times;</button>
                   </div>
@@ -1480,24 +1930,701 @@
                       <p class="text-slate-200 mt-0.5">{{ selectedRule.description }}</p>
                     </div>
 
+                    <div class="grid grid-cols-2 gap-3 bg-[#0B0F19] p-3 rounded-lg border border-slate-800">
+                      <div><span class="text-slate-500">Category:</span> {{ selectedRule.category }}</div>
+                      <div><span class="text-slate-500">Rule Type:</span> {{ selectedRule.type || 'pattern' }}</div>
+                      <div><span class="text-slate-500">Penalty Points:</span> {{ selectedRule.penalty_points || selectedRule.penaltyPoints }} pts</div>
+                      <div><span class="text-slate-500">Status:</span> {{ selectedRule.status || 'ACTIVE' }}</div>
+                      <div><span class="text-slate-500">Version:</span> v{{ selectedRule.version || '1.0.0' }}</div>
+                      <div><span class="text-slate-500">Languages:</span> {{ (selectedRule.languages || []).join(', ') }}</div>
+                    </div>
+
+                    @if (selectedRule.condition) {
+                      <div>
+                        <span class="text-slate-500 block text-[11px]">Detection Condition:</span>
+                        <pre class="p-2.5 rounded bg-[#080B12] border border-slate-800 text-[11px] text-cyan-300 overflow-x-auto mt-0.5">{{ selectedRule.condition | json }}</pre>
+                      </div>
+                    }
+
                     <div>
-                      <span class="text-slate-500 block text-[11px]">Architectural Rationale:</span>
-                      <p class="text-slate-200 mt-0.5">{{ selectedRule.rationale }}</p>
+                      <span class="text-slate-500 block text-[11px]">Remediation &amp; Suggested Fix:</span>
+                      <p class="text-emerald-300 bg-emerald-950/20 p-2.5 rounded border border-emerald-500/20 mt-0.5">{{ selectedRule.suggestion || selectedRule.remediation }}</p>
                     </div>
 
                     <div>
-                      <span class="text-slate-500 block text-[11px]">Remediation Guide:</span>
-                      <p class="text-emerald-300 bg-emerald-950/20 p-2.5 rounded border border-emerald-500/20 mt-0.5">{{ selectedRule.remediation }}</p>
+                      <span class="text-slate-500 block text-[11px]">Suppression Policy:</span>
+                      <p class="text-slate-400 text-[11px] mt-0.5">
+                        Pragma: <code class="text-cyan-400">{{ selectedRule.suppression?.pragma || '@guardian-ignore' }}</code> &bull;
+                        Requires Reason: <span class="text-white">{{ selectedRule.suppression?.requires_reason !== false ? 'Yes' : 'No' }}</span> &bull;
+                        Min Reason Length: <span class="text-white">{{ selectedRule.suppression?.minimum_reason_length || 8 }} chars</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="pt-3 border-t border-slate-800 flex flex-wrap justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                      <button (click)="openTestConsole(selectedRule)" class="btn-guardian btn-guardian-primary h-8 px-3 text-xs">
+                        Test Rule &rarr;
+                      </button>
+                      <button (click)="exportSingleRule(selectedRule)" class="btn-guardian btn-guardian-secondary h-8 px-3 text-xs">
+                        Export JSON
+                      </button>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2 text-[11px]">
-                      <div><span class="text-slate-500">Penalty:</span> {{ selectedRule.penaltyPoints }} pts</div>
-                      <div><span class="text-slate-500">Languages:</span> {{ selectedRule.languages.join(', ') }}</div>
+                    <div class="flex items-center gap-2">
+                      <button (click)="openCloneModal(selectedRule)" class="btn-guardian btn-guardian-secondary h-8 px-3 text-xs">
+                        Clone
+                      </button>
+                      <button (click)="openEditRuleWizard(selectedRule)" class="btn-guardian btn-guardian-secondary h-8 px-3 text-xs">
+                        Edit
+                      </button>
+                      <button (click)="closeRuleDrawer()" class="btn-guardian btn-guardian-secondary h-8 px-3 text-xs">
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- =============================================================== -->
+            <!-- CREATE / EDIT RULE WIZARD MODAL                                  -->
+            <!-- =============================================================== -->
+            @if (isRuleWizardOpen()) {
+              <div class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+                <div class="card-guardian max-w-6xl lg:max-w-7xl w-full p-6 space-y-5 max-h-[92vh] overflow-y-auto border-cyan-500/30 shadow-2xl">
+                  
+                  <!-- Wizard Header -->
+                  <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div>
+                      <h3 class="text-lg font-bold font-mono text-white">
+                        {{ isEditingRule() ? 'Edit Rule: ' + ruleDraft().id : 'Create New Rule' }}
+                      </h3>
+                      <p class="text-xs text-slate-400 font-mono">Step {{ wizardStep() }} of 8 &bull; Extensible Rule Engine</p>
+                    </div>
+                    <button (click)="closeRuleWizard()" class="text-slate-400 hover:text-white text-lg font-mono">&times;</button>
+                  </div>
+
+                  <!-- Wizard Steps Indicator Bar -->
+                  <div class="flex items-center justify-between gap-1 overflow-x-auto pb-1 text-[10px] font-mono">
+                    <button (click)="goToWizardStep(1)" [class]="'px-2 py-1 rounded transition-colors ' + (wizardStep() === 1 ? 'bg-cyan-500 text-slate-950 font-bold' : wizardStep() > 1 ? 'bg-slate-800 text-cyan-300' : 'bg-slate-900 text-slate-500')">1. Info</button>
+                    <button (click)="goToWizardStep(2)" [class]="'px-2 py-1 rounded transition-colors ' + (wizardStep() === 2 ? 'bg-cyan-500 text-slate-950 font-bold' : wizardStep() > 2 ? 'bg-slate-800 text-cyan-300' : 'bg-slate-900 text-slate-500')">2. Type</button>
+                    <button (click)="goToWizardStep(3)" [class]="'px-2 py-1 rounded transition-colors ' + (wizardStep() === 3 ? 'bg-cyan-500 text-slate-950 font-bold' : wizardStep() > 3 ? 'bg-slate-800 text-cyan-300' : 'bg-slate-900 text-slate-500')">3. Scope</button>
+                    <button (click)="goToWizardStep(4)" [class]="'px-2 py-1 rounded transition-colors ' + (wizardStep() === 4 ? 'bg-cyan-500 text-slate-950 font-bold' : wizardStep() > 4 ? 'bg-slate-800 text-cyan-300' : 'bg-slate-900 text-slate-500')">4. Detection</button>
+                    <button (click)="goToWizardStep(5)" [class]="'px-2 py-1 rounded transition-colors ' + (wizardStep() === 5 ? 'bg-cyan-500 text-slate-950 font-bold' : wizardStep() > 5 ? 'bg-slate-800 text-cyan-300' : 'bg-slate-900 text-slate-500')">5. Severity</button>
+                    <button (click)="goToWizardStep(6)" [class]="'px-2 py-1 rounded transition-colors ' + (wizardStep() === 6 ? 'bg-cyan-500 text-slate-950 font-bold' : wizardStep() > 6 ? 'bg-slate-800 text-cyan-300' : 'bg-slate-900 text-slate-500')">6. Pragma</button>
+                    <button (click)="goToWizardStep(7)" [class]="'px-2 py-1 rounded transition-colors ' + (wizardStep() === 7 ? 'bg-cyan-500 text-slate-950 font-bold' : wizardStep() > 7 ? 'bg-slate-800 text-cyan-300' : 'bg-slate-900 text-slate-500')">7. Test</button>
+                    <button (click)="goToWizardStep(8)" [class]="'px-2 py-1 rounded transition-colors ' + (wizardStep() === 8 ? 'bg-cyan-500 text-slate-950 font-bold' : 'bg-slate-900 text-slate-500')">8. Review</button>
+                  </div>
+
+                  <!-- Error Banner -->
+                  @if (wizardValidationErrors().length > 0) {
+                    <div class="p-3 rounded-lg bg-rose-950/40 border border-rose-500/30 text-rose-300 text-xs font-mono space-y-1">
+                      <div *ngFor="let err of wizardValidationErrors()">&bull; {{ err }}</div>
+                    </div>
+                  }
+
+                  @if (wizardSaveError()) {
+                    <div class="p-3 rounded-lg bg-rose-950/40 border border-rose-500/30 text-rose-300 text-xs font-mono">
+                      {{ wizardSaveError() }}
+                    </div>
+                  }
+
+                  <!-- STEP 1: BASIC INFORMATION -->
+                  @if (wizardStep() === 1) {
+                    <div class="space-y-3 text-xs font-mono">
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label class="block text-slate-400 mb-1 font-semibold">Rule ID *</label>
+                          <input type="text" [(ngModel)]="ruleDraft().id" [disabled]="isEditingRule()" placeholder="e.g. SEC-006, ARCH-CUSTOM-01" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200" />
+                        </div>
+                        <div>
+                          <label class="block text-slate-400 mb-1 font-semibold">Version</label>
+                          <input type="text" [(ngModel)]="ruleDraft().version" placeholder="1.0.0" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label class="block text-slate-400 mb-1 font-semibold">Rule Name *</label>
+                        <input type="text" [(ngModel)]="ruleDraft().name" placeholder="Descriptive Rule Name" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200" />
+                      </div>
+
+                      <div>
+                        <label class="block text-slate-400 mb-1 font-semibold">Description</label>
+                        <textarea [(ngModel)]="ruleDraft().description" rows="2" placeholder="Explain what this rule detects and verifies..." class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200"></textarea>
+                      </div>
+
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label class="block text-slate-400 mb-1 font-semibold">Category</label>
+                          <select [(ngModel)]="ruleDraft().category" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200">
+                            <option value="Security">Security</option>
+                            <option value="Architecture">Architecture</option>
+                            <option value="Culture & Quality">Culture & Quality</option>
+                            <option value="Performance">Performance</option>
+                            <option value="Code Style">Code Style</option>
+                            <option value="Custom">Custom</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="block text-slate-400 mb-1 font-semibold">Tier Precedence</label>
+                          <select [(ngModel)]="ruleDraft().tier" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200">
+                            <option value="custom">Custom (Highest precedence)</option>
+                            <option value="project">Project</option>
+                            <option value="organization">Organization</option>
+                            <option value="builtin">Built-in</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- STEP 2: RULE TYPE -->
+                  @if (wizardStep() === 2) {
+                    <div class="space-y-3 text-xs font-mono">
+                      <p class="text-slate-400">Select the detection mechanism for this rule:</p>
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label [class]="'p-3.5 rounded-xl border cursor-pointer flex flex-col justify-between ' + (ruleDraft().type === 'pattern' ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-200' : 'bg-[#0B0F19] border-slate-800 hover:border-slate-700 text-slate-300')">
+                          <input type="radio" name="ruleType" value="pattern" [(ngModel)]="ruleDraft().type" class="hidden" />
+                          <strong class="font-bold text-sm">Pattern Rule (Regex)</strong>
+                          <p class="text-[11px] text-slate-400 mt-1">Detects regex tokens, forbidden strings, or secret leaks.</p>
+                        </label>
+
+                        <label [class]="'p-3.5 rounded-xl border cursor-pointer flex flex-col justify-between ' + (ruleDraft().type === 'naming' ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-200' : 'bg-[#0B0F19] border-slate-800 hover:border-slate-700 text-slate-300')">
+                          <input type="radio" name="ruleType" value="naming" [(ngModel)]="ruleDraft().type" class="hidden" />
+                          <strong class="font-bold text-sm">Naming Convention</strong>
+                          <p class="text-[11px] text-slate-400 mt-1">Enforces PascalCase, camelCase, snake_case on symbols.</p>
+                        </label>
+
+                        <label [class]="'p-3.5 rounded-xl border cursor-pointer flex flex-col justify-between ' + (ruleDraft().type === 'dependency' ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-200' : 'bg-[#0B0F19] border-slate-800 hover:border-slate-700 text-slate-300')">
+                          <input type="radio" name="ruleType" value="dependency" [(ngModel)]="ruleDraft().type" class="hidden" />
+                          <strong class="font-bold text-sm">Dependency Rule</strong>
+                          <p class="text-[11px] text-slate-400 mt-1">Prohibits Layer A from depending on Layer B.</p>
+                        </label>
+
+                        <label [class]="'p-3.5 rounded-xl border cursor-pointer flex flex-col justify-between ' + (ruleDraft().type === 'architecture' ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-200' : 'bg-[#0B0F19] border-slate-800 hover:border-slate-700 text-slate-300')">
+                          <input type="radio" name="ruleType" value="architecture" [(ngModel)]="ruleDraft().type" class="hidden" />
+                          <strong class="font-bold text-sm">Architecture Rule</strong>
+                          <p class="text-[11px] text-slate-400 mt-1">Concentric layer boundary invariants and isolation.</p>
+                        </label>
+
+                        <label [class]="'p-3.5 rounded-xl border cursor-pointer flex flex-col justify-between ' + (ruleDraft().type === 'file_folder' ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-200' : 'bg-[#0B0F19] border-slate-800 hover:border-slate-700 text-slate-300')">
+                          <input type="radio" name="ruleType" value="file_folder" [(ngModel)]="ruleDraft().type" class="hidden" />
+                          <strong class="font-bold text-sm">File / Folder Rule</strong>
+                          <p class="text-[11px] text-slate-400 mt-1">Enforces directory path structure and file naming.</p>
+                        </label>
+
+                        <label [class]="'p-3.5 rounded-xl border cursor-pointer flex flex-col justify-between ' + (ruleDraft().type === 'ast' ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-200' : 'bg-[#0B0F19] border-slate-800 hover:border-slate-700 text-slate-300')">
+                          <input type="radio" name="ruleType" value="ast" [(ngModel)]="ruleDraft().type" class="hidden" />
+                          <strong class="font-bold text-sm">AST Rule</strong>
+                          <p class="text-[11px] text-slate-400 mt-1">Syntactic structural node matching via AST selectors.</p>
+                        </label>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- STEP 3: SCOPE & TARGETS -->
+                  @if (wizardStep() === 3) {
+                    <div class="space-y-3 text-xs font-mono">
+                      <div>
+                        <label class="block text-slate-400 mb-1.5 font-semibold">Supported Languages</label>
+                        <div class="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            *ngFor="let lang of ['Python', 'TypeScript', 'C#', 'PHP', 'Go', 'Java', 'Rust', 'Bend']"
+                            (click)="toggleLanguageInDraft(lang)"
+                            [class]="'px-2.5 py-1 rounded border text-xs ' + (ruleDraft().languages.includes(lang) ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 font-bold' : 'bg-[#0B0F19] text-slate-400 border-slate-800')"
+                          >
+                            {{ lang }}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                        <div>
+                          <label class="block text-slate-400 mb-1 font-semibold">Include Globs (comma separated)</label>
+                          <input type="text" [(ngModel)]="ruleDraft().scopeInclude" placeholder="src/**, app/**" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200" />
+                        </div>
+                        <div>
+                          <label class="block text-slate-400 mb-1 font-semibold">Exclude Globs (comma separated)</label>
+                          <input type="text" [(ngModel)]="ruleDraft().scopeExclude" placeholder="tests/**, **/*.spec.ts" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label class="block text-slate-400 mb-1 font-semibold">Target Architectural Layer (Optional)</label>
+                        <select [(ngModel)]="ruleDraft().targetLayer" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200">
+                          <option value="">Any Layer</option>
+                          <option value="Domain">Domain (Core Entities)</option>
+                          <option value="Application">Application (Use Cases)</option>
+                          <option value="Presentation">Presentation (Controllers / Views)</option>
+                          <option value="Infrastructure">Infrastructure (Persistence / External)</option>
+                        </select>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- STEP 4: DETECTION / CONDITION (DYNAMIC FORM) -->
+                  @if (wizardStep() === 4) {
+                    <div class="space-y-3 text-xs font-mono">
+                      @if (ruleDraft().type === 'pattern') {
+                        <div>
+                          <label class="block text-slate-400 mb-1 font-semibold">Regex Pattern *</label>
+                          <input type="text" [(ngModel)]="ruleDraft().pattern" placeholder="e.g. (password|secret|api_key)\s*=\s*['\w-]+" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-cyan-300" />
+                          <p class="text-[11px] text-slate-500 mt-1">ReDoS-safe regex evaluated line-by-line during parallel reduction.</p>
+                        </div>
+                      }
+
+                      @if (ruleDraft().type === 'naming') {
+                        <div>
+                          <label class="block text-slate-400 mb-1 font-semibold">Naming Convention</label>
+                          <select [(ngModel)]="ruleDraft().namingConvention" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200">
+                            <option value="PascalCase">PascalCase (e.g. OrderRepository)</option>
+                            <option value="camelCase">camelCase (e.g. calculateTotal)</option>
+                            <option value="snake_case">snake_case (e.g. user_id)</option>
+                            <option value="kebab-case">kebab-case (e.g. app-header)</option>
+                            <option value="UPPER_CASE">UPPER_CASE (e.g. MAX_TIMEOUT)</option>
+                          </select>
+                        </div>
+                      }
+
+                      @if (ruleDraft().type === 'dependency' || ruleDraft().type === 'architecture') {
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div>
+                            <label class="block text-slate-400 mb-1 font-semibold">Source Layer</label>
+                            <input type="text" [(ngModel)]="ruleDraft().sourceLayer" placeholder="Domain" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200" />
+                          </div>
+                          <div>
+                            <label class="block text-slate-400 mb-1 font-semibold">Forbidden Target Layer</label>
+                            <input type="text" [(ngModel)]="ruleDraft().forbiddenLayer" placeholder="Infrastructure" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200" />
+                          </div>
+                        </div>
+                      }
+
+                      @if (ruleDraft().type === 'file_folder') {
+                        <div>
+                          <label class="block text-slate-400 mb-1 font-semibold">Required Path Prefix</label>
+                          <input type="text" [(ngModel)]="ruleDraft().requiredPathPrefix" placeholder="src/Presentation/Controllers/" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200" />
+                        </div>
+                      }
+
+                      @if (ruleDraft().type === 'ast') {
+                        <div>
+                          <label class="block text-slate-400 mb-1 font-semibold">AST Selector</label>
+                          <input type="text" [(ngModel)]="ruleDraft().astSelector" placeholder="FunctionDef[name^='get_'] > Return" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200" />
+                        </div>
+                      }
+
+                      <div class="pt-2">
+                        <label class="block text-slate-400 mb-1 font-semibold">Violation Message *</label>
+                        <input type="text" [(ngModel)]="ruleDraft().message" placeholder="Violation of rule detected in source file." class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200" />
+                      </div>
+
+                      <div>
+                        <label class="block text-slate-400 mb-1 font-semibold">Remediation / Fix Suggestion *</label>
+                        <input type="text" [(ngModel)]="ruleDraft().suggestion" placeholder="Extract the forbidden dependency to interface adapters..." class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200" />
+                      </div>
+                    </div>
+                  }
+
+                  <!-- STEP 5: SEVERITY & PENALTY -->
+                  @if (wizardStep() === 5) {
+                    <div class="space-y-3 text-xs font-mono">
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label class="block text-slate-400 mb-1 font-semibold">Severity Level</label>
+                          <select [(ngModel)]="ruleDraft().severity" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200">
+                            <option value="P0">P0 (Blocking / Critical Gate Breaker)</option>
+                            <option value="P1">P1 (Warning / Quality Gate Degradation)</option>
+                            <option value="P2">P2 (Minor Invariant Notice)</option>
+                            <option value="P3">P3 (Style / Advisory)</option>
+                            <option value="INFO">INFO (Informational Annotation)</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="block text-slate-400 mb-1 font-semibold">Penalty Points</label>
+                          <input type="number" [(ngModel)]="ruleDraft().penaltyPoints" min="0" max="100" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200" />
+                        </div>
+                      </div>
+
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                        <div>
+                          <label class="block text-slate-400 mb-1 font-semibold">Lifecycle Status</label>
+                          <select [(ngModel)]="ruleDraft().status" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200">
+                            <option value="ACTIVE">ACTIVE (Evaluated by default)</option>
+                            <option value="DRAFT">DRAFT (Under construction)</option>
+                            <option value="TESTING">TESTING (Non-blocking sandbox)</option>
+                            <option value="VALIDATED">VALIDATED (Passed test fixtures)</option>
+                            <option value="DEPRECATED">DEPRECATED</option>
+                            <option value="ARCHIVED">ARCHIVED</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label class="block text-slate-400 mb-1 font-semibold">Rule Enabled</label>
+                          <select [(ngModel)]="ruleDraft().enabled" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200">
+                            <option [ngValue]="true">Enabled (Active in scans)</option>
+                            <option [ngValue]="false">Disabled (Ignored in scans)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- STEP 6: SUPPRESSION / PRAGMA -->
+                  @if (wizardStep() === 6) {
+                    <div class="space-y-3 text-xs font-mono">
+                      <div class="flex items-center justify-between p-3 rounded-lg bg-[#0B0F19] border border-slate-800">
+                        <div>
+                          <strong class="text-slate-100">Allow Justified Suppressions</strong>
+                          <p class="text-slate-400 text-[11px]">Permit engineers to suppress violations via pragma annotations</p>
+                        </div>
+                        <input type="checkbox" [(ngModel)]="ruleDraft().suppressionAllowed" class="rounded bg-slate-800 border-slate-700 h-4 w-4 text-cyan-500" />
+                      </div>
+
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label class="block text-slate-400 mb-1 font-semibold">Pragma Signature</label>
+                          <input type="text" [(ngModel)]="ruleDraft().suppressionPragma" placeholder="@guardian-ignore" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200" />
+                        </div>
+                        <div>
+                          <label class="block text-slate-400 mb-1 font-semibold">Minimum Reason Length</label>
+                          <input type="number" [(ngModel)]="ruleDraft().suppressionMinLength" min="8" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200" />
+                        </div>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- STEP 7: TEST FIXTURES & AD-HOC TESTING -->
+                  @if (wizardStep() === 7) {
+                    <div class="space-y-3 text-xs font-mono">
+                      <div class="flex items-center justify-between">
+                        <span class="text-slate-400 font-semibold">Source Code Test Input:</span>
+                        <button
+                          type="button"
+                          (click)="runWizardAdHocTest()"
+                          [disabled]="isWizardTesting()"
+                          class="btn-guardian btn-guardian-primary h-7 px-2.5 text-xs font-bold"
+                        >
+                          {{ isWizardTesting() ? 'Running...' : 'Run Ad-Hoc Test' }}
+                        </button>
+                      </div>
+
+                      <textarea [(ngModel)]="ruleDraft().testInput" rows="5" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 p-3 text-cyan-200 font-mono text-xs"></textarea>
+
+                      @if (wizardTestResult(); as tr) {
+                        <div [class]="'p-3 rounded-lg border space-y-1.5 ' + (tr.hasViolation === ruleDraft().testExpectedViolation ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300' : 'bg-rose-950/20 border-rose-500/30 text-rose-300')">
+                          <div class="flex items-center justify-between font-bold">
+                            <span>{{ (tr.hasViolation === ruleDraft().testExpectedViolation) ? '✓ TEST PASSED' : '✗ TEST FAILED' }}</span>
+                            <span class="text-[10px] text-slate-400">{{ tr.durationMs }}ms</span>
+                          </div>
+                          <p class="text-slate-300 text-[11px]">
+                            Expected Violation: <strong>{{ ruleDraft().testExpectedViolation }}</strong> &bull;
+                            Actual Violation: <strong>{{ tr.hasViolation }}</strong> &bull;
+                            Matched Lines: <strong>{{ tr.matchedLines.join(', ') || 'None' }}</strong>
+                          </p>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  <!-- STEP 8: REVIEW & SAVE -->
+                  @if (wizardStep() === 8) {
+                    <div class="space-y-3 text-xs font-mono">
+                      <p class="text-slate-400">Review your rule configuration before saving to the Rule Registry:</p>
+                      
+                      <div class="bg-[#0B0F19] p-4 rounded-xl border border-slate-800 space-y-2 max-h-56 overflow-y-auto">
+                        <div><strong class="text-white">{{ ruleDraft().id }}</strong> (v{{ ruleDraft().version }}) - <span class="text-cyan-300">{{ ruleDraft().name }}</span></div>
+                        <div class="text-slate-400">Type: <span class="text-white">{{ ruleDraft().type }}</span> | Tier: <span class="text-white">{{ ruleDraft().tier }}</span> | Severity: <span class="text-white">{{ ruleDraft().severity }}</span> ({{ ruleDraft().penaltyPoints }} pts)</div>
+                        <div class="text-slate-400">Languages: <span class="text-white">{{ ruleDraft().languages.join(', ') }}</span></div>
+                        <div class="text-slate-400">Message: <span class="text-white">{{ ruleDraft().message }}</span></div>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- Wizard Footer Navigation -->
+                  <div class="pt-3 border-t border-slate-800 flex items-center justify-between">
+                    <button
+                      type="button"
+                      (click)="prevWizardStep()"
+                      [disabled]="wizardStep() === 1"
+                      class="btn-guardian btn-guardian-secondary h-8 px-3 text-xs font-mono disabled:opacity-40"
+                    >
+                      &larr; Back
+                    </button>
+
+                    <div class="flex items-center gap-2">
+                      @if (wizardStep() < 8) {
+                        <button
+                          type="button"
+                          (click)="nextWizardStep()"
+                          class="btn-guardian btn-guardian-primary h-8 px-4 text-xs font-bold font-mono"
+                        >
+                          Next &rarr;
+                        </button>
+                      } @else {
+                        <button
+                          type="button"
+                          (click)="saveRuleWizard()"
+                          [disabled]="isSavingRule()"
+                          class="btn-guardian btn-guardian-primary h-8 px-4 text-xs font-bold font-mono"
+                        >
+                          {{ isSavingRule() ? 'Saving...' : 'Save & Enforce Rule' }}
+                        </button>
+                      }
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            }
+
+            <!-- =============================================================== -->
+            <!-- CLONE RULE MODAL                                                 -->
+            <!-- =============================================================== -->
+            @if (isCloneModalOpen()) {
+              <div class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div class="card-guardian max-w-2xl lg:max-w-3xl w-full p-6 space-y-4 font-mono text-xs">
+                  <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <h3 class="text-base font-bold text-white">Clone Rule: {{ cloneSourceRule()?.id }}</h3>
+                    <button (click)="closeCloneModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+                  </div>
+
+                  @if (cloneError()) {
+                    <div class="p-2.5 rounded bg-rose-950/30 border border-rose-500/30 text-rose-300">
+                      {{ cloneError() }}
+                    </div>
+                  }
+
+                  <div class="space-y-3">
+                    <div>
+                      <label class="block text-slate-400 mb-1 font-semibold">New Rule ID *</label>
+                      <input type="text" [(ngModel)]="cloneNewId" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200" />
+                    </div>
+                    <div>
+                      <label class="block text-slate-400 mb-1 font-semibold">New Rule Name</label>
+                      <input type="text" [(ngModel)]="cloneNewName" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-2 text-slate-200" />
                     </div>
                   </div>
 
                   <div class="pt-3 border-t border-slate-800 flex justify-end gap-2">
-                    <button (click)="closeRuleDrawer()" class="btn-guardian btn-guardian-secondary h-8 px-3 text-xs">Close</button>
+                    <button (click)="closeCloneModal()" class="btn-guardian btn-guardian-secondary h-8 px-3">Cancel</button>
+                    <button (click)="confirmCloneRule()" class="btn-guardian btn-guardian-primary h-8 px-3.5 font-bold">Clone Rule</button>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- =============================================================== -->
+            <!-- DELETE CONFIRMATION MODAL                                        -->
+            <!-- =============================================================== -->
+            @if (isDeleteConfirmOpen()) {
+              <div class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div class="card-guardian max-w-xl lg:max-w-2xl w-full p-6 space-y-4 font-mono text-xs border-rose-500/30">
+                  <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <h3 class="text-base font-bold text-rose-400">Delete Rule</h3>
+                    <button (click)="closeDeleteConfirm()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+                  </div>
+
+                  <p class="text-slate-300">
+                    Are you sure you want to permanently delete rule <strong class="text-white">{{ deleteTargetRule()?.id }}</strong>?
+                  </p>
+
+                  <div class="flex items-center gap-2 pt-1">
+                    <input type="checkbox" [(ngModel)]="deleteCascade" id="cascadeDel" class="rounded bg-slate-800 border-slate-700 h-4 w-4 text-rose-500" />
+                    <label for="cascadeDel" class="text-slate-400 text-[11px]">Cascade delete test fixtures and historical references</label>
+                  </div>
+
+                  @if (deleteError()) {
+                    <div class="p-2.5 rounded bg-rose-950/30 border border-rose-500/30 text-rose-300">
+                      {{ deleteError() }}
+                    </div>
+                  }
+
+                  <div class="pt-3 border-t border-slate-800 flex justify-end gap-2">
+                    <button (click)="closeDeleteConfirm()" class="btn-guardian btn-guardian-secondary h-8 px-3">Cancel</button>
+                    <button (click)="confirmDeleteRule()" class="btn-guardian btn-guardian-secondary bg-rose-950/30 border-rose-500/40 text-rose-300 hover:bg-rose-900/40 h-8 px-3.5 font-bold">Delete Rule</button>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- =============================================================== -->
+            <!-- INTERACTIVE TEST RULE CONSOLE MODAL                              -->
+            <!-- =============================================================== -->
+            @if (isTestConsoleOpen()) {
+              <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div class="card-guardian max-w-6xl lg:max-w-7xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto font-mono text-xs border-cyan-500/30 shadow-2xl">
+                  
+                  <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div>
+                      <h3 class="text-base font-bold text-white">Rule Test Console: {{ testConsoleRule()?.id }}</h3>
+                      <p class="text-[11px] text-slate-400">{{ testConsoleRule()?.name }}</p>
+                    </div>
+                    <button (click)="closeTestConsole()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+                  </div>
+
+                  <div class="space-y-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label class="block text-slate-400 mb-1 font-semibold">Simulated File Name</label>
+                        <input type="text" [(ngModel)]="testConsoleFileName" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 px-3 py-1.5 text-slate-200" />
+                      </div>
+                      <div class="flex items-end">
+                        <button
+                          (click)="runTestConsole()"
+                          [disabled]="isRunningRuleTest()"
+                          class="btn-guardian btn-guardian-primary h-8 px-4 w-full font-bold text-xs"
+                        >
+                          {{ isRunningRuleTest() ? 'Executing Scan...' : 'Run Test Scan &rarr;' }}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label class="block text-slate-400 mb-1 font-semibold">Source Code Under Test</label>
+                      <textarea [(ngModel)]="testConsoleCode" rows="8" class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 p-3 text-cyan-200 font-mono text-xs"></textarea>
+                    </div>
+
+                    <!-- Test Verdict Output -->
+                    @if (testConsoleResult(); as tr) {
+                      <div [class]="'p-4 rounded-xl border space-y-2 ' + (tr.hasViolation ? 'bg-rose-950/20 border-rose-500/30' : 'bg-emerald-950/20 border-emerald-500/30')">
+                        <div class="flex items-center justify-between">
+                          <div class="flex items-center gap-2">
+                            <span [class]="'badge-tech text-[10px] ' + (tr.hasViolation ? 'badge-fail' : 'badge-pass')">
+                              {{ tr.hasViolation ? 'VIOLATION DETECTED' : 'CLEAN / NO VIOLATION' }}
+                            </span>
+                            @if (tr.isSuppressed) {
+                              <span class="badge-tech badge-warn text-[10px]">SUPPRESSED BY PRAGMA</span>
+                            }
+                          </div>
+                          <span class="text-slate-400 text-[11px]">{{ tr.durationMs }}ms (HVM Lexer)</span>
+                        </div>
+
+                        @if (tr.matchedLines.length > 0) {
+                          <p class="text-rose-300 text-xs">
+                            Matched on lines: <strong class="text-white">{{ tr.matchedLines.join(', ') }}</strong>
+                          </p>
+                        }
+
+                        @if (tr.violations.length > 0) {
+                          <div class="space-y-1 pt-1">
+                            <div *ngFor="let v of tr.violations" class="p-2.5 rounded bg-[#0B0F19] border border-slate-800 text-[11px] space-y-1">
+                              <p class="text-rose-400 font-bold">{{ v.message }}</p>
+                              @if (v.snippet) {
+                                <pre class="text-slate-300 text-[10px] bg-slate-900/60 p-1.5 rounded">{{ v.snippet }}</pre>
+                              }
+                              @if (v.suggestion) {
+                                <p class="text-cyan-300 text-[10px]">Suggested Fix: {{ v.suggestion }}</p>
+                              }
+                            </div>
+                          </div>
+                        }
+
+                        @if (tr.suppressionReason) {
+                          <p class="text-slate-400 text-[11px]">
+                            Suppression Reason: <em class="text-slate-200">"{{ tr.suppressionReason }}"</em>
+                          </p>
+                        }
+                      </div>
+                    }
+
+                  </div>
+
+                  <div class="pt-3 border-t border-slate-800 flex justify-end gap-2">
+                    <button (click)="closeTestConsole()" class="btn-guardian btn-guardian-secondary h-8 px-3">Close</button>
+                  </div>
+
+                </div>
+              </div>
+            }
+
+            <!-- =============================================================== -->
+            <!-- IMPORT RULES JSON MODAL                                          -->
+            <!-- =============================================================== -->
+            @if (isImportModalOpen()) {
+              <div class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div class="card-guardian max-w-5xl lg:max-w-6xl w-full p-6 space-y-4 font-mono text-xs">
+                  <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <h3 class="text-base font-bold text-white">Import Rules Manifest (JSON)</h3>
+                    <button (click)="closeImportModal()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+                  </div>
+
+                  <p class="text-slate-400">
+                    Paste a JSON array of rule definitions or a single rule object to import into the Guardian catalog.
+                  </p>
+
+                  <textarea
+                    [(ngModel)]="importJsonInput"
+                    rows="8"
+                    placeholder='[ { "id": "CUSTOM-01", "name": "Custom Rule", "type": "pattern", ... } ]'
+                    class="w-full rounded-lg bg-[#0B0F19] border border-slate-800 p-3 text-cyan-200 text-xs"
+                  ></textarea>
+
+                  <div class="flex items-center gap-2">
+                    <input type="checkbox" [(ngModel)]="importOverwrite" id="importOverwriteId" class="rounded bg-slate-800 border-slate-700 h-4 w-4 text-cyan-500" />
+                    <label for="importOverwriteId" class="text-slate-300">Overwrite existing rules with matching IDs</label>
+                  </div>
+
+                  @if (importResult(); as res) {
+                    <div [class]="'p-3 rounded-lg border space-y-1 ' + (res.errors.length === 0 ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300' : 'bg-rose-950/20 border-rose-500/30 text-rose-300')">
+                      <p class="font-bold">Import Result: {{ res.imported }} imported &bull; {{ res.updated }} updated &bull; {{ res.failed }} failed</p>
+                      @if (res.errors.length > 0) {
+                        <div *ngFor="let err of res.errors" class="text-[11px]">&bull; {{ err }}</div>
+                      }
+                    </div>
+                  }
+
+                  <div class="pt-3 border-t border-slate-800 flex justify-end gap-2">
+                    <button (click)="closeImportModal()" class="btn-guardian btn-guardian-secondary h-8 px-3">Cancel</button>
+                    <button (click)="confirmImport()" [disabled]="isImporting()" class="btn-guardian btn-guardian-primary h-8 px-4 font-bold">
+                      {{ isImporting() ? 'Importing...' : 'Validate & Import' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- =============================================================== -->
+            <!-- AUDIT TRAIL MODAL                                                -->
+            <!-- =============================================================== -->
+            @if (isAuditTrailOpen()) {
+              <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div class="card-guardian max-w-6xl lg:max-w-7xl w-full p-6 space-y-4 max-h-[85vh] overflow-y-auto font-mono text-xs">
+                  <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div>
+                      <h3 class="text-base font-bold text-white">Rule Registry Mutation Audit Trail</h3>
+                      <p class="text-[11px] text-slate-400">Full tamper-evident historical audit log of rule operations</p>
+                    </div>
+                    <button (click)="closeAuditTrail()" class="text-slate-400 hover:text-white text-lg">&times;</button>
+                  </div>
+
+                  <div class="divide-y divide-slate-800/80 border border-slate-800 rounded-xl overflow-hidden bg-[#0B0F19]">
+                    @if (auditTrailList().length === 0) {
+                      <div class="p-6 text-center text-slate-500">
+                        No mutation audit entries recorded in this session.
+                      </div>
+                    } @else {
+                      <div *ngFor="let entry of auditTrailList()" class="p-3 hover:bg-slate-800/30 flex items-center justify-between gap-3 text-xs">
+                        <div class="space-y-0.5">
+                          <div class="flex items-center gap-2">
+                            <span [class]="'text-[10px] font-bold px-1.5 py-0.5 rounded ' + (entry.action === 'CREATE' ? 'bg-emerald-500/20 text-emerald-300' : entry.action === 'UPDATE' ? 'bg-cyan-500/20 text-cyan-300' : entry.action === 'DELETE' ? 'bg-rose-500/20 text-rose-300' : 'bg-purple-500/20 text-purple-300')">
+                              {{ entry.action }}
+                            </span>
+                            <strong class="text-slate-200">{{ entry.ruleId }}</strong>
+                            <span class="text-slate-500 text-[10px]">by {{ entry.actor }}</span>
+                          </div>
+                          <p class="text-[11px] text-slate-400">{{ entry.timestamp }}</p>
+                        </div>
+
+                        <div class="text-slate-500 text-[10px] text-right">
+                          v{{ entry.version }}
+                        </div>
+                      </div>
+                    }
+                  </div>
+
+                  <div class="pt-3 border-t border-slate-800 flex justify-end">
+                    <button (click)="closeAuditTrail()" class="btn-guardian btn-guardian-secondary h-8 px-3">Close</button>
                   </div>
                 </div>
               </div>
@@ -1784,7 +2911,7 @@
   <!-- EXPORT MODALS -->
   @if (activeExportModal()) {
     <div class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div class="card-guardian max-w-xl w-full p-6 space-y-4">
+      <div class="card-guardian max-w-5xl lg:max-w-6xl w-full p-6 space-y-4">
         <div class="flex items-center justify-between pb-3 border-b border-slate-800">
           <h3 class="text-base font-bold font-mono text-white">
             Export Report ({{ activeExportModal()?.toUpperCase() }})

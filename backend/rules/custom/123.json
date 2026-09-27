@@ -1,0 +1,68 @@
+{
+  "id": "123",
+  "version": "1.0.0",
+  "name": "123",
+  "description": "1231231",
+  "type": "pattern",
+  "category": "custom",
+  "severity": "P2",
+  "penaltyPoints": 10,
+  "penalty_points": 10,
+  "status": "ACTIVE",
+  "enabled": true,
+  "tier": "custom",
+  "layer": null,
+  "architectures": [
+    "clean_architecture"
+  ],
+  "languages": [
+    "PHP"
+  ],
+  "scope": {
+    "include": [
+      "src/**"
+    ],
+    "exclude": [
+      "tests/**"
+    ],
+    "target_layer": null
+  },
+  "condition": {
+    "pattern": "password",
+    "patterns": [
+      "password"
+    ],
+    "naming_convention": null,
+    "source_layer": null,
+    "forbidden_layer": null,
+    "forbidden_targets": [],
+    "required_path_prefix": null,
+    "ast_selector": null
+  },
+  "message": "meu piruzinho.",
+  "suggestion": "Refactor code to satisfy this custom rule.",
+  "rationale": "Enforces architectural boundary separation.",
+  "remediation": "Extract forbidden dependency or rewrite code to conform to rule.",
+  "suppression": {
+    "allowed": true,
+    "pragma": "@guardian-ignore",
+    "requires_reason": true,
+    "minimum_reason_length": 8
+  },
+  "tests": [
+    {
+      "name": "Primary Validation Fixture",
+      "input": "# Example source code snippet for rule validation\n",
+      "expected_violation": true,
+      "expected_line": null,
+      "expected_message": null
+    }
+  ],
+  "metadata": {
+    "author": "system",
+    "created_at": "2026-09-27T19:27:53.661108+00:00",
+    "updated_at": "2026-09-27T19:27:53.662434+00:00",
+    "executions_count": 0,
+    "violations_count": 0
+  }
+}

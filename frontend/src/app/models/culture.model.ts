@@ -10,7 +10,15 @@ export type ArchitecturalLayer =
   | 'Service'
   | 'Unknown';
 
-export type SeverityLevel = 'P0_BLOCKING' | 'P1_WARNING' | 'P2_INFO';
+export type SeverityLevel = 
+  | 'P0_BLOCKING' 
+  | 'P1_WARNING' 
+  | 'P2_INFO' 
+  | 'P0' 
+  | 'P1' 
+  | 'P2' 
+  | 'P3' 
+  | 'INFO';
 
 export type VcsPlatform = 'github' | 'gitlab' | 'bitbucket' | 'local';
 
@@ -114,18 +122,135 @@ export interface ArchitectureProfile {
   }[];
 }
 
-export interface CultureRule {
+export type RuleType = 
+  | 'pattern'
+  | 'naming'
+  | 'dependency'
+  | 'architecture'
+  | 'file_folder'
+  | 'ast'
+  | 'language_specific';
+
+export type RuleSeverityLevel = 
+  | 'P0' 
+  | 'P1' 
+  | 'P2' 
+  | 'P3' 
+  | 'INFO' 
+  | 'P0_BLOCKING' 
+  | 'P1_WARNING' 
+  | 'P2_INFO';
+
+export type RuleStatus = 
+  | 'DRAFT' 
+  | 'TESTING' 
+  | 'VALIDATED' 
+  | 'ACTIVE' 
+  | 'DEPRECATED' 
+  | 'ARCHIVED';
+
+export type RuleTier = 
+  | 'builtin' 
+  | 'organization' 
+  | 'project' 
+  | 'custom';
+
+export interface RuleScopeConfig {
+  include: string[];
+  exclude: string[];
+  target_layer?: string;
+}
+
+export interface RuleConditionConfig {
+  pattern?: string;
+  patterns?: string[];
+  naming_convention?: 'PascalCase' | 'camelCase' | 'snake_case' | 'kebab-case' | 'UPPER_CASE' | string;
+  source_layer?: string;
+  forbidden_layer?: string;
+  forbidden_targets?: string[];
+  required_path_prefix?: string;
+  ast_selector?: string;
+}
+
+export interface RuleSuppressionConfig {
+  allowed: boolean;
+  pragma: string;
+  requires_reason: boolean;
+  minimum_reason_length: number;
+}
+
+export interface RuleTestFixture {
+  name: string;
+  input: string;
+  expected_violation: boolean;
+  expected_line?: number;
+  expected_message?: string;
+}
+
+export interface RuleModel {
   id: string;
   name: string;
-  category: 'Culture & Quality' | 'Architecture - Layer Boundaries' | 'Language Adapter' | 'Security';
+  category: string;
   severity: SeverityLevel;
   penaltyPoints: number;
+  penalty_points?: number;
   description: string;
-  rationale: string;
-  remediation: string;
-  layer?: string;
+  rationale?: string;
+  remediation?: string;
   languages: string[];
-  status: 'active' | 'inactive';
+  status: RuleStatus | 'active' | 'inactive';
+  version?: string;
+  type?: RuleType;
+  enabled?: boolean;
+  tier?: RuleTier;
+  layer?: string;
+  architectures?: string[];
+  scope?: RuleScopeConfig;
+  condition?: RuleConditionConfig;
+  message?: string;
+  suggestion?: string;
+  suppression?: RuleSuppressionConfig;
+  tests?: RuleTestFixture[];
+  metadata?: {
+    author?: string;
+    created_at?: string;
+    updated_at?: string;
+    executions_count?: number;
+    violations_count?: number;
+  };
+}
+
+export interface CultureRule extends RuleModel {}
+
+export interface RuleTestResult {
+  ruleId: string;
+  passed: boolean;
+  hasViolation: boolean;
+  isSuppressed: boolean;
+  suppressionReason?: string | null;
+  matchedLines: number[];
+  violations: {
+    ruleId: string;
+    fileName?: string;
+    severity: string;
+    penalty: number;
+    line?: number;
+    snippet?: string;
+    message: string;
+    suggestion?: string;
+    remediation?: string;
+  }[];
+  error?: string | null;
+  durationMs: number;
+}
+
+export interface RuleAuditTrailEntry {
+  timestamp: string;
+  action: string;
+  actor: string;
+  ruleId: string;
+  version: string;
+  details?: Record<string, any>;
 }
 
 export interface LayerVocabularyItem {

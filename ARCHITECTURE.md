@@ -147,19 +147,35 @@ sequenceDiagram
 
 ---
 
-## 🏛️ 4-Tier Declarative Pipeline Architecture
+## 🏛️ Multi-Tier Declarative Catalog & Extensible Rule Engine
 
-The audit rules are organized into four decoupled stages:
-1. [`1_architectures/`](./backend/rules/1_architectures/): Defines structural topologies (`layered_mvc`, `clean_architecture`, `microservices`, `cqrs_event_sourcing`, `rest_api`, `frontend_clean`).
-2. [`2_rules/`](./backend/rules/2_rules/): Abstract constraints, severities (`P0_BLOCKING`, `P1_WARNING`), and penalties.
-3. [`3_languages/`](./backend/rules/3_languages/): Syntax patterns and AST tokens for C#, Python, TypeScript, PHP, Go, Java, Rust.
-4. [`4_scanner/`](./backend/rules/4_scanner/): Engine configurations and quality gate thresholds.
+The audit rules are organized into decoupled, multi-tiered catalogs resolved with deterministic precedence:
+1. **Built-in Tier** ([`backend/rules/builtin/`](./backend/rules/builtin/) & [`2_rules/`](./backend/rules/2_rules/)): Out-of-the-box Clean Architecture and Culture rules.
+2. **Organization Tier** ([`backend/rules/organization/`](./backend/rules/organization/)): Enterprise-wide engineering compliance policies.
+3. **Project Tier** ([`backend/rules/projects/`](./backend/rules/projects/)): Team and repository-specific standards.
+4. **Custom Tier** ([`backend/rules/custom/`](./backend/rules/custom/)): Ad-hoc or overridden rules (highest priority).
+
+```mermaid
+flowchart TD
+    Builtin["Tier 1: Built-in"] --> Org["Tier 2: Organization"]
+    Org --> Proj["Tier 3: Project"]
+    Proj --> Custom["Tier 4: Custom"]
+    Custom --> Norm["Rule Normalizer & Schema Validator"]
+    Norm --> Safety["Regex Safety Validator (ReDoS Protected)"]
+    Safety --> TestEngine["Isolated Rule Test Engine"]
+    TestEngine --> EffectiveSet["Effective Rule Set"]
+    EffectiveSet --> Synthesizer["Bend Harness Synthesizer"]
+    Synthesizer --> HVM["Bend HVM Parallel Reduction"]
+```
 
 ---
 
 ## 🔗 Related Documentation
 - [Quickstart & CLI Usage](./QUICKSTART.md)
 - [4-Tier Pipeline Specification](./PIPELINE.md)
+- [Extensible Custom Rules Guide](./CUSTOM-RULES.md)
+- [Rule Authoring & Schema Reference](./RULE-AUTHORING.md)
+- [Rule REST API Reference](./RULE-API.md)
 - [Multi-Platform VCS Integrations](./INTEGRATIONS.md)
 - [Engineering Standards & Rules Catalog](./RULES.md)
 - [Contributor Guidelines](./CONTRIBUTING.md)

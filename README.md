@@ -14,6 +14,9 @@ The documentation for **Bend DevOps Guardian** is organized into specialized mod
 | 🏛️ **[`ARCHITECTURE.md`](./ARCHITECTURE.md)** | **Clean Architecture**, runtime characteristics, parallel HVM reduction model, and C4/Mermaid topology diagrams. |
 | ⚡ **[`QUICKSTART.md`](./QUICKSTART.md)** | Step-by-step installation, prerequisites, CLI usage examples, and dashboard execution. |
 | 🔬 **[`PIPELINE.md`](./PIPELINE.md)** | 4-Tier Declarative Pipeline (`1_architectures`, `2_rules`, `3_languages`, `4_scanner`) and Token Taxonomy matrix. |
+| 🛡️ **[`CUSTOM-RULES.md`](./CUSTOM-RULES.md)** | Extensible custom rule engine, multi-tier precedence model, and lifecycle governance. |
+| ✍️ **[`RULE-AUTHORING.md`](./RULE-AUTHORING.md)** | Authoring guide, JSON schemas, ReDoS safety validation, and test fixture authoring. |
+| 🔌 **[`RULE-API.md`](./RULE-API.md)** | Full REST API reference for rule management, testing, cloning, import/export, and audit trails. |
 | 🌐 **[`INTEGRATIONS.md`](./INTEGRATIONS.md)** | Multi-platform VCS setup for **GitHub Actions**, **GitLab CI/CD**, and **Bitbucket Pipelines**. |
 | 📜 **[`RULES.md`](./RULES.md)** | Complete rules catalog (`CULT01..05`, `ARCH-LAYER-01..04`), severities, and inline suppression pragmas (`@guardian-ignore`). |
 | 🤝 **[`CONTRIBUTING.md`](./CONTRIBUTING.md)** | Spec-Driven Development (SDD), Test-Driven Development (TDD) workflow, and commit standards. |
@@ -72,7 +75,10 @@ bend-devops/
 │   ├── 001-devops-standards-validator/# Core Parallel HVM Engine Spec
 │   ├── 002-layered-architecture-auditor/# 4-Tier Pipeline & Layer Vocabulary Spec
 │   ├── 003-vcs-git-platforms-integration/# GitHub, GitLab, Bitbucket Integration Spec
-│   └── 004-false-positive-suppression-engine/# False-Positive Elimination & Pragmas Spec
+│   ├── 004-false-positive-suppression-engine/# False-Positive Elimination & Pragmas Spec
+│   ├── 005-live-code-diff-auditor/    # Interactive Live Code & Unified/Split Diff Auditor
+│   ├── 006-extensible-rule-management/# Extensible 4-Tier Rule Catalog & Custom Rule Wizard
+│   └── 007-escopo-e-regras-arquiteturais-do-usuario/# User-Scoped Architectural Rules & Workflow Spec
 ├── tests/                             # 🧪 Automated Python TDD Test Suite
 │   ├── test_token_filter.py           # Token boundary tests
 │   ├── test_suppressions.py           # Inline pragma tests
@@ -97,10 +103,12 @@ bend-devops/
 # 2. Audit codebase via CLI
 python3 scripts/culture_guard.py src/
 
-# 3. Run in CI/CD mode with automated PR/MR commenting
-python3 scripts/culture_guard.py --vcs github
+# 4. Manage, validate, and test custom rules via CLI
+python3 scripts/culture_guard.py rules list
+python3 scripts/culture_guard.py rules test CULT01 --code "def fn(): pass"
+python3 scripts/culture_guard.py rules validate backend/rules/custom/my_rule.json
 
-# 4. Launch Angular 19 Dashboard
+# 5. Launch Angular 19 Dashboard
 cd frontend && npm install && npm start
 ```
 

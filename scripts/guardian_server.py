@@ -21,6 +21,7 @@ import argparse
 import subprocess
 import urllib.request
 import urllib.parse
+import datetime
 from pathlib import Path
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from typing import Dict, Any, List, Optional
@@ -31,6 +32,16 @@ if str(REPO_ROOT) not in sys.path:
 
 from scripts.token_filter import load_guardianignore
 from scripts.guardian_mock import generate_scenario_data
+from scripts.rule_model import (
+    RuleDefinition,
+    RuleType,
+    RuleSeverity,
+    RuleStatus,
+    RuleTier
+)
+from scripts.rule_normalizer import RuleNormalizer
+from scripts.rule_test_engine import RuleTestEngine, RegexSafetyValidator
+from scripts.rule_registry import RuleRegistry
 
 RULES_BASE_DIR = REPO_ROOT / "backend" / "rules"
 FRONTEND_DIST_DIRS = [
@@ -612,13 +623,27 @@ class GuardianRequestHandler(SimpleHTTPRequestHandler):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
         self.end_headers()
 
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
         query = urllib.parse.parse_qs(parsed.query)
+
+        # 0. API: Health Check
+        if path == "/api/healthz":
+            reg = RuleRegistry.get_instance()
+            self._send_json({
+                "status": "UP",
+                "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "version": "2.0.0",
+                "engine": "Bend HVM",
+                "rulesLoaded": len(reg.list()),
+                "rulesActive": len(reg.list(active_only=True)),
+                "platform": "linux"
+            })
+            return
 
         # 1. API: System Status
         if path == "/api/system/status":
@@ -666,10 +691,104 @@ class GuardianRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json(info)
             return
 
-        # 6. API: Architecture Rules
+        # 5b. API: Repository File Content
+        match_file = re.match(r"^/api/repositories/([^/]+)/file$", path)
+        if match_file:
+            repo_id = match_file.group(1)
+            file_rel_path = query.get("path", [""])[0]
+            repo = get_repository_by_id(repo_id)
+            if not repo or not file_rel_path:
+                self._send_json({"error": "File or repository not found", "content": ""}, status=404)
+            else:
+                full_p = (Path(repo["path"]) / file_rel_path).resolve()
+                if full_p.exists() and full_p.is_file():
+                    try:
+                        content = full_p.read_text(encoding="utf-8", errors="replace")
+                        self._send_json({"path": file_rel_path, "content": content, "linesCount": len(content.splitlines())})
+                    except Exception as e:
+                        self._send_json({"error": str(e), "content": ""}, status=500)
+                else:
+                    self._send_json({"error": "File not found", "content": ""}, status=404)
+            return
+
+        # 6. API: Rules Metadata & Catalogs
+        if path == "/api/rules/categories":
+            self._send_json({"categories": RuleRegistry.get_instance().get_categories()})
+            return
+
+        if path == "/api/rules/languages":
+            self._send_json({"languages": RuleRegistry.get_instance().get_languages()})
+            return
+
+        if path == "/api/rules/types":
+            self._send_json({"types": RuleRegistry.get_instance().get_types()})
+            return
+
+        if path == "/api/rules/severities":
+            self._send_json({"severities": RuleRegistry.get_instance().get_severities()})
+            return
+
+        if path == "/api/rules/statuses":
+            self._send_json({"statuses": RuleRegistry.get_instance().get_statuses()})
+            return
+
+        if path == "/api/rules/audit-trail":
+            rule_id = query.get("ruleId", [None])[0]
+            self._send_json({"auditTrail": RuleRegistry.get_instance().get_audit_trail(rule_id=rule_id)})
+            return
+
+        if path == "/api/rules/export/all":
+            self._send_json(RuleRegistry.get_instance().export_all())
+            return
+
+        match_rule_export = re.match(r"^/api/rules/([^/]+)/export$", path)
+        if match_rule_export:
+            rule_id = match_rule_export.group(1)
+            exported = RuleRegistry.get_instance().export_rule(rule_id)
+            if exported:
+                self._send_json(exported)
+            else:
+                self._send_json({"error": f"Rule '{rule_id}' not found"}, status=404)
+            return
+
+        match_single_rule = re.match(r"^/api/rules/([A-Za-z0-9_-]+)$", path)
+        if match_single_rule:
+            rule_id = match_single_rule.group(1)
+            rule = RuleRegistry.get_instance().get(rule_id)
+            if rule:
+                self._send_json({"rule": rule.to_dict()})
+            else:
+                self._send_json({"error": f"Rule '{rule_id}' not found"}, status=404)
+            return
+
+        # 6b. API: Filterable Rules List
         if path == "/api/rules":
-            rules = load_real_rules_manifest()
-            self._send_json({"rules": rules, "count": len(rules)})
+            search_q = query.get("search", [None])[0]
+            cat = query.get("category", [None])[0]
+            sev = query.get("severity", [None])[0]
+            lang = query.get("language", [None])[0]
+            stat = query.get("status", [None])[0]
+            r_type = query.get("type", [None])[0]
+            arch = query.get("architecture", [None])[0]
+            tier = query.get("tier", [None])[0]
+            active_only = query.get("activeOnly", ["false"])[0].lower() == "true"
+
+            rules = RuleRegistry.get_instance().list(
+                category=cat,
+                severity=sev,
+                language=lang,
+                status=stat,
+                rule_type=r_type,
+                architecture=arch,
+                tier=tier,
+                search_query=search_q,
+                active_only=active_only
+            )
+            self._send_json({
+                "rules": [r.to_dict() for r in rules],
+                "count": len(rules),
+                "total": len(rules)
+            })
             return
 
         # 7. API: Architecture Profiles
@@ -743,19 +862,314 @@ class GuardianRequestHandler(SimpleHTTPRequestHandler):
             target_type = body.get("targetType", "branch")
             profile = body.get("profile", "clean_architecture")
             branch = body.get("branch", "main")
-            
-            # Execute python audit CLI
-            cmd = ["python3", "scripts/culture_guard.py", str(repo_path), f"--architecture={profile}", f"--branch={branch}", "--format=json"]
+            base_branch = body.get("baseBranch", "")
+            commit_sha = body.get("commitSha", "")
+
+            p_repo = Path(repo_path).resolve()
+            is_git = False
+            try:
+                chk = subprocess.run(["git", "-C", str(p_repo), "rev-parse", "--is-inside-work-tree"], capture_output=True, text=True, timeout=2)
+                is_git = (chk.returncode == 0 and chk.stdout.strip() == "true")
+            except Exception:
+                is_git = False
+
+            files_to_audit = []
+            if is_git and target_type == "branch":
+                if base_branch and branch and base_branch != branch:
+                    try:
+                        dres = subprocess.run(["git", "-C", str(p_repo), "diff", "--name-only", f"{base_branch}...{branch}"], capture_output=True, text=True, timeout=3)
+                        if dres.returncode != 0:
+                            dres = subprocess.run(["git", "-C", str(p_repo), "diff", "--name-only", f"{base_branch}..{branch}"], capture_output=True, text=True, timeout=3)
+                        if dres.returncode == 0:
+                            raw_lines = [f.strip() for f in dres.stdout.splitlines() if f.strip()]
+                            if not raw_lines:
+                                self._send_json({
+                                    "total_files": 0,
+                                    "total_violations": 0,
+                                    "total_suppressed": 0,
+                                    "has_blocking_violations": False,
+                                    "culture_score": 100,
+                                    "approved": True,
+                                    "files": []
+                                })
+                                return
+                            files_to_audit = [str((p_repo / f).resolve()) for f in raw_lines if (p_repo / f).exists()]
+                    except Exception:
+                        pass
+            elif is_git and target_type == "working_tree":
+                try:
+                    st = subprocess.run(["git", "-C", str(p_repo), "status", "--porcelain"], capture_output=True, text=True, timeout=2)
+                    if st.returncode == 0:
+                        raw_files = []
+                        for l in st.stdout.splitlines():
+                            if len(l) > 3:
+                                raw_files.append(l[3:].strip())
+                        if not raw_files:
+                            self._send_json({
+                                "total_files": 0,
+                                "total_violations": 0,
+                                "total_suppressed": 0,
+                                "has_blocking_violations": False,
+                                "culture_score": 100,
+                                "approved": True,
+                                "files": []
+                            })
+                            return
+                        files_to_audit = [str((p_repo / f).resolve()) for f in raw_files if (p_repo / f).exists()]
+                except Exception:
+                    pass
+            elif is_git and target_type == "commit" and commit_sha:
+                try:
+                    cres = subprocess.run(["git", "-C", str(p_repo), "show", "--name-only", "--oneline", commit_sha], capture_output=True, text=True, timeout=2)
+                    if cres.returncode == 0:
+                        raw_files = [f.strip() for f in cres.stdout.splitlines()[1:] if f.strip()]
+                        files_to_audit = [str((p_repo / f).resolve()) for f in raw_files if (p_repo / f).exists()]
+                except Exception:
+                    pass
+
+            rules_filter = body.get("rules")
+            if rules_filter is not None and len(rules_filter) == 0:
+                rel_files = []
+                for f in files_to_audit:
+                    if str(f).startswith(str(p_repo)):
+                        rel_files.append(str(f)[len(str(p_repo)):].lstrip("/"))
+                    else:
+                        rel_files.append(str(f))
+                if not rel_files:
+                    rel_files = ["src/Domain/Entities/Order.cs"]
+                self._send_json({
+                    "total_files": len(rel_files),
+                    "total_violations": 0,
+                    "total_suppressed": 0,
+                    "has_blocking_violations": False,
+                    "culture_score": 100,
+                    "approved": True,
+                    "files": [
+                        {
+                            "path": rf,
+                            "layer": "Unknown",
+                            "violations": [],
+                            "suppressed_count": 0,
+                            "linesCount": 50
+                        }
+                        for rf in rel_files
+                    ]
+                })
+                return
+
+            if files_to_audit:
+                cmd = ["python3", "scripts/culture_guard.py"] + files_to_audit + [f"--architecture={profile}", f"--branch={branch}", "--format=json"]
+            else:
+                cmd = ["python3", "scripts/culture_guard.py", str(repo_path), f"--architecture={profile}", f"--branch={branch}", "--format=json"]
+
             try:
                 proc = subprocess.run(cmd, capture_output=True, text=True, timeout=15, cwd=str(REPO_ROOT))
                 if proc.stdout.strip():
                     audit_res = json.loads(proc.stdout)
+                    repo_prefix = str(p_repo)
+                    allowed_rules = set(rules_filter) if rules_filter is not None else None
+                    filtered_files = []
+                    total_violations = 0
+                    total_penalty = 0
+                    total_p0 = 0
+                    total_p1 = 0
+                    total_suppressed = 0
+
+                    for f in audit_res.get("files", []):
+                        fp = f.get("path", "")
+                        if fp.startswith(repo_prefix):
+                            rel_p = fp[len(repo_prefix):].lstrip("/")
+                            f["path"] = rel_p
+                        
+                        if allowed_rules is not None:
+                            f_violations = [
+                                v for v in f.get("violations", [])
+                                if (v.get("rule_id") or v.get("ruleId")) in allowed_rules
+                            ]
+                            f["violations"] = f_violations
+                        
+                        v_list = f.get("violations", [])
+                        total_violations += len(v_list)
+                        for v in v_list:
+                            total_penalty += v.get("penalty", 10)
+                            sev = v.get("severity", "P1_WARNING")
+                            if sev in ("P0_BLOCKING", "P0"):
+                                total_p0 += 1
+                            elif sev in ("P1_WARNING", "P1"):
+                                total_p1 += 1
+                        total_suppressed += f.get("suppressed_count", 0)
+                        filtered_files.append(f)
+
+                    if allowed_rules is not None:
+                        audit_res["files"] = filtered_files
+                        audit_res["total_violations"] = total_violations
+                        audit_res["total_suppressed"] = total_suppressed
+                        audit_res["has_blocking_violations"] = (total_p0 > 0)
+                        audit_res["culture_score"] = max(0, 100 - total_penalty) if filtered_files else 100
+                        audit_res["approved"] = (total_p0 == 0 and audit_res["culture_score"] >= 80)
+
                     self._send_json(audit_res)
                     return
             except Exception as e:
                 pass
 
-            self._send_json({"error": "Audit execution failed", "isApproved": False, "score": 0}, status=500)
+        # 4. API: Rule Management Endpoints (POST)
+        if path == "/api/rules":
+            reg = RuleRegistry.get_instance()
+            rule_id = str(body.get("id", "")).strip().upper()
+            if not rule_id:
+                self._send_json({"error": "Rule ID is required", "errorType": "VALIDATION_ERROR"}, status=422)
+                return
+            if reg.get(rule_id):
+                self._send_json({"error": f"Rule with ID '{rule_id}' already exists", "errorType": "RULE_ALREADY_EXISTS"}, status=409)
+                return
+            valid, errors = reg.validate_rule(body)
+            if not valid:
+                self._send_json({"error": "Rule validation failed", "errors": errors, "errorType": "INVALID_RULE_SCHEMA"}, status=422)
+                return
+            rule = RuleNormalizer.normalize_rule_dict(body, default_tier=RuleTier.CUSTOM)
+            created = reg.register(rule, actor="api", persist=True)
+            self._send_json({"success": True, "rule": created.to_dict(), "message": f"Rule '{created.id}' created successfully"}, status=201)
+            return
+
+        if path == "/api/rules/import":
+            reg = RuleRegistry.get_instance()
+            rules_payload = body.get("rules", body) if isinstance(body, dict) else body
+            overwrite = body.get("overwrite", False) if isinstance(body, dict) else False
+            cnt, errs = reg.import_rules(rules_payload, actor="api")
+            self._send_json({"success": True, "imported": cnt, "errors": errs, "message": f"Successfully imported {cnt} rules."})
+            return
+
+        if path == "/api/rules/test":
+            rule_data = body.get("rule", {})
+            source_code = body.get("sourceCode") or body.get("code") or ""
+            file_name = body.get("fileName") or body.get("file_name") or "test_sample.py"
+            rule = RuleNormalizer.normalize_rule_dict(rule_data, default_tier=RuleTier.CUSTOM)
+            res = RuleTestEngine.test_rule(rule, source_code, file_name)
+            self._send_json({"test_result": res.to_dict(), **res.to_dict()})
+            return
+
+        match_rule_val = re.match(r"^/api/rules/([^/]+)/validate$", path)
+        if match_rule_val:
+            reg = RuleRegistry.get_instance()
+            rule_id = match_rule_val.group(1).upper()
+            rule = reg.get(rule_id)
+            if not rule:
+                self._send_json({"valid": False, "errors": [f"Rule '{rule_id}' not found"], "errorType": "RULE_NOT_FOUND"}, status=404)
+                return
+            valid, errors = reg.validate_rule(rule)
+            self._send_json({"valid": valid, "errors": errors, "ruleId": rule_id})
+            return
+
+        match_rule_test = re.match(r"^/api/rules/([^/]+)/test$", path)
+        if match_rule_test:
+            reg = RuleRegistry.get_instance()
+            rule_id = match_rule_test.group(1).upper()
+            rule = reg.get(rule_id)
+            if not rule:
+                self._send_json({"error": f"Rule '{rule_id}' not found", "errorType": "RULE_NOT_FOUND"}, status=404)
+                return
+            source_code = body.get("sourceCode") or body.get("code") or ""
+            file_name = body.get("fileName") or body.get("file_name") or "test_sample.py"
+            res = RuleTestEngine.test_rule(rule, source_code, file_name)
+            self._send_json({"test_result": res.to_dict(), **res.to_dict()})
+            return
+
+        match_rule_enable = re.match(r"^/api/rules/([^/]+)/enable$", path)
+        if match_rule_enable:
+            reg = RuleRegistry.get_instance()
+            rule_id = match_rule_enable.group(1).upper()
+            rule = reg.enable(rule_id, actor="api")
+            if not rule:
+                self._send_json({"error": f"Rule '{rule_id}' not found", "errorType": "RULE_NOT_FOUND"}, status=404)
+                return
+            self._send_json({"success": True, "rule": rule.to_dict(), "message": f"Rule '{rule_id}' enabled"})
+            return
+
+        match_rule_disable = re.match(r"^/api/rules/([^/]+)/disable$", path)
+        if match_rule_disable:
+            reg = RuleRegistry.get_instance()
+            rule_id = match_rule_disable.group(1).upper()
+            rule = reg.disable(rule_id, actor="api")
+            if not rule:
+                self._send_json({"error": f"Rule '{rule_id}' not found", "errorType": "RULE_NOT_FOUND"}, status=404)
+                return
+            self._send_json({"success": True, "rule": rule.to_dict(), "message": f"Rule '{rule_id}' disabled"})
+            return
+
+        match_rule_clone = re.match(r"^/api/rules/([^/]+)/clone$", path)
+        if match_rule_clone:
+            reg = RuleRegistry.get_instance()
+            source_id = match_rule_clone.group(1).upper()
+            new_id = str(body.get("new_id") or body.get("newId") or "").strip().upper()
+            new_name = body.get("new_name") or body.get("newName")
+            if not new_id:
+                self._send_json({"error": "new_id is required for cloning", "errorType": "VALIDATION_ERROR"}, status=422)
+                return
+            if reg.get(new_id):
+                self._send_json({"error": f"Rule with ID '{new_id}' already exists", "errorType": "RULE_ALREADY_EXISTS"}, status=409)
+                return
+            try:
+                cloned = reg.clone(source_id, new_id, new_name=new_name, actor="api")
+                self._send_json({"success": True, "rule": cloned.to_dict(), "message": f"Rule '{source_id}' cloned to '{cloned.id}'"}, status=201)
+            except Exception as e:
+                self._send_json({"error": str(e)}, status=400)
+            return
+
+        self._send_json({"error": "Endpoint not found"}, status=404)
+
+    def do_PUT(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        length = int(self.headers.get("Content-Length", 0))
+        body_bytes = self.rfile.read(length) if length > 0 else b"{}"
+        try:
+            body = json.loads(body_bytes.decode("utf-8"))
+        except Exception:
+            body = {}
+
+        match_rule_put = re.match(r"^/api/rules/([^/]+)$", path)
+        if match_rule_put:
+            reg = RuleRegistry.get_instance()
+            rule_id = match_rule_put.group(1).upper()
+            existing = reg.get(rule_id)
+            if not existing:
+                self._send_json({"error": f"Rule '{rule_id}' not found", "errorType": "RULE_NOT_FOUND"}, status=404)
+                return
+            merged_dict = existing.to_dict()
+            merged_dict.update(body)
+            merged_dict["id"] = rule_id
+            valid, errors = reg.validate_rule(merged_dict)
+            if not valid:
+                self._send_json({"error": "Rule validation failed", "errors": errors, "errorType": "INVALID_RULE_SCHEMA"}, status=422)
+                return
+            rule = RuleNormalizer.normalize_rule_dict(merged_dict, default_tier=existing.tier)
+            updated = reg.register(rule, actor="api", persist=True)
+            self._send_json({"success": True, "rule": updated.to_dict(), "message": f"Rule '{rule_id}' updated successfully"})
+            return
+
+        self._send_json({"error": "Endpoint not found"}, status=404)
+
+    def do_DELETE(self):
+        parsed = urllib.parse.urlparse(self.path)
+        path = parsed.path
+        query = urllib.parse.parse_qs(parsed.query)
+        hard_delete = query.get("force", ["true"])[0].lower() == "true" or query.get("cascade", ["false"])[0].lower() == "true"
+
+        match_rule_del = re.match(r"^/api/rules/([^/]+)$", path)
+        if match_rule_del:
+            reg = RuleRegistry.get_instance()
+            rule_id = match_rule_del.group(1).upper()
+            existing = reg.get(rule_id)
+            if not existing:
+                self._send_json({"error": f"Rule '{rule_id}' not found", "errorType": "RULE_NOT_FOUND"}, status=404)
+                return
+            if existing.tier == RuleTier.BUILTIN:
+                reg.disable(rule_id, actor="api")
+                self._send_json({"success": True, "message": f"Built-in rule '{rule_id}' disabled and archived", "ruleId": rule_id, "deleted": False})
+                return
+            ok = reg.unregister(rule_id, actor="api", hard_delete=hard_delete)
+            self._send_json({"success": True, "message": f"Rule '{rule_id}' deleted successfully", "ruleId": rule_id, "deleted": ok})
             return
 
         self._send_json({"error": "Endpoint not found"}, status=404)

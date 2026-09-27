@@ -33,6 +33,16 @@ from scripts.token_filter import (
     is_file_or_rule_exempt
 )
 from scripts.vcs_adapters import get_vcs_adapter, BranchPolicyEngine
+from scripts.rule_model import (
+    RuleDefinition,
+    RuleType,
+    RuleSeverity,
+    RuleStatus,
+    RuleTier
+)
+from scripts.rule_normalizer import RuleNormalizer
+from scripts.rule_test_engine import RuleTestEngine, RegexSafetyValidator
+from scripts.rule_registry import RuleRegistry
 
 # Base path for rules catalog
 RULES_BASE_DIR = REPO_ROOT / "backend" / "rules"
@@ -65,7 +75,7 @@ SPEC_PATTERNS = [
 # Supported source file extensions
 SUPPORTED_EXTENSIONS = {
     ".py", ".ts", ".js", ".tsx", ".jsx", ".bend", 
-    ".cs", ".cshtml", ".razor", ".php", ".go", ".java", ".rs"
+    ".cs", ".cshtml", ".razor", ".php", ".go", ".java", ".rs", ".sql"
 }
 
 # Fallback layer classification mappings
@@ -76,6 +86,8 @@ DEFAULT_LAYER_PATTERNS = [
     (r"(?i)(services|usecases|use_cases|domain/services)/.*\.(cs|py|ts|js|php|java|go|rs|rb)$", "Service"),
     (r"(?i)(validators|requests|dtos|schemas)/.*\.(cs|py|ts|js|php|java|go|rs|rb)$", "RequestValidator"),
     (r"(?i)(components/ui|atoms|molecules)/.*\.(tsx|vue|ts|html)$", "PresentationalUI"),
+    (r"(?i)(sql|queries|migrations|db|tables|staging)/.*\.(sql)$", "Infrastructure"),
+    (r"(?i).*\.sql$", "Infrastructure"),
 ]
 
 def load_layer_vocabulary() -> Dict[str, Any]:
@@ -322,6 +334,36 @@ class FileAuditResult:
                             "layer": self.layer,
                             "message": msg
                         })
+
+        # 7. Extensible & Custom Rules Evaluation (from RuleRegistry)
+        try:
+            registry = RuleRegistry.get_instance()
+            custom_rules = [
+                r for r in registry.list(active_only=True)
+                if r.tier in (RuleTier.CUSTOM, RuleTier.ORGANIZATION, RuleTier.PROJECT)
+            ]
+            for c_rule in custom_rules:
+                if is_file_or_rule_exempt(self.path, c_rule.id, project_exemptions):
+                    self.suppressed_count += 1
+                    continue
+
+                test_res = RuleTestEngine.test_rule(c_rule, content, str(path))
+                if test_res.is_suppressed:
+                    self.suppressed_count += 1
+
+                for v in test_res.violations:
+                    self.violations.append({
+                        "rule_id": c_rule.id,
+                        "severity": c_rule.severity.value,
+                        "penalty": c_rule.penalty_points,
+                        "line": v.get("line", 1),
+                        "snippet": v.get("snippet", ""),
+                        "layer": self.layer,
+                        "message": v.get("message", c_rule.message),
+                        "suggestion": c_rule.suggestion
+                    })
+        except Exception:
+            pass
 
 def generate_bend_harness(files: List[FileAuditResult]) -> str:
     """Generates dynamic Bend evaluation harness for parallel HVM reduction"""
@@ -589,11 +631,491 @@ def print_report(
     print("\n" + "="*70 + "\n")
     return is_ok
 
+def resolve_scope_files(
+    root_dir: Any,
+    scope: str = "full_branch",
+    target: Optional[str] = None,
+    branch: Optional[str] = None,
+    include_patterns: Optional[List[str]] = None,
+    exclude_patterns: Optional[List[str]] = None
+) -> List[str]:
+    """
+    Resolves eligible source files for a given scope (RF02, RN03):
+    - 'full_branch': walks all directories in root_dir (ignoring standard ignored dirs).
+    - 'working_tree_diff' | 'diff': uses git status / diff to get modified/untracked files.
+    - 'subdirectory' | 'subdir': walks only within root_dir / target.
+    - 'single_file' | 'file': returns target if it is a single valid file.
+    """
+    root_path = Path(root_dir).resolve()
+    ignored_dirs = {
+        ".git", "node_modules", "dist", ".angular", "build", "bin", "obj", 
+        "target", "venv", ".venv", "env", "__pycache__", ".pytest_cache", 
+        ".mypy_cache", ".cache", "coverage", ".nyc_output", ".idea", ".vscode"
+    }
+
+    if exclude_patterns:
+        for pat in exclude_patterns:
+            clean_pat = pat.rstrip("/*").rstrip("/")
+            if clean_pat:
+                ignored_dirs.add(clean_pat)
+
+    resolved_files: List[Path] = []
+
+    if scope in ("subdirectory", "subdir"):
+        if target:
+            target_path = (root_path / target).resolve() if not Path(target).is_absolute() else Path(target).resolve()
+            if target_path.exists() and target_path.is_dir():
+                for root, dirs, files in os.walk(str(target_path)):
+                    dirs[:] = [d for d in dirs if d not in ignored_dirs and not d.startswith(".")]
+                    for file_name in files:
+                        fp = Path(root) / file_name
+                        if fp.suffix in SUPPORTED_EXTENSIONS or (include_patterns and any(fp.match(p) for p in include_patterns)):
+                            resolved_files.append(fp)
+            elif target_path.exists() and target_path.is_file():
+                resolved_files.append(target_path)
+    elif scope in ("single_file", "file"):
+        if target:
+            target_path = (root_path / target).resolve() if not Path(target).is_absolute() else Path(target).resolve()
+            if target_path.exists() and target_path.is_file():
+                resolved_files.append(target_path)
+    elif scope in ("working_tree_diff", "diff", "branch_diff"):
+        try:
+            cmd = ["git", "-C", str(root_path), "status", "--porcelain"]
+            out = subprocess.run(cmd, capture_output=True, text=True, timeout=5).stdout
+            for line in out.splitlines():
+                if len(line) > 3:
+                    file_rel = line[3:].strip().split(" -> ")[-1]
+                    fp = (root_path / file_rel).resolve()
+                    if fp.exists() and fp.is_file() and (fp.suffix in SUPPORTED_EXTENSIONS or (include_patterns and any(fp.match(p) for p in include_patterns))):
+                        resolved_files.append(fp)
+        except Exception:
+            pass
+    else:  # full_branch
+        if root_path.exists() and root_path.is_dir():
+            for root, dirs, files in os.walk(str(root_path)):
+                dirs[:] = [d for d in dirs if d not in ignored_dirs and not d.startswith(".")]
+                for file_name in files:
+                    fp = Path(root) / file_name
+                    if fp.suffix in SUPPORTED_EXTENSIONS or (include_patterns and any(fp.match(p) for p in include_patterns)):
+                        resolved_files.append(fp)
+
+    return [str(f) for f in resolved_files]
+
+def evaluate_scoped_rules(
+    files: List[Any],
+    rules: Optional[List[Dict[str, Any]]] = None,
+    repo_root: Optional[Any] = None,
+    project_exemptions: Optional[List[Any]] = None
+) -> Dict[str, Any]:
+    """
+    Evaluates modular scoped rules on a specific set of files (RF03, RF04, RF05, RN01, RN02, RN04).
+    """
+    import uuid
+    from datetime import datetime, timezone
+
+    report_id = f"rep-{uuid.uuid4().hex[:8]}"
+    now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+    if not files:
+        return {
+            "reportId": report_id,
+            "timestamp": now_iso,
+            "score": 100,
+            "isApproved": True,
+            "scope": {
+                "filesEvaluatedCount": 0
+            },
+            "totalViolations": 0,
+            "violations": [],
+            "rulesEvaluated": [
+                {"ruleId": (r.get("id") or r.get("ruleId") or "") if isinstance(r, dict) else str(r), "status": "PASSED"}
+                for r in (rules or [])
+            ]
+        }
+
+    # Normalize active rules and custom severities
+    active_rule_map: Optional[Dict[str, Optional[str]]] = None
+    if rules is not None:
+        active_rule_map = {}
+        for r in rules:
+            if isinstance(r, dict):
+                r_id = (r.get("id") or r.get("ruleId") or "").upper()
+                enabled = r.get("enabled", True)
+                if enabled and r_id:
+                    custom_sev = r.get("customSeverity") or r.get("custom_severity") or r.get("severity")
+                    active_rule_map[r_id] = custom_sev
+            elif isinstance(r, str):
+                active_rule_map[r.upper()] = None
+
+    exemptions = project_exemptions if project_exemptions is not None else load_guardianignore()
+    audit_results: List[FileAuditResult] = []
+    
+    for f in files:
+        f_path = Path(f)
+        if f_path.exists() and f_path.is_file():
+            audit_results.append(FileAuditResult(f_path, exemptions))
+
+    all_raw_violations = []
+    for f in audit_results:
+        all_raw_violations.extend(f.violations)
+
+    filtered_violations = []
+    total_penalty = 0
+    has_blocking_p0 = False
+
+    rules_evaluated_status: Dict[str, str] = {}
+    if active_rule_map is not None:
+        for r_id in active_rule_map:
+            rules_evaluated_status[r_id] = "PASSED"
+
+    for v in all_raw_violations:
+        r_id = v.get("rule_id", "").upper()
+        if active_rule_map is not None and r_id not in active_rule_map:
+            continue
+
+        v_copy = dict(v)
+        custom_sev = active_rule_map.get(r_id) if active_rule_map else None
+        if custom_sev:
+            v_copy["severity"] = custom_sev
+            if custom_sev in ("P0", "P0_BLOCKING"):
+                v_copy["penalty"] = max(v_copy.get("penalty", 30), 35)
+            elif custom_sev in ("P1", "P1_WARNING"):
+                v_copy["penalty"] = min(v_copy.get("penalty", 15), 15)
+            elif custom_sev in ("P2", "P2_INFO", "P3", "INFO"):
+                v_copy["penalty"] = 0
+
+        filtered_violations.append(v_copy)
+        sev = v_copy.get("severity", "")
+        penalty = v_copy.get("penalty", 0)
+        total_penalty += penalty
+
+        if sev in ("P0", "P0_BLOCKING", 0):
+            has_blocking_p0 = True
+            if r_id in rules_evaluated_status:
+                rules_evaluated_status[r_id] = "FAILED"
+        elif r_id in rules_evaluated_status:
+            rules_evaluated_status[r_id] = "WARNING"
+
+    calculated_score = max(0, 100 - total_penalty)
+    is_approved = (not has_blocking_p0) and (calculated_score >= 80)
+
+    rules_evaluated_list = [
+        {"ruleId": rid, "status": stat}
+        for rid, stat in rules_evaluated_status.items()
+    ]
+
+    return {
+        "reportId": report_id,
+        "timestamp": now_iso,
+        "score": calculated_score,
+        "isApproved": is_approved,
+        "scope": {
+            "filesEvaluatedCount": len(files)
+        },
+        "totalViolations": len(filtered_violations),
+        "violations": filtered_violations,
+        "rulesEvaluated": rules_evaluated_list
+    }
+
+def handle_rules_cli(args_list: List[str]):
+    """CLI Subcommand dispatcher for Extensible Rule Management (guardian rules ...)."""
+    parser = argparse.ArgumentParser(prog="guardian rules", description="Extensible Rule Management & Governance CLI")
+    subparsers = parser.add_subparsers(dest="subcommand", help="Rule management command")
+
+    # 1. List
+    p_list = subparsers.add_parser("list", help="List rules with filters")
+    p_list.add_argument("--category", help="Filter by category")
+    p_list.add_argument("--severity", help="Filter by severity (P0, P1, P2, P3, INFO)")
+    p_list.add_argument("--language", help="Filter by language")
+    p_list.add_argument("--status", help="Filter by status (ACTIVE, DRAFT, TESTING, etc.)")
+    p_list.add_argument("--type", help="Filter by type (pattern, naming, dependency, etc.)")
+    p_list.add_argument("--architecture", help="Filter by architecture")
+    p_list.add_argument("--tier", help="Filter by tier (builtin, organization, project, custom)")
+    p_list.add_argument("--search", help="Search keyword in name or description")
+    p_list.add_argument("--active-only", action="store_true", help="Show only active rules")
+    p_list.add_argument("--json", action="store_true", help="Output as JSON")
+
+    # 2. Show
+    p_show = subparsers.add_parser("show", help="Show details of a specific rule")
+    p_show.add_argument("rule_id", help="Rule ID to inspect")
+    p_show.add_argument("--json", action="store_true", help="Output as JSON")
+
+    # 3. Create
+    p_create = subparsers.add_parser("create", help="Create a new custom rule from a JSON file")
+    p_create.add_argument("file", help="Path to rule JSON file")
+
+    # 4. Edit
+    p_edit = subparsers.add_parser("edit", help="Edit an existing rule from a JSON file")
+    p_edit.add_argument("rule_id", help="Rule ID to update")
+    p_edit.add_argument("file", help="Path to updated rule JSON file")
+
+    # 5. Clone
+    p_clone = subparsers.add_parser("clone", help="Clone an existing rule to a new ID")
+    p_clone.add_argument("source_id", help="Source Rule ID")
+    p_clone.add_argument("new_id", help="New Rule ID")
+    p_clone.add_argument("--name", help="New Rule Name")
+
+    # 6. Delete
+    p_del = subparsers.add_parser("delete", help="Delete or archive a rule")
+    p_del.add_argument("rule_id", help="Rule ID to delete")
+    p_del.add_argument("--force", action="store_true", help="Hard delete custom rule")
+
+    # 7. Enable
+    p_en = subparsers.add_parser("enable", help="Enable/activate a rule")
+    p_en.add_argument("rule_id", help="Rule ID to enable")
+
+    # 8. Disable
+    p_dis = subparsers.add_parser("disable", help="Disable/deactivate a rule")
+    p_dis.add_argument("rule_id", help="Rule ID to disable")
+
+    # 9. Validate
+    p_val = subparsers.add_parser("validate", help="Validate a rule file against schema and safety checks")
+    p_val.add_argument("file", help="Path to rule JSON file")
+
+    # 10. Test
+    p_test = subparsers.add_parser("test", help="Test a rule against source code input")
+    p_test.add_argument("target", help="Rule ID or Path to rule JSON file")
+    p_test.add_argument("--code", help="Inline source code snippet to test")
+    p_test.add_argument("--file", help="Source code file path to test")
+    p_test.add_argument("--json", action="store_true", help="Output as JSON")
+
+    # 11. Import
+    p_imp = subparsers.add_parser("import", help="Import rules from a file or directory")
+    p_imp.add_argument("path", help="Path to JSON file or directory containing rules")
+    p_imp.add_argument("--overwrite", action="store_true", help="Overwrite existing rules with matching IDs")
+
+    # 12. Export
+    p_exp = subparsers.add_parser("export", help="Export rule(s) to JSON")
+    p_exp.add_argument("rule_id", nargs="?", default="all", help="Rule ID or 'all'")
+    p_exp.add_argument("--out", help="Output JSON file path")
+
+    # 13. Search
+    p_search = subparsers.add_parser("search", help="Search rules by query")
+    p_search.add_argument("query", help="Search term")
+
+    parsed = parser.parse_args(args_list)
+    registry = RuleRegistry.get_instance()
+
+    if not parsed.subcommand or parsed.subcommand == "list":
+        rules = registry.list(
+            category=getattr(parsed, "category", None),
+            severity=getattr(parsed, "severity", None),
+            language=getattr(parsed, "language", None),
+            status=getattr(parsed, "status", None),
+            rule_type=getattr(parsed, "type", None),
+            architecture=getattr(parsed, "architecture", None),
+            tier=getattr(parsed, "tier", None),
+            search_query=getattr(parsed, "search", None),
+            active_only=getattr(parsed, "active_only", False)
+        )
+        if getattr(parsed, "json", False):
+            print(json.dumps([r.to_dict() for r in rules], indent=2))
+        else:
+            print("\n" + "="*85)
+            print(f" 🛡️  BEND DEVOPS GUARDIAN — GUARDIAN DECLARATIVE RULES CATALOG ({len(rules)} Rules Resolved)")
+            print("="*85)
+            print(f"{'ID':<18} {'NAME':<32} {'SEV':<5} {'TIER':<8} {'TYPE':<10} {'STATUS'}")
+            print("-" * 85)
+            for r in rules:
+                sev = r.severity.value
+                tier_str = r.tier.value
+                type_str = r.type.value
+                status_str = "ACTIVE" if r.enabled and r.status == RuleStatus.ACTIVE else "INACTIVE"
+                name_short = (r.name[:29] + "...") if len(r.name) > 32 else r.name
+                print(f"{r.id:<18} {name_short:<32} {sev:<5} {tier_str:<8} {type_str:<10} {status_str}")
+            print("="*85 + "\n")
+        return 0
+
+    if parsed.subcommand == "show":
+        rule = registry.get(parsed.rule_id)
+        if not rule:
+            print(f"❌ Error: Rule '{parsed.rule_id}' not found.", file=sys.stderr)
+            return 1
+        if parsed.json:
+            print(json.dumps(rule.to_dict(), indent=2))
+        else:
+            print("\n" + "="*70)
+            print(f" 🛡️  RULE SPECIFICATION: Rule: {rule.id} (v{rule.version})")
+            print("="*70)
+            print(f" Name:         {rule.name}")
+            print(f" Category:     {rule.category}")
+            print(f" Type:         {rule.type.value}")
+            print(f" Severity:     {rule.severity.value} ({rule.penalty_points} pts penalty)")
+            print(f" Status:       {rule.status.value} (Enabled: {rule.enabled})")
+            print(f" Tier:         {rule.tier.value}")
+            print(f" Languages:    {', '.join(rule.languages)}")
+            print(f" Architectures:{', '.join(rule.architectures)}")
+            print(f" Description:  {rule.description}")
+            print(f" Message:      {rule.message}")
+            print(f" Suggestion:   {rule.suggestion}")
+            if rule.condition.patterns:
+                print(f" Patterns:     {rule.condition.patterns}")
+            elif rule.condition.pattern:
+                print(f" Pattern:      {rule.condition.pattern}")
+            print("="*70 + "\n")
+        return 0
+
+    if parsed.subcommand == "create":
+        p = Path(parsed.file)
+        if not p.exists():
+            print(f"❌ Error: File not found: {parsed.file}", file=sys.stderr)
+            return 1
+        data = json.loads(p.read_text(encoding="utf-8"))
+        rule = RuleNormalizer.normalize_rule_dict(data, default_tier=RuleTier.CUSTOM)
+        created = registry.register(rule, actor="cli", persist=True)
+        print(f"✅ Rule '{created.id}' successfully created and registered (Tier: {created.tier.value}).")
+        return 0
+
+    if parsed.subcommand == "edit":
+        p = Path(parsed.file)
+        if not p.exists():
+            print(f"❌ Error: File not found: {parsed.file}", file=sys.stderr)
+            return 1
+        data = json.loads(p.read_text(encoding="utf-8"))
+        data["id"] = parsed.rule_id
+        rule = RuleNormalizer.normalize_rule_dict(data, default_tier=RuleTier.CUSTOM)
+        updated = registry.register(rule, actor="cli", persist=True)
+        print(f"✅ Rule '{updated.id}' successfully updated (v{updated.version}).")
+        return 0
+
+    if parsed.subcommand == "clone":
+        try:
+            cloned = registry.clone(parsed.source_id, parsed.new_id, new_name=parsed.name, actor="cli")
+            print(f"✅ Rule '{parsed.source_id}' cloned to '{cloned.id}' ({cloned.name}).")
+            return 0
+        except Exception as e:
+            print(f"❌ Error cloning rule: {e}", file=sys.stderr)
+            return 1
+
+    if parsed.subcommand == "delete":
+        ok = registry.unregister(parsed.rule_id, actor="cli", hard_delete=parsed.force)
+        if ok:
+            print(f"✅ Rule '{parsed.rule_id}' successfully removed.")
+            return 0
+        else:
+            print(f"❌ Error: Rule '{parsed.rule_id}' not found.", file=sys.stderr)
+            return 1
+
+    if parsed.subcommand == "enable":
+        rule = registry.enable(parsed.rule_id, actor="cli")
+        if rule:
+            print(f"✅ Rule '{rule.id}' enabled in Quality Gate.")
+            return 0
+        else:
+            print(f"❌ Error: Rule '{parsed.rule_id}' not found.", file=sys.stderr)
+            return 1
+
+    if parsed.subcommand == "disable":
+        rule = registry.disable(parsed.rule_id, actor="cli")
+        if rule:
+            print(f"✅ Rule '{rule.id}' disabled.")
+            return 0
+        else:
+            print(f"❌ Error: Rule '{parsed.rule_id}' not found.", file=sys.stderr)
+            return 1
+
+    if parsed.subcommand == "validate":
+        p = Path(parsed.file)
+        if not p.exists():
+            # Also check if it's a rule ID in registry
+            existing = registry.get(parsed.file)
+            if existing:
+                valid, errors = registry.validate_rule(existing.to_dict())
+            else:
+                print(f"❌ Error: File or rule ID not found: {parsed.file}", file=sys.stderr)
+                return 1
+        else:
+            data = json.loads(p.read_text(encoding="utf-8"))
+            valid, errors = registry.validate_rule(data)
+
+        if valid:
+            print(f"✅ Rule '{parsed.file}' is VALID (schema-valid and passed safety checks).")
+            return 0
+        else:
+            print(f"❌ Validation failed for '{parsed.file}':", file=sys.stderr)
+            for err in errors:
+                print(f"   - {err}", file=sys.stderr)
+            return 1
+
+    if parsed.subcommand == "test":
+        rule = registry.get(parsed.target)
+        if not rule and Path(parsed.target).exists():
+            data = json.loads(Path(parsed.target).read_text(encoding="utf-8"))
+            rule = RuleNormalizer.normalize_rule_dict(data)
+        if not rule:
+            print(f"❌ Error: Target rule '{parsed.target}' not found.", file=sys.stderr)
+            return 1
+
+        code_input = parsed.code or ""
+        test_file = parsed.file or "test_snippet.py"
+        if not code_input and parsed.file and Path(parsed.file).exists():
+            code_input = Path(parsed.file).read_text(encoding="utf-8", errors="ignore")
+
+        res = RuleTestEngine.test_rule(rule, code_input, test_file)
+        if parsed.json:
+            print(json.dumps(res.to_dict(), indent=2))
+        else:
+            print("\n" + "="*70)
+            print(f" 🧪 RULE TEST EXECUTION: {rule.id}")
+            print("="*70)
+            status_tag = "✅ NO VIOLATIONS DETECTED" if not res.has_violation else "⚠️ VIOLATIONS DETECTED"
+            if res.is_suppressed:
+                status_tag = "🛡️ SUPPRESSED VIA PRAGMA"
+            print(f" Result:       {status_tag}")
+            print(f" Duration:     {res.duration_ms:.2f}ms")
+            print(f" Matched Lines:{res.matched_lines or 'None'}")
+            if res.violations:
+                print("\nViolations:")
+                for v in res.violations:
+                    print(f" - [Line {v.get('line', 1)}] {v.get('message')}")
+                    print(f"   Snippet: '{v.get('snippet')}'")
+                    print(f"   Fix:     {v.get('suggestion')}")
+            print("="*70 + "\n")
+        return 0
+
+    if parsed.subcommand == "import":
+        cnt, errs = registry.import_rules(parsed.path, actor="cli")
+        print(f"✅ Imported {cnt} rules from '{parsed.path}'.")
+        if errs:
+            print("Warnings during import:")
+            for e in errs:
+                print(f" - {e}")
+        return 0
+
+    if parsed.subcommand == "export":
+        if parsed.rule_id == "all":
+            data = registry.export_all()
+        else:
+            data = registry.export_rule(parsed.rule_id)
+            if not data:
+                print(f"❌ Error: Rule '{parsed.rule_id}' not found.", file=sys.stderr)
+                return 1
+        json_str = json.dumps(data, indent=2)
+        if parsed.out:
+            Path(parsed.out).write_text(json_str, encoding="utf-8")
+            print(f"✅ Exported to '{parsed.out}'.")
+        else:
+            print(json_str)
+        return 0
+
+    if parsed.subcommand == "search":
+        rules = registry.search(parsed.query)
+        print(f"\n🔍 SEARCH RESULTS for '{parsed.query}' ({len(rules)} matches):")
+        for r in rules:
+            print(f" - [{r.severity.value}] {r.id}: {r.name} ({r.category})")
+        print("")
+        return 0
+    return 0
+
 def main():
     if len(sys.argv) > 1 and sys.argv[1] == "mock":
         from scripts.guardian_mock import main as mock_main
         sys.argv.pop(1)
         mock_main()
+        return
+
+    if len(sys.argv) > 1 and sys.argv[1] == "rules":
+        handle_rules_cli(sys.argv[2:])
         return
 
     parser = argparse.ArgumentParser(description="Bend DevOps Guardian (Bend Parallel HVM Quality Gate)")

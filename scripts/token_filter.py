@@ -64,6 +64,9 @@ class TokenFilter:
         elif ext in [".cs", ".ts", ".js", ".tsx", ".jsx", ".php", ".go", ".java", ".rs", ".cpp", ".c"]:
             parts = line.split("//", 1)
             return parts[0].rstrip()
+        elif ext in [".sql", ".duckdb"]:
+            parts = line.split("--", 1)
+            return parts[0].rstrip()
         return line
 
     @staticmethod
@@ -76,11 +79,11 @@ class TokenFilter:
             - suppressed_map: Dict mapping 1-indexed target line number to a set of ignored rule IDs
             - warnings: List of violation dictionaries for invalid/undocumented pragmas
         """
-        suppressed_map: Dict[int, Set[str]] = {}
+        suppressed_map: Dict[int, Dict[str, str]] = {}
         warnings: List[Dict[str, Any]] = []
 
-        # Active block suppressions: map of rule_id -> set of active rules
-        active_block_rules: Set[str] = set()
+        # Active block suppressions: map of rule_id -> reason
+        active_block_rules: Dict[str, str] = {}
 
         for idx, line in enumerate(lines, 1):
             # 1. Check for block start: @guardian-ignore-start
@@ -88,16 +91,21 @@ class TokenFilter:
             if start_match:
                 rule_id = start_match.group(1).upper()
                 reason = start_match.group(2)
-                if reason and reason.strip():
-                    active_block_rules.add(rule_id)
+                if reason and len(reason.strip()) >= 8:
+                    active_block_rules[rule_id] = reason.strip()
                 else:
+                    msg = (
+                        f"Block suppression pragma '@guardian-ignore-start {rule_id}' is missing mandatory justification/reason."
+                        if not (reason and reason.strip())
+                        else f"Block suppression pragma '@guardian-ignore-start {rule_id}' justification is too short (minimum 8 characters required)."
+                    )
                     warnings.append({
                         "rule_id": "PRAGMA-INVALID",
                         "severity": "P1_WARNING",
                         "penalty": 10,
                         "line": idx,
                         "snippet": line.strip(),
-                        "message": f"Block suppression pragma '@guardian-ignore-start {rule_id}' is missing mandatory justification/reason."
+                        "message": msg
                     })
                 continue
 
@@ -106,7 +114,7 @@ class TokenFilter:
             if end_match:
                 target_rule = end_match.group(1)
                 if target_rule:
-                    active_block_rules.discard(target_rule.upper())
+                    active_block_rules.pop(target_rule.upper(), None)
                 else:
                     active_block_rules.clear()
                 continue
@@ -118,25 +126,30 @@ class TokenFilter:
                 reason = single_match.group(2)
                 target_line = idx + 1  # Applies to next line
 
-                if reason and reason.strip():
+                if reason and len(reason.strip()) >= 8:
                     if target_line not in suppressed_map:
-                        suppressed_map[target_line] = set()
-                    suppressed_map[target_line].add(rule_id)
+                        suppressed_map[target_line] = {}
+                    suppressed_map[target_line][rule_id] = reason.strip()
                 else:
+                    msg = (
+                        f"Inline suppression pragma '@guardian-ignore {rule_id}' is missing mandatory justification/reason."
+                        if not (reason and reason.strip())
+                        else f"Inline suppression pragma '@guardian-ignore {rule_id}' justification is too short (minimum 8 characters required)."
+                    )
                     warnings.append({
                         "rule_id": "PRAGMA-INVALID",
                         "severity": "P1_WARNING",
                         "penalty": 10,
                         "line": idx,
                         "snippet": line.strip(),
-                        "message": f"Inline suppression pragma '@guardian-ignore {rule_id}' is missing mandatory justification/reason."
+                        "message": msg
                     })
                 continue
 
             # 4. If within an active block, suppress the current line
             if active_block_rules:
                 if idx not in suppressed_map:
-                    suppressed_map[idx] = set()
+                    suppressed_map[idx] = {}
                 suppressed_map[idx].update(active_block_rules)
 
         return suppressed_map, warnings

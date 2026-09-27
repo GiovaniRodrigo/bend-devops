@@ -23,5 +23,10 @@
 | **FE-10** | OASIS SARIF v2.1.0 Exporter | **Header / Results Modal** | SARIF JSON Modal Presenter | `CultureGuardianService.generateSarifJson` | **COMPLETE** |
 | **FE-11** | GitLab Code Quality JSON Exporter | **Header / Results Modal** | Code Climate JSON Presenter | `CultureGuardianService.generateGitLabCodeQualityJson` | **COMPLETE** |
 | **FE-12** | Live Session Audit History & JSON Export | **Session History Tab** | History Timeline + JSON Downloader | `App.history`, `App.exportHistory` | **COMPLETE** |
+| **FE-13** | Dark / Light Theme Switcher | **Header & Sidebar Footer** | Interactive Theme Switcher Button | `App.theme`, `localStorage`, `styles.css` `.light` | **COMPLETE** |
+| **FE-14** | Widescreen Responsive Modals | **All Modal Dialogs** | Widescreen Container (`max-w-5xl`..`7xl`) | Responsive layout for code inspection & rules | **COMPLETE** |
+| **FE-15** | Extensible Rule Management (Spec 006) | **Rules Manifests Tab** | Rule Creator Wizard, JSON Import & Test Console | `RuleRegistry`, `RuleNormalizer`, `RuleTestEngine` | **COMPLETE** |
+| **FE-16** | User-Scoped Architectural Rules (Spec 007) | **Live Code & Diff Tab** | Scope Selector (Full, Diff, Subdir, File) & Modular Rules | Dynamic scope resolution and user rule composition | **SPECIFIED** |
 
 ---
+

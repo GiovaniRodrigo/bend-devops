@@ -68,9 +68,26 @@ tests/mocks/**
 
 ---
 
+---
+
+## 🏛️ 4. Multi-Tier Rule Governance & Precedence
+
+Guardian resolves rules dynamically across 4 hierarchical tiers:
+1. **Built-in Tier** (`backend/rules/builtin/` & `2_rules/`)
+2. **Organization Tier** (`backend/rules/organization/`)
+3. **Project Tier** (`backend/rules/projects/`)
+4. **Custom Tier** (`backend/rules/custom/` — Highest Priority)
+
+See [`CUSTOM-RULES.md`](./CUSTOM-RULES.md) for full details on rule types (`pattern`, `naming`, `dependency`, `architecture`, `file_folder`, `ast`, `language_specific`), lifecycle states (`DRAFT`, `TESTING`, `VALIDATED`, `ACTIVE`, `DEPRECATED`, `ARCHIVED`), and [`RULE-AUTHORING.md`](./RULE-AUTHORING.md) for authoring specifications.
+
+---
+
 ## 🔗 Related Documentation
 - [Clean Architecture & System Design](./ARCHITECTURE.md)
 - [Quickstart & CLI Usage](./QUICKSTART.md)
 - [4-Tier Pipeline Specification](./PIPELINE.md)
+- [Extensible Custom Rules Guide](./CUSTOM-RULES.md)
+- [Rule Authoring & Schema Reference](./RULE-AUTHORING.md)
+- [Rule REST API Reference](./RULE-API.md)
 - [Multi-Platform VCS Integrations](./INTEGRATIONS.md)
 - [Contributor Guidelines](./CONTRIBUTING.md)

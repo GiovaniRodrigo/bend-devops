@@ -13,6 +13,13 @@ import {
   DiffExplanation,
   DiffViewMode,
   CultureRule,
+  RuleModel,
+  RuleType,
+  RuleSeverityLevel,
+  RuleStatus,
+  RuleTier,
+  RuleTestResult,
+  RuleAuditTrailEntry,
   FileAuditInfo,
   LayerVocabularyItem,
   VcsPlatform,
@@ -39,7 +46,8 @@ export type TabId =
   | 'results'
   | 'vocabulary'
   | 'vcs'
-  | 'history';
+  | 'history'
+  | 'audit-trail';
 
 export type AuditScope = 'branch_analysis' | 'single_file';
 
@@ -69,6 +77,30 @@ export class App {
   readonly isSidebarCollapsed = signal<boolean>(false);
   readonly isMobileMenuOpen = signal<boolean>(false);
   readonly isMobile = signal<boolean>(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+  readonly theme = signal<'dark' | 'light'>(
+    (typeof window !== 'undefined' && (localStorage.getItem('bend_guardian_theme') as 'dark' | 'light')) || 'dark'
+  );
+
+  toggleTheme(): void {
+    const next = this.theme() === 'dark' ? 'light' : 'dark';
+    this.theme.set(next);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('bend_guardian_theme', next);
+    }
+    this.applyTheme(next);
+  }
+
+  applyTheme(theme: 'dark' | 'light'): void {
+    if (typeof document !== 'undefined') {
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
+      }
+    }
+  }
 
   // Architecture & Branch Configuration State
   readonly selectedProfile = signal<ArchitectureProfileId>('clean_architecture');
@@ -166,6 +198,8 @@ export class App {
   // Scope & Progressive Disclosure State
   readonly auditScope = signal<AuditScope>('branch_analysis');
   readonly isAnalyzing = signal<boolean>(false);
+  readonly analysisProgress = signal<number>(0);
+  readonly analysisProgressStep = signal<string>('');
   readonly showDiffView = signal<boolean>(true);
   readonly isReviewingSpecificFile = signal<boolean>(false);
   readonly isViolationsExpanded = signal<boolean>(false);
@@ -196,7 +230,10 @@ export class App {
         };
       });
     }
-    return this.branchFiles;
+    if (this.isMockMode()) {
+      return this.branchFiles;
+    }
+    return [];
   });
 
   readonly branchSummary = computed(() => {
@@ -211,6 +248,14 @@ export class App {
     };
   });
 
+  readonly branchViolations = computed<CodeViolation[]>(() => {
+    const audited = this.currentAuditedFiles();
+    if (audited && audited.length > 0) {
+      return audited.flatMap(f => f.violations);
+    }
+    return [];
+  });
+
   // Diff View State
   readonly diffViewMode = signal<DiffViewMode>('split');
   readonly mobileActiveSide = signal<'before' | 'after'>('before');
@@ -221,9 +266,129 @@ export class App {
   readonly searchQuery = signal<string>('');
   readonly selectedSeverityFilter = signal<string>('all');
   readonly selectedCategoryFilter = signal<string>('all');
+  readonly selectedRuleTierFilter = signal<string>('all');
+  readonly selectedRuleTypeFilter = signal<string>('all');
+  readonly selectedRuleLanguageFilter = signal<string>('all');
+  readonly selectedRuleStatusFilter = signal<string>('all');
+  readonly selectedRuleArchitectureFilter = signal<string>('all');
   readonly vocabularySearch = signal<string>('');
   readonly violationSearch = signal<string>('');
   readonly violationSeverityFilter = signal<string>('all');
+
+  // Rule Wizard & Modal State
+  readonly isRuleWizardOpen = signal<boolean>(false);
+  readonly isEditingRule = signal<boolean>(false);
+  readonly wizardStep = signal<number>(1);
+  readonly wizardValidationErrors = signal<string[]>([]);
+  readonly wizardTestResult = signal<RuleTestResult | null>(null);
+  readonly isWizardTesting = signal<boolean>(false);
+  readonly isSavingRule = signal<boolean>(false);
+  readonly wizardSaveError = signal<string | null>(null);
+
+  readonly ruleDraft = signal<{
+    id: string;
+    version: string;
+    name: string;
+    description: string;
+    type: RuleType;
+    category: string;
+    severity: RuleSeverityLevel;
+    penaltyPoints: number;
+    tier: RuleTier;
+    status: RuleStatus;
+    enabled: boolean;
+    architectures: string[];
+    languages: string[];
+    scopeInclude: string;
+    scopeExclude: string;
+    targetLayer: string;
+    pattern: string;
+    namingConvention: string;
+    sourceLayer: string;
+    forbiddenLayer: string;
+    requiredPathPrefix: string;
+    astSelector: string;
+    message: string;
+    suggestion: string;
+    rationale: string;
+    remediation: string;
+    suppressionAllowed: boolean;
+    suppressionPragma: string;
+    suppressionRequiresReason: boolean;
+    suppressionMinLength: number;
+    testInput: string;
+    testExpectedViolation: boolean;
+  }>({
+    id: '',
+    version: '1.0.0',
+    name: '',
+    description: '',
+    type: 'pattern',
+    category: 'Custom',
+    severity: 'P1',
+    penaltyPoints: 10,
+    tier: 'custom',
+    status: 'ACTIVE',
+    enabled: true,
+    architectures: ['clean_architecture'],
+    languages: ['Python', 'TypeScript', 'C#'],
+    scopeInclude: 'src/**',
+    scopeExclude: 'tests/**',
+    targetLayer: '',
+    pattern: '',
+    namingConvention: 'PascalCase',
+    sourceLayer: 'Domain',
+    forbiddenLayer: 'Infrastructure',
+    requiredPathPrefix: 'src/Controllers/',
+    astSelector: '',
+    message: 'Violation of custom rule detected.',
+    suggestion: 'Refactor code to satisfy this custom rule.',
+    rationale: 'Enforces architectural boundary separation.',
+    remediation: 'Extract forbidden dependency or rewrite code to conform to rule.',
+    suppressionAllowed: true,
+    suppressionPragma: '@guardian-ignore',
+    suppressionRequiresReason: true,
+    suppressionMinLength: 8,
+    testInput: '# Example source code to test rule\n',
+    testExpectedViolation: true
+  });
+
+  // Clone Rule Modal State
+  readonly isCloneModalOpen = signal<boolean>(false);
+  readonly cloneSourceRule = signal<RuleModel | null>(null);
+  readonly cloneNewId = signal<string>('');
+  readonly cloneNewName = signal<string>('');
+  readonly cloneError = signal<string | null>(null);
+
+  // Delete Rule Modal State
+  readonly isDeleteConfirmOpen = signal<boolean>(false);
+  readonly deleteTargetRule = signal<RuleModel | null>(null);
+  readonly deleteCascade = signal<boolean>(false);
+  readonly deleteError = signal<string | null>(null);
+
+  // Interactive Test Rule Console Modal State
+  readonly isTestConsoleOpen = signal<boolean>(false);
+  readonly testConsoleRule = signal<RuleModel | null>(null);
+  readonly testConsoleCode = signal<string>('');
+  readonly testConsoleFileName = signal<string>('src/Domain/Order.cs');
+  readonly testConsoleResult = signal<RuleTestResult | null>(null);
+  readonly isRunningRuleTest = signal<boolean>(false);
+
+  // Import / Export Modal State
+  readonly isImportModalOpen = signal<boolean>(false);
+  readonly importJsonInput = signal<string>('');
+  readonly importOverwrite = signal<boolean>(false);
+  readonly importResult = signal<{ imported: number; updated: number; failed: number; errors: string[] } | null>(null);
+  readonly isImporting = signal<boolean>(false);
+
+  // Audit Trail View State
+  readonly isAuditTrailOpen = signal<boolean>(false);
+  readonly auditTrailList = this.guardianService.auditTrail;
+  readonly ruleCategories = this.guardianService.ruleCategories;
+  readonly ruleLanguages = this.guardianService.ruleLanguages;
+  readonly ruleTypes = this.guardianService.ruleTypes;
+  readonly ruleSeverities = this.guardianService.ruleSeverities;
+  readonly ruleStatuses = this.guardianService.ruleStatuses;
 
   // Webhook Simulator State
   readonly webhookPlatform = signal<VcsPlatform>('github');
@@ -362,19 +527,30 @@ export class App {
   });
 
   // Filtered Rules List
-  readonly filteredRules = computed<CultureRule[]>(() => {
+  readonly filteredRules = computed<RuleModel[]>(() => {
     const query = this.searchQuery().toLowerCase().trim();
     const sev = this.selectedSeverityFilter();
     const cat = this.selectedCategoryFilter();
+    const tier = this.selectedRuleTierFilter();
+    const type = this.selectedRuleTypeFilter();
+    const lang = this.selectedRuleLanguageFilter();
+    const status = this.selectedRuleStatusFilter();
+    const arch = this.selectedRuleArchitectureFilter();
 
     return this.rules().filter(r => {
       const matchQuery = !query || 
         r.id.toLowerCase().includes(query) || 
         r.name.toLowerCase().includes(query) || 
-        r.description.toLowerCase().includes(query);
-      const matchSev = sev === 'all' || r.severity === sev;
+        (r.description && r.description.toLowerCase().includes(query)) ||
+        (r.message && r.message.toLowerCase().includes(query));
+      const matchSev = sev === 'all' || r.severity === sev || (r.severity as string) === sev;
       const matchCat = cat === 'all' || r.category === cat;
-      return matchQuery && matchSev && matchCat;
+      const matchTier = tier === 'all' || r.tier === tier;
+      const matchType = type === 'all' || r.type === type;
+      const matchLang = lang === 'all' || (r.languages && r.languages.some(l => l.toLowerCase() === lang.toLowerCase()));
+      const matchStatus = status === 'all' || (r.status && r.status.toUpperCase() === status.toUpperCase());
+      const matchArch = arch === 'all' || (r.architectures && r.architectures.includes(arch));
+      return matchQuery && matchSev && matchCat && matchTier && matchType && matchLang && matchStatus && matchArch;
     });
   });
 
@@ -516,8 +692,32 @@ export class App {
   // Stage 1-3 Dynamic Computed Properties
   readonly activeRepoName = computed(() => {
     return this.codeSourceMode() === 'local' 
-      ? this.localRepoName() 
+      ? (this.localRepoName() || 'ai-bend-devops')
       : `${this.githubAccount()}/${this.githubRepo()}`;
+  });
+
+  readonly activeRepoPath = computed(() => {
+    if (this.codeSourceMode() === 'local') {
+      const repo = this.selectedLocalRepo();
+      return repo?.path || this.selectedRepositoryPath() || this.customLocalPathInput() || '/home/isabelle/projects/ai-bend-devops';
+    } else {
+      return `https://github.com/${this.githubAccount()}/${this.githubRepo()}`;
+    }
+  });
+
+  readonly activeTargetBranch = computed(() => {
+    return this.sourceBranch() || this.selectedBranch();
+  });
+
+  readonly activeTargetScopeDescription = computed(() => {
+    const mode = this.analysisTargetMode();
+    if (mode === 'branch') {
+      return `Branch: ${this.sourceBranch()} → ${this.compareBranch()}`;
+    } else if (mode === 'working_tree') {
+      return `Working Tree (${this.workingTreeInfo().isClean ? 'Clean' : this.workingTreeInfo().changedFiles.length + ' changed files'})`;
+    } else {
+      return `Commit: ${this.commitShaInput()}`;
+    }
   });
 
   readonly allActiveRules = computed(() => {
@@ -568,6 +768,7 @@ export class App {
   });
 
   constructor() {
+    this.applyTheme(this.theme());
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', () => {
         this.isMobile.set(window.innerWidth < 768);
@@ -582,13 +783,9 @@ export class App {
         } else {
           this.guardianService.discoverLocalRepositories();
           this.guardianService.inspectWorkingTree();
-          this.analyzeBranch();
         }
       } catch (e) {
-        this.analyzeBranch();
       }
-    } else {
-      this.analyzeBranch();
     }
     this.selectedCustomRuleIds.set(new Set(this.rules().map(r => r.id)));
   }
@@ -648,6 +845,11 @@ export class App {
     }
   }
 
+  toggleCodeSourceMode(): void {
+    const nextMode = this.codeSourceMode() === 'local' ? 'github' : 'local';
+    this.setCodeSourceMode(nextMode);
+  }
+
   clearRepositoryState(): void {
     this.selectedRepositoryPath.set(null);
     this.selectedLocalRepoId.set('');
@@ -658,6 +860,7 @@ export class App {
   }
 
   setLocalRepo(repoNameOrId: string): void {
+    this.isMockMode.set(false);
     const found = this.localRepositories().find(r => r.id === repoNameOrId || r.name === repoNameOrId || r.path === repoNameOrId);
     if (found) {
       this.selectedLocalRepoId.set(found.id);
@@ -665,22 +868,26 @@ export class App {
       this.customLocalPathInput.set(found.path);
       this.customLocalPathValidation.set({ valid: true, repository: found });
       this.inputRepo.set(found.name);
-      if (found.branches && found.branches.length > 0) {
-        this.sourceBranch.set(found.currentBranch || found.branches[0]);
-        this.compareBranch.set(found.branches[0]);
-      } else {
-        this.sourceBranch.set(found.currentBranch || 'Detached HEAD');
-        this.compareBranch.set(found.currentBranch || 'Detached HEAD');
+      const defaultBranch = (found.branches && found.branches.length > 0)
+        ? (found.currentBranch || found.branches[0])
+        : (found.currentBranch || 'main');
+      this.sourceBranch.set(defaultBranch);
+      this.compareBranch.set((found.branches && found.branches[0]) || 'main');
+      if (defaultBranch === 'main' || defaultBranch === 'develop' || defaultBranch === 'feature/billing-refactor') {
+        this.selectedBranch.set(defaultBranch as any);
       }
       this.guardianService.inspectWorkingTree(found.id);
+      this.currentAuditedFiles.set([]);
+      this.isAudited.set(false);
+      this.isReviewingSpecificFile.set(false);
     } else {
       this.clearRepositoryState();
     }
     this.isChangingLocalRepo.set(false);
-    this.reanalyzeCurrentScope();
   }
 
   async validateAndSetCustomPath(dirPath?: string): Promise<void> {
+    this.isMockMode.set(false);
     const target = (dirPath !== undefined ? dirPath : this.customLocalPathInput()).trim();
     this.customLocalPathInput.set(target);
     this.isValidatingCustomLocalPath.set(true);
@@ -698,12 +905,17 @@ export class App {
           : res.repository.branches[0];
         this.sourceBranch.set(defaultBranch);
         this.compareBranch.set(res.repository.branches[0]);
+        if (defaultBranch === 'main' || defaultBranch === 'develop' || defaultBranch === 'feature/billing-refactor') {
+          this.selectedBranch.set(defaultBranch as any);
+        }
       } else {
         this.sourceBranch.set(res.repository.currentBranch || 'Detached HEAD');
         this.compareBranch.set(res.repository.currentBranch || 'Detached HEAD');
       }
       this.guardianService.inspectWorkingTree(res.repository.id);
-      this.reanalyzeCurrentScope();
+      this.currentAuditedFiles.set([]);
+      this.isAudited.set(false);
+      this.isReviewingSpecificFile.set(false);
     } else {
       this.clearRepositoryState();
       this.inputRepo.set('');
@@ -761,7 +973,9 @@ export class App {
   setGitHubRepo(repoFullName: string): void {
     this.selectedGitHubRepoFullName.set(repoFullName);
     this.inputRepo.set(repoFullName);
-    this.reanalyzeCurrentScope();
+    this.currentAuditedFiles.set([]);
+    this.isAudited.set(false);
+    this.isReviewingSpecificFile.set(false);
   }
 
   async connectGitHub(token?: string): Promise<void> {
@@ -770,7 +984,9 @@ export class App {
     if (res.connected && res.repositories.length > 0) {
       this.selectedGitHubRepoFullName.set(res.repositories[0].fullName);
       this.inputRepo.set(res.repositories[0].fullName);
-      this.reanalyzeCurrentScope();
+      this.currentAuditedFiles.set([]);
+      this.isAudited.set(false);
+      this.isReviewingSpecificFile.set(false);
     }
   }
 
@@ -782,7 +998,6 @@ export class App {
     } else if (mode === 'commit') {
       this.validateCommitInput(this.commitShaInput());
     }
-    this.reanalyzeCurrentScope();
   }
 
   async validateCommitInput(sha: string): Promise<void> {
@@ -791,14 +1006,10 @@ export class App {
     const res = await this.guardianService.validateCommitSha(this.selectedLocalRepoId(), sha);
     this.commitValidation.set(res);
     this.isCommitValidating.set(false);
-    if (res.valid) {
-      this.reanalyzeCurrentScope();
-    }
   }
 
   setSourceBranch(branch: string): void {
     this.sourceBranch.set(branch);
-    this.reanalyzeCurrentScope();
   }
 
   setCompareBranch(branch: string): void {
@@ -806,13 +1017,11 @@ export class App {
     if (branch === 'main' || branch === 'develop') {
       this.selectedBranch.set(branch);
     }
-    this.reanalyzeCurrentScope();
   }
 
   // Stage 3 Helper Methods
   setValidationScopeMode(mode: 'all' | 'ruleset' | 'custom'): void {
     this.validationScopeMode.set(mode);
-    this.reanalyzeCurrentScope();
   }
 
   toggleCustomRule(ruleId: string): void {
@@ -825,17 +1034,14 @@ export class App {
       }
       return next;
     });
-    this.reanalyzeCurrentScope();
   }
 
   selectAllCustomRules(): void {
     this.selectedCustomRuleIds.set(new Set(this.rules().map(r => r.id)));
-    this.reanalyzeCurrentScope();
   }
 
   clearAllCustomRules(): void {
     this.selectedCustomRuleIds.set(new Set());
-    this.reanalyzeCurrentScope();
   }
 
   isCustomRuleSelected(ruleId: string): boolean {
@@ -846,6 +1052,16 @@ export class App {
     if (this.validationScopeMode() === 'custom') {
       return this.selectedCustomRuleIds();
     }
+    if (this.validationScopeMode() === 'ruleset') {
+      const archId = this.selectedProfile();
+      const matchingRules = this.allActiveRules().filter(r => 
+        !r.architectures || r.architectures.length === 0 || r.architectures.includes(archId) || r.architectures.includes('all')
+      );
+      return new Set(matchingRules.map(r => r.id));
+    }
+    if (this.validationScopeMode() === 'all') {
+      return new Set(this.allActiveRules().map(r => r.id));
+    }
     return undefined;
   }
 
@@ -854,12 +1070,10 @@ export class App {
     if (scope === 'single_file') {
       this.isReviewingSpecificFile.set(false);
       this.selectPreset(this.selectedPresetIndex());
-    } else {
-      this.analyzeBranch();
     }
   }
 
-  selectBranchFile(index: number): void {
+  async selectBranchFile(index: number): Promise<void> {
     this.selectedBranchFileIndex.set(index);
     const audited = this.currentAuditedFiles();
     if (audited && audited[index]) {
@@ -871,11 +1085,18 @@ export class App {
         this.hasTestFileChecked.set(preset.hasTestFile);
         this.inputAuthor.set(preset.author);
       } else {
-        this.inputSourceCode.set(`// File: ${file.name}\n// Layer: ${file.identifiedLayer}\n// Violations count: ${file.violations.length}\n`);
+        const repo = this.selectedLocalRepo();
+        const repoPath = repo?.path || this.selectedRepositoryPath() || 'ai-bend-devops';
+        const realContent = await this.guardianService.fetchFileContent(repoPath, file.name);
+        if (realContent !== null) {
+          this.inputSourceCode.set(realContent);
+        } else {
+          this.inputSourceCode.set(`// File: ${file.name}\n// Layer: ${file.identifiedLayer}\n// Violations count: ${file.violations.length}\n`);
+        }
         this.hasTestFileChecked.set(file.hasTestCoverage);
         this.inputAuthor.set('DevOps Pipeline');
       }
-    } else if (this.branchFiles[index]) {
+    } else if (this.branchFiles[index] && this.isMockMode()) {
       const file = this.branchFiles[index];
       const preset = this.codePresets[file.presetIndex];
       if (preset) {
@@ -893,16 +1114,32 @@ export class App {
     this.showDiffView.set(true);
   }
 
+  reviewFileByName(fileName: string): void {
+    const index = this.displayBranchFiles().findIndex(f => f.name === fileName);
+    if (index !== -1) {
+      this.startFileReview(index);
+    } else {
+      this.inputFileName.set(fileName);
+      this.isReviewingSpecificFile.set(true);
+      this.showDiffView.set(true);
+    }
+  }
+
   closeFileReview(): void {
     this.isReviewingSpecificFile.set(false);
   }
 
   async analyzeBranch(): Promise<void> {
     this.isAnalyzing.set(true);
+    this.analysisProgress.set(10);
+    this.analysisProgressStep.set('Initializing Bend HVM execution engine...');
     const repo = this.selectedLocalRepo();
     const repoPath = repo?.path || this.selectedRepositoryPath() || 'ai-bend-devops';
     const ruleIdsFilter = this.getActiveRuleIdsFilter();
-    const branch = this.selectedBranch();
+    const targetMode = this.analysisTargetMode();
+    const branch = this.sourceBranch() || this.selectedBranch();
+    const baseBranch = this.compareBranch();
+    const commitSha = this.commitShaInput();
     const profile = this.selectedProfile();
 
     try {
@@ -910,7 +1147,14 @@ export class App {
         repoPath,
         branch,
         profile,
-        ruleIdsFilter
+        ruleIdsFilter,
+        targetMode,
+        baseBranch,
+        commitSha,
+        (progress, step) => {
+          this.analysisProgress.set(progress);
+          this.analysisProgressStep.set(step);
+        }
       );
 
       this.currentAuditedFiles.set(result.files);
@@ -941,15 +1185,18 @@ export class App {
     } catch (err) {
       console.error('Audit execution failed:', err);
     } finally {
-      this.isAnalyzing.set(false);
+      this.analysisProgress.set(100);
+      this.analysisProgressStep.set('Audit completed.');
+      setTimeout(() => {
+        this.isAnalyzing.set(false);
+      }, 250);
     }
   }
 
   analyzeSingleFile(): void {
     this.isAnalyzing.set(true);
-    setTimeout(() => {
-      this.isAnalyzing.set(false);
-    }, 120);
+    this.analysisProgress.set(25);
+    this.analysisProgressStep.set('Scanning source code and building AST syntax tree...');
 
     const ruleIdsFilter = this.getActiveRuleIdsFilter();
     const fileAudit = this.guardianService.auditCode(
@@ -986,6 +1233,22 @@ export class App {
 
     this.history.update(h => [newRun, ...h]);
     this.isAudited.set(true);
+
+    setTimeout(() => {
+      this.analysisProgress.set(70);
+      this.analysisProgressStep.set('Running massively parallel Bend HVM rule reduction...');
+    }, 40);
+
+    setTimeout(() => {
+      this.analysisProgress.set(95);
+      this.analysisProgressStep.set('Computing Quality Gate score and remediation diff...');
+    }, 80);
+
+    setTimeout(() => {
+      this.analysisProgress.set(100);
+      this.analysisProgressStep.set('Audit completed.');
+      this.isAnalyzing.set(false);
+    }, 150);
   }
 
   analyzeCurrentScope(): void {
@@ -1243,4 +1506,446 @@ export class App {
       navigator.clipboard.writeText(this.currentCodeDiff().after);
     }
   }
+
+  // =========================================================================
+  // EXTENSIBLE RULE MANAGEMENT CONTROLLER ACTIONS
+  // =========================================================================
+
+  openCreateRuleWizard(): void {
+    this.isEditingRule.set(false);
+    this.wizardStep.set(1);
+    this.wizardValidationErrors.set([]);
+    this.wizardTestResult.set(null);
+    this.wizardSaveError.set(null);
+    this.ruleDraft.set({
+      id: '',
+      version: '1.0.0',
+      name: '',
+      description: '',
+      type: 'pattern',
+      category: 'Custom',
+      severity: 'P1',
+      penaltyPoints: 10,
+      tier: 'custom',
+      status: 'ACTIVE',
+      enabled: true,
+      architectures: ['clean_architecture'],
+      languages: ['Python', 'TypeScript', 'C#'],
+      scopeInclude: 'src/**',
+      scopeExclude: 'tests/**',
+      targetLayer: '',
+      pattern: '',
+      namingConvention: 'PascalCase',
+      sourceLayer: 'Domain',
+      forbiddenLayer: 'Infrastructure',
+      requiredPathPrefix: 'src/Controllers/',
+      astSelector: '',
+      message: 'Violation of custom rule detected.',
+      suggestion: 'Refactor code to satisfy this custom rule.',
+      rationale: 'Enforces architectural boundary separation.',
+      remediation: 'Extract forbidden dependency or rewrite code to conform to rule.',
+      suppressionAllowed: true,
+      suppressionPragma: '@guardian-ignore',
+      suppressionRequiresReason: true,
+      suppressionMinLength: 8,
+      testInput: '# Example source code snippet for rule validation\n',
+      testExpectedViolation: true
+    });
+    this.isRuleWizardOpen.set(true);
+  }
+
+  openEditRuleWizard(rule: RuleModel): void {
+    this.isEditingRule.set(true);
+    this.wizardStep.set(1);
+    this.wizardValidationErrors.set([]);
+    this.wizardTestResult.set(null);
+    this.wizardSaveError.set(null);
+
+    const inc = (rule.scope?.include || []).join(', ');
+    const exc = (rule.scope?.exclude || []).join(', ');
+    const cond = rule.condition || {};
+
+    this.ruleDraft.set({
+      id: rule.id,
+      version: rule.version || '1.0.0',
+      name: rule.name || rule.id,
+      description: rule.description || '',
+      type: rule.type || 'pattern',
+      category: rule.category || 'Custom',
+      severity: rule.severity || 'P1',
+      penaltyPoints: rule.penalty_points || rule.penaltyPoints || 10,
+      tier: rule.tier || 'custom',
+      status: (rule.status as RuleStatus) || 'ACTIVE',
+      enabled: rule.enabled !== false,
+      architectures: rule.architectures || ['clean_architecture'],
+      languages: rule.languages || ['Python', 'TypeScript', 'C#'],
+      scopeInclude: inc || 'src/**',
+      scopeExclude: exc || 'tests/**',
+      targetLayer: rule.scope?.target_layer || rule.layer || '',
+      pattern: cond.pattern || '',
+      namingConvention: cond.naming_convention || 'PascalCase',
+      sourceLayer: cond.source_layer || 'Domain',
+      forbiddenLayer: cond.forbidden_layer || 'Infrastructure',
+      requiredPathPrefix: cond.required_path_prefix || 'src/Controllers/',
+      astSelector: cond.ast_selector || '',
+      message: rule.message || 'Violation detected.',
+      suggestion: rule.suggestion || rule.remediation || 'Refactor code to conform to rule.',
+      rationale: rule.rationale || rule.description || '',
+      remediation: rule.remediation || rule.suggestion || '',
+      suppressionAllowed: rule.suppression?.allowed !== false,
+      suppressionPragma: rule.suppression?.pragma || '@guardian-ignore',
+      suppressionRequiresReason: rule.suppression?.requires_reason !== false,
+      suppressionMinLength: rule.suppression?.minimum_reason_length || 8,
+      testInput: rule.tests && rule.tests.length > 0 ? rule.tests[0].input : '# Sample test code\n',
+      testExpectedViolation: rule.tests && rule.tests.length > 0 ? rule.tests[0].expected_violation : true
+    });
+    this.isRuleWizardOpen.set(true);
+  }
+
+  closeRuleWizard(): void {
+    this.isRuleWizardOpen.set(false);
+  }
+
+  goToWizardStep(step: number): void {
+    if (step >= 1 && step <= 8) {
+      this.wizardStep.set(step);
+    }
+  }
+
+  nextWizardStep(): void {
+    const s = this.wizardStep();
+    const d = this.ruleDraft();
+    const errors: string[] = [];
+
+    if (s === 1) {
+      if (!d.id || !d.id.trim()) errors.push('Rule ID is required (e.g. SEC-006, ARCH-CUSTOM-01)');
+      if (!d.name || !d.name.trim()) errors.push('Rule Name is required');
+    } else if (s === 4) {
+      if (d.type === 'pattern' && (!d.pattern || !d.pattern.trim())) {
+        errors.push('Regex pattern cannot be empty for pattern rules');
+      }
+    }
+
+    if (errors.length > 0) {
+      this.wizardValidationErrors.set(errors);
+      return;
+    }
+
+    this.wizardValidationErrors.set([]);
+    this.wizardStep.update(curr => Math.min(8, curr + 1));
+  }
+
+  prevWizardStep(): void {
+    this.wizardValidationErrors.set([]);
+    this.wizardStep.update(curr => Math.max(1, curr - 1));
+  }
+
+  toggleLanguageInDraft(lang: string): void {
+    const current = [...this.ruleDraft().languages];
+    const idx = current.indexOf(lang);
+    if (idx >= 0) {
+      current.splice(idx, 1);
+    } else {
+      current.push(lang);
+    }
+    this.ruleDraft.update(d => ({ ...d, languages: current }));
+  }
+
+  toggleArchitectureInDraft(arch: string): void {
+    const current = [...this.ruleDraft().architectures];
+    const idx = current.indexOf(arch);
+    if (idx >= 0) {
+      current.splice(idx, 1);
+    } else {
+      current.push(arch);
+    }
+    this.ruleDraft.update(d => ({ ...d, architectures: current }));
+  }
+
+  async runWizardAdHocTest(): Promise<void> {
+    this.isWizardTesting.set(true);
+    const d = this.ruleDraft();
+    const condition: any = {};
+    if (d.type === 'pattern') condition.pattern = d.pattern;
+    else if (d.type === 'naming') condition.naming_convention = d.namingConvention;
+    else if (d.type === 'dependency' || d.type === 'architecture') {
+      condition.source_layer = d.sourceLayer;
+      condition.forbidden_layer = d.forbiddenLayer;
+    } else if (d.type === 'file_folder') condition.required_path_prefix = d.requiredPathPrefix;
+    else if (d.type === 'ast') condition.ast_selector = d.astSelector;
+
+    const partialRule: Partial<RuleModel> = {
+      id: d.id || 'TEMP-TEST',
+      version: d.version,
+      name: d.name || 'Ad-Hoc Test Rule',
+      type: d.type,
+      category: d.category,
+      severity: d.severity,
+      penaltyPoints: d.penaltyPoints,
+      tier: d.tier,
+      languages: d.languages,
+      condition,
+      message: d.message,
+      suggestion: d.suggestion,
+      suppression: {
+        allowed: d.suppressionAllowed,
+        pragma: d.suppressionPragma,
+        requires_reason: d.suppressionRequiresReason,
+        minimum_reason_length: d.suppressionMinLength
+      }
+    };
+
+    const result = await this.guardianService.testAdHocRule(partialRule, d.testInput);
+    this.wizardTestResult.set(result);
+    this.isWizardTesting.set(false);
+  }
+
+  async saveRuleWizard(): Promise<void> {
+    this.isSavingRule.set(true);
+    this.wizardSaveError.set(null);
+    const d = this.ruleDraft();
+
+    const inc = d.scopeInclude.split(',').map(s => s.trim()).filter(Boolean);
+    const exc = d.scopeExclude.split(',').map(s => s.trim()).filter(Boolean);
+
+    const condition: any = {};
+    if (d.type === 'pattern') condition.pattern = d.pattern;
+    else if (d.type === 'naming') condition.naming_convention = d.namingConvention;
+    else if (d.type === 'dependency' || d.type === 'architecture') {
+      condition.source_layer = d.sourceLayer;
+      condition.forbidden_layer = d.forbiddenLayer;
+    } else if (d.type === 'file_folder') condition.required_path_prefix = d.requiredPathPrefix;
+    else if (d.type === 'ast') condition.ast_selector = d.astSelector;
+
+    const payload: Partial<RuleModel> = {
+      id: d.id.trim(),
+      version: d.version.trim() || '1.0.0',
+      name: d.name.trim(),
+      description: d.description.trim(),
+      type: d.type,
+      category: d.category,
+      severity: d.severity,
+      penaltyPoints: d.penaltyPoints,
+      penalty_points: d.penaltyPoints,
+      tier: d.tier,
+      status: d.status,
+      enabled: d.enabled,
+      architectures: d.architectures,
+      languages: d.languages,
+      scope: {
+        include: inc.length > 0 ? inc : ['src/**'],
+        exclude: exc,
+        target_layer: d.targetLayer || undefined
+      },
+      condition,
+      message: d.message.trim(),
+      suggestion: d.suggestion.trim(),
+      rationale: d.rationale.trim(),
+      remediation: d.remediation.trim(),
+      suppression: {
+        allowed: d.suppressionAllowed,
+        pragma: d.suppressionPragma || '@guardian-ignore',
+        requires_reason: d.suppressionRequiresReason,
+        minimum_reason_length: d.suppressionMinLength || 8
+      },
+      tests: [
+        {
+          name: 'Primary Validation Fixture',
+          input: d.testInput,
+          expected_violation: d.testExpectedViolation
+        }
+      ]
+    };
+
+    let result: { success: boolean; rule?: RuleModel; error?: string };
+    if (this.isEditingRule()) {
+      result = await this.guardianService.updateRule(payload.id!, payload);
+    } else {
+      result = await this.guardianService.createRule(payload);
+    }
+
+    this.isSavingRule.set(false);
+    if (result.success) {
+      this.isRuleWizardOpen.set(false);
+    } else {
+      this.wizardSaveError.set(result.error || 'Failed to save rule');
+    }
+  }
+
+  // CLONE RULE
+  openCloneModal(rule: RuleModel): void {
+    this.cloneSourceRule.set(rule);
+    this.cloneNewId.set(`${rule.id}-CUSTOM`);
+    this.cloneNewName.set(`${rule.name} (Custom Copy)`);
+    this.cloneError.set(null);
+    this.isCloneModalOpen.set(true);
+  }
+
+  closeCloneModal(): void {
+    this.isCloneModalOpen.set(false);
+    this.cloneSourceRule.set(null);
+  }
+
+  async confirmCloneRule(): Promise<void> {
+    const src = this.cloneSourceRule();
+    if (!src) return;
+    const newId = this.cloneNewId().trim();
+    const newName = this.cloneNewName().trim();
+    if (!newId) {
+      this.cloneError.set('New rule ID is required');
+      return;
+    }
+    const res = await this.guardianService.cloneRule(src.id, newId, newName);
+    if (res.success) {
+      this.closeCloneModal();
+    } else {
+      this.cloneError.set(res.error || 'Failed to clone rule');
+    }
+  }
+
+  // DELETE RULE
+  openDeleteConfirm(rule: RuleModel): void {
+    this.deleteTargetRule.set(rule);
+    this.deleteCascade.set(false);
+    this.deleteError.set(null);
+    this.isDeleteConfirmOpen.set(true);
+  }
+
+  closeDeleteConfirm(): void {
+    this.isDeleteConfirmOpen.set(false);
+    this.deleteTargetRule.set(null);
+  }
+
+  async confirmDeleteRule(): Promise<void> {
+    const target = this.deleteTargetRule();
+    if (!target) return;
+    const res = await this.guardianService.deleteRule(target.id, this.deleteCascade());
+    if (res.success) {
+      this.closeDeleteConfirm();
+      if (this.selectedRuleForDrawer()?.id === target.id) {
+        this.closeRuleDrawer();
+      }
+    } else {
+      this.deleteError.set(res.error || 'Failed to delete rule');
+    }
+  }
+
+  // TOGGLE STATUS
+  async toggleRuleActive(rule: RuleModel): Promise<void> {
+    const isActive = rule.status === 'ACTIVE' || rule.enabled;
+    if (isActive) {
+      await this.guardianService.disableRule(rule.id);
+    } else {
+      await this.guardianService.enableRule(rule.id);
+    }
+  }
+
+  // TEST RULE CONSOLE
+  openTestConsole(rule: RuleModel): void {
+    this.testConsoleRule.set(rule);
+    this.testConsoleResult.set(null);
+
+    let defaultCode = '// Sample code to test rule\n';
+    if (rule.tests && rule.tests.length > 0) {
+      defaultCode = rule.tests[0].input;
+    } else if (rule.type === 'pattern' && rule.condition?.pattern) {
+      defaultCode = `// Example triggering rule ${rule.id}\nconst password = "admin_secret_123";\n`;
+    }
+    this.testConsoleCode.set(defaultCode);
+    this.isTestConsoleOpen.set(true);
+  }
+
+  closeTestConsole(): void {
+    this.isTestConsoleOpen.set(false);
+    this.testConsoleRule.set(null);
+  }
+
+  async runTestConsole(): Promise<void> {
+    const rule = this.testConsoleRule();
+    if (!rule) return;
+    this.isRunningRuleTest.set(true);
+    const result = await this.guardianService.testRule(
+      rule.id,
+      this.testConsoleCode(),
+      this.testConsoleFileName()
+    );
+    this.testConsoleResult.set(result);
+    this.isRunningRuleTest.set(false);
+  }
+
+  // IMPORT / EXPORT
+  openImportModal(): void {
+    this.importJsonInput.set('');
+    this.importOverwrite.set(false);
+    this.importResult.set(null);
+    this.isImportModalOpen.set(true);
+  }
+
+  closeImportModal(): void {
+    this.isImportModalOpen.set(false);
+  }
+
+  async confirmImport(): Promise<void> {
+    const raw = this.importJsonInput().trim();
+    if (!raw) return;
+    this.isImporting.set(true);
+    try {
+      let parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) {
+        if (parsed.rules && Array.isArray(parsed.rules)) {
+          parsed = parsed.rules;
+        } else {
+          parsed = [parsed];
+        }
+      }
+      const res = await this.guardianService.importRules(parsed, this.importOverwrite());
+      this.importResult.set(res);
+    } catch (e: any) {
+      this.importResult.set({
+        imported: 0,
+        updated: 0,
+        failed: 1,
+        errors: [`JSON Parse error: ${e?.message || 'Invalid JSON syntax'}`]
+      });
+    }
+    this.isImporting.set(false);
+  }
+
+  exportSingleRule(rule: RuleModel): void {
+    const json = JSON.stringify(rule, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rule-${rule.id}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  exportAllRulesManifest(): void {
+    const json = JSON.stringify({
+      schema_version: '1.0.0',
+      exported_at: new Date().toISOString(),
+      total_rules: this.rules().length,
+      rules: this.rules()
+    }, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rules-catalog-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // AUDIT TRAIL
+  openAuditTrail(): void {
+    this.guardianService.fetchAuditTrail();
+    this.isAuditTrailOpen.set(true);
+  }
+
+  closeAuditTrail(): void {
+    this.isAuditTrailOpen.set(false);
+  }
 }
+
