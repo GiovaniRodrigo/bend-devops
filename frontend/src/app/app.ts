@@ -1967,6 +1967,13 @@ export class App {
     this.selectedRuleForDrawer.set(rule);
   }
 
+  openRuleDrawerById(ruleId: string): void {
+    const found = this.rules().find(r => r.id === ruleId);
+    if (found) {
+      this.selectedRuleForDrawer.set(found);
+    }
+  }
+
   closeRuleDrawer(): void {
     this.selectedRuleForDrawer.set(null);
   }

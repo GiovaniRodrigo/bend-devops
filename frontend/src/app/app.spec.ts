@@ -937,5 +937,45 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     app.toggleAppliedRulesPanel();
     expect(app.isAppliedRulesPanelCollapsed()).toBe(false);
   });
+
+  it('should open rule details modal when clicking on an applied rule card and support closing it', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    await fixture.whenStable();
+
+    app.navigateToTab('analyze');
+    fixture.detectChanges();
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    expect(app.selectedRuleForDrawer()).toBeNull();
+    expect(compiled.querySelector('[data-testid="rule-detail-modal"]')).toBeNull();
+
+    // Find the first rule card and click it
+    const firstRule = app.appliedRulesList()[0];
+    expect(firstRule).toBeDefined();
+
+    const ruleCard = compiled.querySelector(`[data-testid="applied-rule-card-${firstRule.id}"]`) as HTMLElement;
+    expect(ruleCard).toBeTruthy();
+    ruleCard.click();
+    fixture.detectChanges();
+
+    // Verify modal is open and has correct rule details
+    expect(app.selectedRuleForDrawer()).not.toBeNull();
+    expect(app.selectedRuleForDrawer()?.id).toBe(firstRule.id);
+
+    const modal = compiled.querySelector('[data-testid="rule-detail-modal"]') as HTMLElement;
+    expect(modal).toBeTruthy();
+    expect(modal.textContent).toContain(firstRule.id);
+    expect(modal.textContent).toContain(firstRule.name);
+
+    // Close the modal via close button
+    const closeBtn = modal.querySelector('[data-testid="close-rule-detail-modal-btn"]') as HTMLElement;
+    expect(closeBtn).toBeTruthy();
+    closeBtn.click();
+    fixture.detectChanges();
+
+    expect(app.selectedRuleForDrawer()).toBeNull();
+    expect(compiled.querySelector('[data-testid="rule-detail-modal"]')).toBeNull();
+  });
 });
 
