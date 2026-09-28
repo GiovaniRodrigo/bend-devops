@@ -47,14 +47,15 @@ class RuleNormalizer:
         raw_cat = str(raw.get("category", "custom")).strip()
 
         # Rule Type
+        raw_cond = raw.get("condition") if isinstance(raw.get("condition"), dict) else {}
         raw_type = str(raw.get("type", "")).strip().lower()
         if raw_type in [t.value for t in RuleType]:
             rule_type = RuleType(raw_type)
-        elif raw.get("forbidden_targets") or raw.get("condition", {}).get("forbidden_targets"):
+        elif raw.get("forbidden_targets") or raw_cond.get("forbidden_targets"):
             rule_type = RuleType.DEPENDENCY
         elif "architecture" in raw_cat.lower() or rule_id.startswith("ARCH"):
             rule_type = RuleType.ARCHITECTURE
-        elif raw.get("detection_patterns") or raw.get("pattern") or raw.get("condition", {}).get("pattern"):
+        elif raw.get("detection_patterns") or raw.get("pattern") or raw_cond.get("pattern"):
             rule_type = RuleType.PATTERN
         else:
             rule_type = RuleType.PATTERN

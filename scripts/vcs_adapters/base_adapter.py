@@ -22,27 +22,27 @@ class BaseVcsAdapter(ABC):
     @abstractmethod
     def get_changed_files(self) -> List[str]:
         """Returns list of modified or added file paths in the PR/MR."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def publish_commit_status(self, state: str, description: str, score: int) -> bool:
         """Sets commit status check on the HEAD SHA (e.g. success, failure, pending)."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def post_pr_comment(self, markdown_body: str) -> bool:
         """Posts or updates a markdown comment on the PR/MR discussion thread."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def publish_annotations(self, violations: List[Dict[str, Any]]) -> bool:
         """Publishes line-level inline annotations (GitHub Check Runs, Bitbucket Insights)."""
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def generate_report_artifact(self, violations: List[Dict[str, Any]], score: int, approved: bool) -> str:
         """Generates platform-specific report format (SARIF / CodeQuality JSON / Insights)."""
-        pass
+        raise NotImplementedError
 
     def _get_git_diff_files(self, base_ref: str = "HEAD~1") -> List[str]:
         """Fallback helper to extract changed files from local git diff."""

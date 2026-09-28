@@ -222,11 +222,26 @@ class TokenFilter:
         return patterns
 
     @staticmethod
-    def is_file_or_rule_exempt(file_path: str, rule_id: str, exemptions: List[IgnoredFilePattern]) -> bool:
+    def is_file_or_rule_exempt(file_path: str, rule_id: str, exemptions: List[Any]) -> bool:
         """Checks if a file and rule are covered by any project-level exemption."""
+        normalized_path = str(file_path).replace("\\", "/").lstrip("./")
         for ex in exemptions:
-            if ex.matches(file_path, rule_id):
-                return True
+            if hasattr(ex, "matches"):
+                if ex.matches(file_path, rule_id):
+                    return True
+            elif isinstance(ex, (tuple, list)) and len(ex) >= 2:
+                # Can be (rule_id, glob_pattern) or (glob_pattern, rule_id)
+                a, b = str(ex[0]), str(ex[1])
+                # Check if 'a' is rule or 'b' is rule
+                if a.upper() in ("ALL", rule_id.upper()) or a.startswith("CULT") or a.startswith("ARCH"):
+                    ex_rule, ex_glob = a, b
+                else:
+                    ex_glob, ex_rule = a, b
+                
+                if ex_rule.upper() in ("ALL", rule_id.upper()):
+                    clean_glob = ex_glob.replace("\\", "/").lstrip("./")
+                    if fnmatch.fnmatch(normalized_path, clean_glob) or fnmatch.fnmatch(normalized_path, f"*/{clean_glob}") or normalized_path.endswith(clean_glob.lstrip("*")):
+                        return True
         return False
 
 

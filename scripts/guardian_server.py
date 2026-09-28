@@ -1017,8 +1017,11 @@ class GuardianRequestHandler(SimpleHTTPRequestHandler):
         # 9. API: Mock Scenarios (only when requested)
         if path == "/api/mock/scenario":
             scenario = query.get("name", ["clean-repository"])[0]
-            data = generate_scenario_data(scenario)
-            self._send_json(data)
+            try:
+                data = generate_scenario_data(scenario)
+                self._send_json(data)
+            except Exception as e:
+                self._send_json({"error": str(e)}, status=404)
             return
 
         # Static Angular App files fallback
