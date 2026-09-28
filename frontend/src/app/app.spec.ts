@@ -1305,6 +1305,53 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     app.enableAllProfiles();
     expect(app.activeArchitectureProfilesCount()).toBe(app.architectureProfiles().length);
   });
+
+  it('should render side-by-side split code diff on the right side in Branch Analysis Result view', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.activeTab.set('analyze');
+    app.setAuditScope('branch_analysis');
+    fixture.detectChanges();
+
+    expect(app.auditScope()).toBe('branch_analysis');
+    expect(app.isReviewingSpecificFile()).toBe(false);
+
+    // Initial branch analysis
+    await app.analyzeBranch();
+    fixture.detectChanges();
+
+    expect(app.displayBranchFiles().length).toBeGreaterThan(0);
+    expect(app.selectedBranchFileIndex()).toBe(0);
+
+    // Right-pane diff should be computed for the selected file
+    const diff = app.currentCodeDiff();
+    expect(diff).toBeDefined();
+    expect(diff.splitBefore.length).toBeGreaterThan(0);
+    expect(diff.splitAfter.length).toBeGreaterThan(0);
+
+    // Verify DOM structure contains the 2-column grid
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('Branch Analysis Result');
+    expect(compiled.textContent).toContain('Diff Inspector');
+    expect(compiled.textContent).toContain('BEFORE');
+    expect(compiled.textContent).toContain('AFTER');
+
+    // Select second branch file
+    if (app.displayBranchFiles().length > 1) {
+      const secondFile = app.displayBranchFiles()[1];
+      await app.selectBranchFile(1);
+      fixture.detectChanges();
+
+      expect(app.selectedBranchFileIndex()).toBe(1);
+      expect(app.inputFileName()).toBe(secondFile.name);
+      expect(app.currentCodeDiff().splitBefore.length).toBeGreaterThan(0);
+    }
+
+    // Test findBranchFileIndex
+    const firstFileName = app.displayBranchFiles()[0].name;
+    expect(app.findBranchFileIndex(firstFileName)).toBe(0);
+  });
 });
+
 
 

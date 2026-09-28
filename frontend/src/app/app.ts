@@ -2067,7 +2067,14 @@ export class App {
     if (scope === 'single_file') {
       this.isReviewingSpecificFile.set(false);
       this.selectPreset(this.selectedPresetIndex());
+    } else if (scope === 'branch_analysis') {
+      this.isReviewingSpecificFile.set(false);
+      this.selectBranchFile(this.selectedBranchFileIndex() || 0);
     }
+  }
+
+  findBranchFileIndex(fileName: string): number {
+    return this.displayBranchFiles().findIndex(f => f.name === fileName);
   }
 
   async selectBranchFile(index: number): Promise<void> {
@@ -2156,6 +2163,9 @@ export class App {
       );
 
       this.currentAuditedFiles.set(result.files);
+      if (result.files.length > 0) {
+        this.selectBranchFile(0);
+      }
       const report = result.report;
       const statusText = report.p0Count > 0 ? 'Blocked' : report.score === 100 ? 'Full compliance' : 'Completed';
 
