@@ -5,6 +5,9 @@ import { CultureGuardianService } from './services/culture-guardian.service';
 
 describe('App (Bend DevOps Guardian Dashboard)', () => {
   beforeEach(async () => {
+    if (typeof window !== 'undefined' && window.history) {
+      window.history.replaceState({}, '', '/');
+    }
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [CultureGuardianService]
@@ -462,8 +465,9 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     expect(app.mockScenario()).toBe('empty-repository');
     expect(app.currentAuditedFiles().length).toBe(0);
     expect(app.history().length).toBe(0);
-    expect(app.currentReport().score).toBe(0);
-    expect(app.currentReport().isApproved).toBe(false);
+    expect(app.hasExecutedAudit()).toBe(false);
+    expect(app.currentReport().score).toBe(100);
+    expect(app.currentReport().isApproved).toBe(true);
 
     // Exit Mock Mode back to real data
     app.disableMockMode();
@@ -597,6 +601,298 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     expect(app.branchViolations().length).toBe(0);
     expect(app.displayBranchFiles().every(f => f.status === 'passed')).toBe(true);
   });
-});
 
+  it('should support whole repository validation mode (full_repo) with active scope description', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.activeTab.set('analyze');
+    await fixture.whenStable();
+
+    // Select full_repo target mode
+    app.setAnalysisTargetMode('full_repo');
+    expect(app.analysisTargetMode()).toBe('full_repo');
+    expect(app.activeTargetScopeDescription()).toContain('Whole Repository');
+
+    // Run audit in full_repo mode
+    await app.analyzeBranch();
+    expect(app.currentAuditedFiles().length).toBeGreaterThan(0);
+    expect(app.history()[0].project).toContain('Whole Repository');
+  });
+
+  it('should trigger warning confirmation modal when attempting to validate build folders and allow confirm or cancel', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.activeTab.set('analyze');
+    await fixture.whenStable();
+
+    app.setAnalysisTargetMode('full_repo');
+    expect(app.includeBuildDirs()).toBe(false);
+    expect(app.showBuildDirsWarningModal()).toBe(false);
+
+    // User checks "Validar pastas de build" -> triggers warning modal
+    app.onIncludeBuildDirsChange(true);
+    expect(app.showBuildDirsWarningModal()).toBe(true);
+    expect(app.includeBuildDirs()).toBe(false); // not confirmed yet
+
+    // User cancels
+    app.cancelIncludeBuildDirs();
+    expect(app.showBuildDirsWarningModal()).toBe(false);
+    expect(app.includeBuildDirs()).toBe(false);
+
+    // User checks again and confirms
+    app.onIncludeBuildDirsChange(true);
+    expect(app.showBuildDirsWarningModal()).toBe(true);
+    app.confirmIncludeBuildDirs();
+    expect(app.showBuildDirsWarningModal()).toBe(false);
+    expect(app.includeBuildDirs()).toBe(true);
+    expect(app.activeTargetScopeDescription()).toContain('+ Build Dirs');
+
+    // User unchecks directly -> turns off without modal
+    app.onIncludeBuildDirsChange(false);
+    expect(app.includeBuildDirs()).toBe(false);
+    expect(app.showBuildDirsWarningModal()).toBe(false);
+  });
+
+  it('should filter findings across text search, rule dropdown, file dropdown, and severity buttons', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    app.selectPreset(1); // Non-compliant preset with multiple findings
+    app.runLiveAudit();
+
+    expect(app.allFindings().length).toBeGreaterThan(0);
+    const initialCount = app.filteredViolations().length;
+    expect(initialCount).toBeGreaterThan(0);
+    expect(app.isFindingFiltered()).toBe(false);
+
+    // 1. Text search
+    app.violationSearch.set('Secret');
+    expect(app.isFindingFiltered()).toBe(true);
+    const searchFilteredCount = app.filteredViolations().length;
+    expect(searchFilteredCount).toBeLessThanOrEqual(initialCount);
+
+    // 2. Rule filter
+    app.clearFindingFilters();
+    expect(app.isFindingFiltered()).toBe(false);
+    if (app.uniqueFindingRules().length > 0) {
+      const targetRule = app.uniqueFindingRules()[0];
+      app.findingRuleFilter.set(targetRule);
+      expect(app.isFindingFiltered()).toBe(true);
+      expect(app.filteredViolations().every((f: any) => f.ruleId === targetRule)).toBe(true);
+    }
+
+    // 3. Severity filter
+    app.clearFindingFilters();
+    app.selectedSeverityFilter.set('P0');
+    expect(app.isFindingFiltered()).toBe(true);
+    expect(app.filteredViolations().every((f: any) => f.severity === 'P0')).toBe(true);
+
+    // 4. Reset filters
+    app.clearFindingFilters();
+    expect(app.isFindingFiltered()).toBe(false);
+    expect(app.violationSearch()).toBe('');
+    expect(app.findingRuleFilter()).toBe('all');
+    expect(app.findingFileFilter()).toBe('all');
+    expect(app.selectedSeverityFilter()).toBe('all');
+    expect(app.filteredViolations().length).toBe(initialCount);
+  });
+
+  it('should manage SPA browser navigation history stack and forward/backward controls', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    // Initial state: dashboard
+    expect(app.activeTab()).toBe('dashboard');
+    expect(app.canGoBack()).toBe(false);
+    expect(app.canGoForward()).toBe(false);
+    expect(app.navHistory()).toEqual(['dashboard']);
+    expect(app.navHistoryIndex()).toBe(0);
+
+    // Navigate to analyze
+    app.navigateToTab('analyze');
+    expect(app.activeTab()).toBe('analyze');
+    expect(app.canGoBack()).toBe(true);
+    expect(app.canGoForward()).toBe(false);
+    expect(app.navHistory()).toEqual(['dashboard', 'analyze']);
+    expect(app.navHistoryIndex()).toBe(1);
+
+    // Navigate to results
+    app.navigateToTab('results');
+    expect(app.activeTab()).toBe('results');
+    expect(app.canGoBack()).toBe(true);
+    expect(app.canGoForward()).toBe(false);
+    expect(app.navHistory()).toEqual(['dashboard', 'analyze', 'results']);
+    expect(app.navHistoryIndex()).toBe(2);
+
+    // Go Back -> analyze
+    app.goBack();
+    expect(app.activeTab()).toBe('analyze');
+    expect(app.canGoBack()).toBe(true);
+    expect(app.canGoForward()).toBe(true);
+    expect(app.navHistoryIndex()).toBe(1);
+
+    // Go Back -> dashboard
+    app.goBack();
+    expect(app.activeTab()).toBe('dashboard');
+    expect(app.canGoBack()).toBe(false);
+    expect(app.canGoForward()).toBe(true);
+    expect(app.navHistoryIndex()).toBe(0);
+
+    // Go Forward -> analyze
+    app.goForward();
+    expect(app.activeTab()).toBe('analyze');
+    expect(app.canGoBack()).toBe(true);
+    expect(app.canGoForward()).toBe(true);
+    expect(app.navHistoryIndex()).toBe(1);
+
+    // Go Forward -> results
+    app.goForward();
+    expect(app.activeTab()).toBe('results');
+    expect(app.canGoBack()).toBe(true);
+    expect(app.canGoForward()).toBe(false);
+    expect(app.navHistoryIndex()).toBe(2);
+
+    // Branching navigation: Go back to analyze, then navigate to rules
+    app.goBack();
+    expect(app.activeTab()).toBe('analyze');
+    app.navigateToTab('rules');
+    expect(app.activeTab()).toBe('rules');
+    expect(app.navHistory()).toEqual(['dashboard', 'analyze', 'rules']);
+    expect(app.navHistoryIndex()).toBe(2);
+    expect(app.canGoForward()).toBe(false);
+  });
+
+  it('should not falsely display BLOCKED when no audit has been executed or when 0 violations exist', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    await fixture.whenStable();
+
+    // Initial state: No audit executed
+    expect(app.hasExecutedAudit()).toBe(false);
+    expect(app.history().length).toBe(0);
+    expect(app.currentAuditedFiles().length).toBe(0);
+    // Report score is 100% and isApproved is true when 0 violations exist
+    expect(app.currentReport().isApproved).toBe(true);
+    expect(app.currentReport().score).toBe(100);
+    expect(app.currentReport().p0Count).toBe(0);
+
+    // After compliant audit: Approved
+    app.selectPreset(0);
+    expect(app.hasExecutedAudit()).toBe(true);
+    expect(app.currentReport().isApproved).toBe(true);
+    expect(app.currentReport().score).toBe(100);
+
+    // Only non-compliant audit with P0 blockers triggers BLOCKED
+    app.selectPreset(1);
+    expect(app.currentReport().isApproved).toBe(false);
+    expect(app.currentReport().p0Count).toBeGreaterThan(0);
+  });
+
+  it('should allow interactive configuration of Settings & Branch Policies', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    await fixture.whenStable();
+
+    // Navigate to settings tab
+    app.navigateToTab('settings');
+    expect(app.activeTab()).toBe('settings');
+
+    // Switch subtabs
+    app.setSettingsSubTab('engine');
+    expect(app.settingsSubTab()).toBe('engine');
+
+    // Update engine settings
+    app.updateEngineSettingField('minGlobalPassingScore', 85);
+    app.updateEngineSettingField('hvmWorkerThreads', 128);
+    app.updateEngineSettingField('strictQualityGate', false);
+    expect(app.engineSettings().minGlobalPassingScore).toBe(85);
+    expect(app.engineSettings().hvmWorkerThreads).toBe(128);
+    expect(app.engineSettings().strictQualityGate).toBe(false);
+
+    // Switch to policies subtab
+    app.setSettingsSubTab('policies');
+    expect(app.settingsSubTab()).toBe('policies');
+    const initialPoliciesCount = app.branchPolicies().length;
+
+    // Add a new branch policy
+    app.openAddPolicyModal();
+    expect(app.isAddingPolicy()).toBe(true);
+    app.newPolicyForm.set({
+      id: 'policy-hotfix',
+      name: 'Hotfix Emergency Policy',
+      branchPattern: 'hotfix/*',
+      minScore: 90,
+      allowP0: false,
+      allowP1: false,
+      requireCleanBuild: true,
+      requireCiApproval: true,
+      blockOnPragmaWithoutReason: true,
+      enabled: true,
+      description: 'Emergency hotfix branches require zero warnings'
+    });
+    app.submitNewPolicy();
+    expect(app.isAddingPolicy()).toBe(false);
+    expect(app.branchPolicies().length).toBe(initialPoliciesCount + 1);
+
+    const added = app.branchPolicies().find(p => p.id === 'policy-hotfix');
+    expect(added).toBeDefined();
+    expect(added?.branchPattern).toBe('hotfix/*');
+    expect(added?.minScore).toBe(90);
+
+    // Toggle and update policy
+    const hotfixIdx = app.branchPolicies().findIndex(p => p.id === 'policy-hotfix');
+    app.togglePolicy(hotfixIdx);
+    expect(app.branchPolicies()[hotfixIdx].enabled).toBe(false);
+
+    app.updatePolicyField(hotfixIdx, 'minScore', 95);
+    expect(app.branchPolicies()[hotfixIdx].minScore).toBe(95);
+
+    // Delete policy
+    app.deletePolicy(hotfixIdx);
+    expect(app.branchPolicies().length).toBe(initialPoliciesCount);
+
+    // Reset settings
+    app.resetEngineSettingsToDefault();
+    expect(app.engineSettings().minGlobalPassingScore).toBe(80);
+    expect(app.engineSettings().strictQualityGate).toBe(true);
+  });
+
+  it('should trigger framework detection prompt when selecting a repository and adapt rules upon confirmation', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    await fixture.whenStable();
+
+    // Ensure auto-scan setting is enabled
+    app.updateEngineSettingField('autoScanFrameworkOnRepoSelect', true);
+    expect(app.engineSettings().autoScanFrameworkOnRepoSelect).toBe(true);
+
+    // Select local repository
+    app.setLocalRepo('ai-bend-devops');
+    expect(app.showFrameworkDetectionModal()).toBe(true);
+    expect(app.pendingRepoForFrameworkScan()).toBeDefined();
+
+    // Confirm framework scan
+    await app.confirmFrameworkScan();
+    expect(app.showFrameworkDetectionModal()).toBe(false);
+    expect(app.lastFrameworkDetectionResult()).not.toBeNull();
+    expect(app.lastFrameworkDetectionResult()?.valid).toBe(true);
+
+    // Check that CancellationToken rule is active in rules catalog
+    const rules = app.rules();
+    const dotnetRule = rules.find(r => r.id === 'DOTNET-ASYNC-01');
+    expect(dotnetRule).toBeDefined();
+    expect(dotnetRule?.status).toBe('active');
+
+    // Check toast feedback message was displayed
+    expect(app.frameworkToastMessage()).toContain('configurado com sucesso');
+
+    // Test quick preset application
+    app.quickApplyFrameworkPreset('dotnet');
+    expect(app.selectedProfile()).toBe('clean_architecture');
+    expect(app.rules().find(r => r.id === 'DOTNET-ASYNC-01')?.status).toBe('active');
+
+    app.quickApplyFrameworkPreset('angular');
+    expect(app.selectedProfile()).toBe('frontend_clean');
+    expect(app.rules().find(r => r.id === 'ARCH-FE-01')?.status).toBe('active');
+  });
+});
 

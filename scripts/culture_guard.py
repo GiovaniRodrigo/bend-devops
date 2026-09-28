@@ -637,11 +637,12 @@ def resolve_scope_files(
     target: Optional[str] = None,
     branch: Optional[str] = None,
     include_patterns: Optional[List[str]] = None,
-    exclude_patterns: Optional[List[str]] = None
+    exclude_patterns: Optional[List[str]] = None,
+    include_build_dirs: bool = False
 ) -> List[str]:
     """
     Resolves eligible source files for a given scope (RF02, RN03):
-    - 'full_branch': walks all directories in root_dir (ignoring standard ignored dirs).
+    - 'full_branch': walks all directories in root_dir (ignoring standard ignored dirs unless include_build_dirs=True).
     - 'working_tree_diff' | 'diff': uses git status / diff to get modified/untracked files.
     - 'subdirectory' | 'subdir': walks only within root_dir / target.
     - 'single_file' | 'file': returns target if it is a single valid file.
@@ -651,7 +652,7 @@ def resolve_scope_files(
         ".git", "node_modules", "dist", ".angular", "build", "bin", "obj", 
         "target", "venv", ".venv", "env", "__pycache__", ".pytest_cache", 
         ".mypy_cache", ".cache", "coverage", ".nyc_output", ".idea", ".vscode"
-    }
+    } if not include_build_dirs else {".git"}
 
     if exclude_patterns:
         for pat in exclude_patterns:
@@ -1125,6 +1126,7 @@ def main():
     parser.add_argument("--format", choices=["text", "json", "markdown"], default="text", help="Report output format")
     parser.add_argument("--min-score", type=int, default=80, help="Minimum score for approval (default: 80)")
     parser.add_argument("--vcs", choices=["github", "gitlab", "bitbucket"], help="Target VCS hosting platform for CI/CD status posting and reports")
+    parser.add_argument("--include-build-dirs", action="store_true", help="Include build and dependency directories (bin, obj, dist, node_modules, build) in the audit")
     parser.add_argument("--mock-scenario", choices=["clean-repository", "architecture-violations", "blocked-quality-gate", "github-repository", "empty-repository", "integration-error"], help="Explicitly run a deterministic mock scenario")
     args = parser.parse_args()
 
@@ -1152,7 +1154,7 @@ def main():
         ".git", "node_modules", "dist", ".angular", "build", "bin", "obj", 
         "target", "venv", ".venv", "env", "__pycache__", ".pytest_cache", 
         ".mypy_cache", ".cache", "coverage", ".nyc_output", ".idea", ".vscode"
-    }
+    } if not args.include_build_dirs else {".git"}
 
     all_files = []
     for p_str in args.paths:

@@ -114,6 +114,7 @@ export interface ArchitectureProfile {
   name: string;
   category: string;
   description: string;
+  enabled?: boolean;
   tiers: {
     name: string;
     description: string;
@@ -334,11 +335,64 @@ export interface WebhookEventPayload {
   diffSummary?: string;
 }
 
+export interface GuardianEngineSettings {
+  strictQualityGate: boolean;
+  minGlobalPassingScore: number;
+  maxP0BlockingThreshold: number;
+  maxP1WarningsThreshold: number;
+  autoRollbackOnFailure: boolean;
+  hvmWorkerThreads: number;
+  hvmReductionMode: 'high_performance' | 'balanced' | 'deep_verification';
+  strictFrameworkEnforcement: boolean;
+  autoScanFrameworkOnRepoSelect: boolean;
+  requireSuppressionReason: boolean;
+  minSuppressionReasonLength: number;
+  notificationWebhookUrl: string;
+  includeBuildDirsDefault: boolean;
+}
+
+export interface DetectedFrameworkItem {
+  name: string;
+  category: 'backend' | 'frontend' | 'fullstack' | 'database' | 'system';
+  language: string;
+  version?: string;
+  confidence: number;
+  indicators: string[];
+}
+
+export interface FrameworkDetectionResult {
+  valid: boolean;
+  repositoryId?: string;
+  repositoryPath: string;
+  detectedFrameworks: DetectedFrameworkItem[];
+  primaryFramework: string;
+  recommendedProfile: ArchitectureProfileId;
+  matchingRuleIds: string[];
+  disabledRuleIds: string[];
+  suggestedTiers: string[];
+  summary: string;
+  error?: string;
+}
+
+export interface FrameworkApplicationSummary {
+  appliedProfile: ArchitectureProfileId;
+  activatedRulesCount: number;
+  deactivatedRulesCount: number;
+  activatedRuleIds: string[];
+  message: string;
+}
+
 export interface BranchPolicy {
+  id?: string;
+  name?: string;
   branchPattern: string;
   minScore: number;
   allowP0: boolean;
   allowP1: boolean;
+  requireCleanBuild?: boolean;
+  requireCiApproval?: boolean;
+  blockOnPragmaWithoutReason?: boolean;
+  enabled?: boolean;
   description: string;
 }
 

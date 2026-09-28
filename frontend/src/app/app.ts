@@ -6,6 +6,11 @@ import {
   AnalysisRun,
   ArchitectureProfileId,
   AuditReport,
+  BranchPolicy,
+  GuardianEngineSettings,
+  DetectedFrameworkItem,
+  FrameworkDetectionResult,
+  FrameworkApplicationSummary,
   CodeViolation,
   CodeDiff,
   DiffLine,
@@ -80,6 +85,126 @@ export class App {
   readonly theme = signal<'dark' | 'light'>(
     (typeof window !== 'undefined' && (localStorage.getItem('bend_guardian_theme') as 'dark' | 'light')) || 'dark'
   );
+
+  // SPA Browser Navigation & History Stack State
+  readonly navHistory = signal<TabId[]>(['dashboard']);
+  readonly navHistoryIndex = signal<number>(0);
+  readonly canGoBack = computed<boolean>(() => this.navHistoryIndex() > 0);
+  readonly canGoForward = computed<boolean>(() => this.navHistoryIndex() < this.navHistory().length - 1);
+  private isNavigatingFromHistory = false;
+
+  readonly tabDisplayNames: Record<TabId, string> = {
+    dashboard: 'Dashboard',
+    analyze: 'Live Code & Diff Auditor',
+    results: 'Audit Results',
+    rules: 'Rules Manifests',
+    vocabulary: 'Layer Taxonomy',
+    vcs: 'VCS & Webhook Simulator',
+    history: 'Session History',
+    pipelines: 'Pipelines',
+    architecture: 'Architecture Health',
+    violations: 'Violations Matrix',
+    integrations: 'CI/CD Integrations',
+    reports: 'Artifact Reports',
+    settings: 'Settings & Policy Gates',
+    'audit-trail': 'Audit Trail Log'
+  };
+
+  readonly activeTabTitle = computed(() => {
+    return this.tabDisplayNames[this.activeTab()] || this.activeTab();
+  });
+
+  isValidTab(tab: string | null | undefined): tab is TabId {
+    if (!tab) return false;
+    return [
+      'dashboard',
+      'pipelines',
+      'architecture',
+      'rules',
+      'violations',
+      'analyze',
+      'integrations',
+      'reports',
+      'settings',
+      'results',
+      'vocabulary',
+      'vcs',
+      'history',
+      'audit-trail'
+    ].includes(tab);
+  }
+
+  navigateToTab(tab: TabId, updateHistory: boolean = true): void {
+    if (!this.isValidTab(tab)) return;
+    
+    this.activeTab.set(tab);
+    if (this.isMobileMenuOpen()) {
+      this.isMobileMenuOpen.set(false);
+    }
+
+    if (updateHistory && !this.isNavigatingFromHistory) {
+      const currentHistory = this.navHistory();
+      const currentIdx = this.navHistoryIndex();
+      
+      if (currentHistory[currentIdx] !== tab) {
+        const newHistory = [...currentHistory.slice(0, currentIdx + 1), tab];
+        this.navHistory.set(newHistory);
+        this.navHistoryIndex.set(newHistory.length - 1);
+        
+        if (typeof window !== 'undefined' && window.history) {
+          try {
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', tab);
+            window.history.pushState({ tab, index: newHistory.length - 1 }, '', url.toString());
+          } catch (e) {}
+        }
+      }
+    }
+
+    if (typeof document !== 'undefined') {
+      document.title = `Bend DevOps Guardian - ${this.tabDisplayNames[tab] || tab}`;
+    }
+  }
+
+  goBack(): void {
+    if (!this.canGoBack()) return;
+    const newIdx = this.navHistoryIndex() - 1;
+    this.navHistoryIndex.set(newIdx);
+    const targetTab = this.navHistory()[newIdx];
+    this.isNavigatingFromHistory = true;
+    this.activeTab.set(targetTab);
+    this.isNavigatingFromHistory = false;
+    if (typeof window !== 'undefined' && window.history) {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', targetTab);
+        window.history.replaceState({ tab: targetTab, index: newIdx }, '', url.toString());
+      } catch (e) {}
+    }
+    if (typeof document !== 'undefined') {
+      document.title = `Bend DevOps Guardian - ${this.tabDisplayNames[targetTab] || targetTab}`;
+    }
+  }
+
+  goForward(): void {
+    if (!this.canGoForward()) return;
+    const newIdx = this.navHistoryIndex() + 1;
+    this.navHistoryIndex.set(newIdx);
+    const targetTab = this.navHistory()[newIdx];
+    this.isNavigatingFromHistory = true;
+    this.activeTab.set(targetTab);
+    this.isNavigatingFromHistory = false;
+    if (typeof window !== 'undefined' && window.history) {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', targetTab);
+        window.history.replaceState({ tab: targetTab, index: newIdx }, '', url.toString());
+      } catch (e) {}
+    }
+    if (typeof document !== 'undefined') {
+      document.title = `Bend DevOps Guardian - ${this.tabDisplayNames[targetTab] || targetTab}`;
+    }
+  }
 
   toggleTheme(): void {
     const next = this.theme() === 'dark' ? 'light' : 'dark';
@@ -161,8 +286,10 @@ export class App {
   });
   readonly availableGitHubRepos = computed(() => this.gitHubRepositories().map(r => r.fullName));
 
-  // Repository & Branch Target State (Stage 2 - Real Git Branches)
-  readonly analysisTargetMode = signal<'working_tree' | 'branch' | 'commit'>('branch');
+  // Repository & Branch Target State (Stage 2 - Real Git Branches & Repo Scope)
+  readonly analysisTargetMode = signal<'working_tree' | 'branch' | 'commit' | 'full_repo'>('branch');
+  readonly includeBuildDirs = signal<boolean>(false);
+  readonly showBuildDirsWarningModal = signal<boolean>(false);
   readonly availableBranches = computed(() => {
     if (this.codeSourceMode() === 'local') {
       const repo = this.selectedLocalRepo();
@@ -274,6 +401,8 @@ export class App {
   readonly vocabularySearch = signal<string>('');
   readonly violationSearch = signal<string>('');
   readonly violationSeverityFilter = signal<string>('all');
+  readonly findingRuleFilter = signal<string>('all');
+  readonly findingFileFilter = signal<string>('all');
 
   // Rule Wizard & Modal State
   readonly isRuleWizardOpen = signal<boolean>(false);
@@ -390,7 +519,7 @@ export class App {
   readonly ruleSeverities = this.guardianService.ruleSeverities;
   readonly ruleStatuses = this.guardianService.ruleStatuses;
 
-  // Webhook Simulator State
+  // Webhook Simulator & Real API Connection State
   readonly webhookPlatform = signal<VcsPlatform>('github');
   readonly webhookEventType = signal<string>('pull_request');
   readonly webhookRepo = signal<string>('GiovaniRodrigo/bend-devops');
@@ -400,6 +529,14 @@ export class App {
   readonly webhookPrTitle = signal<string>('feat: enforce clean architecture domain isolation');
   readonly webhookAuthor = signal<string>('lead-architect');
   readonly webhookResult = signal<string>('');
+  readonly webhookApiUrl = signal<string>('/api/v1/webhook');
+  readonly webhookPingUrl = signal<string>('/api/v1/vcs/ping');
+  readonly webhookSecretToken = signal<string>('ghp_guardian_secret_token_123');
+  readonly isTestingApiConnection = signal<boolean>(false);
+  readonly apiConnectionResult = signal<{ success: boolean; latency: string; message: string; version?: string } | null>(null);
+  readonly isDispatchingWebhook = signal<boolean>(false);
+  readonly webhookHttpResponse = signal<{ statusCode: number; latency: string; data?: any; headers?: Record<string, string>; error?: string } | null>(null);
+  readonly activeWebhookTab = signal<'result' | 'headers' | 'curl' | 'payload'>('result');
 
   // Export Format State
   readonly exportedSarif = signal<string>('');
@@ -434,8 +571,34 @@ export class App {
   readonly rules = this.guardianService.rules;
   readonly layerVocabulary = this.guardianService.layerVocabulary;
   readonly branchPolicies = this.guardianService.branchPolicies;
+  readonly engineSettings = this.guardianService.engineSettings;
   readonly history = this.guardianService.history;
   readonly codePresets = this.guardianService.codePresets;
+
+  // Settings & Branch Policy Sub-tab and Form State
+  readonly settingsSubTab = signal<'policies' | 'engine' | 'framework' | 'raw_json'>('policies');
+  readonly isAddingPolicy = signal<boolean>(false);
+  readonly editingPolicyIndex = signal<number | null>(null);
+  readonly newPolicyForm = signal<BranchPolicy>({
+    branchPattern: 'release/*',
+    minScore: 80,
+    allowP0: false,
+    allowP1: true,
+    requireCleanBuild: true,
+    requireCiApproval: true,
+    blockOnPragmaWithoutReason: true,
+    enabled: true,
+    description: 'Release stabilization gate'
+  });
+  readonly settingsSavedToast = signal<string | null>(null);
+
+  // Framework Detection Modal & State
+  readonly showFrameworkDetectionModal = signal<boolean>(false);
+  readonly pendingRepoForFrameworkScan = signal<LocalRepositoryInfo | null>(null);
+  readonly isScanningFramework = signal<boolean>(false);
+  readonly lastFrameworkDetectionResult = signal<FrameworkDetectionResult | null>(null);
+  readonly frameworkToastMessage = signal<string | null>(null);
+  readonly rememberFrameworkScanChoice = signal<boolean>(false);
 
   // Active Audit Results State
   readonly currentAuditedFiles = signal<FileAuditInfo[]>([]);
@@ -565,29 +728,81 @@ export class App {
     );
   });
 
-  // Filtered Violations List
-  readonly filteredViolations = computed<CodeViolation[]>(() => {
-    const query = (this.searchQuery() || this.violationSearch()).toLowerCase().trim();
-    const filter = this.selectedSeverityFilter() !== 'all' ? this.selectedSeverityFilter() : this.violationSeverityFilter();
-
+  // All Raw Findings/Violations
+  readonly allFindings = computed<CodeViolation[]>(() => {
     let list: CodeViolation[] = [];
     if (this.currentAuditedFiles().length > 0) {
       this.currentAuditedFiles().forEach(f => list.push(...f.violations));
     } else {
       this.history().forEach(h => list.push(...h.violations));
     }
+    return list;
+  });
+
+  // Unique Rule IDs in Findings for Dropdown Filtering
+  readonly uniqueFindingRules = computed<string[]>(() => {
+    const set = new Set<string>();
+    this.allFindings().forEach(v => {
+      if (v.ruleId) set.add(v.ruleId);
+    });
+    return Array.from(set).sort();
+  });
+
+  // Unique Files in Findings for Dropdown Filtering
+  readonly uniqueFindingFiles = computed<string[]>(() => {
+    const set = new Set<string>();
+    this.allFindings().forEach(v => {
+      if (v.fileName) set.add(v.fileName);
+    });
+    return Array.from(set).sort();
+  });
+
+  // Computed Boolean to Check if Any Filter is Active
+  readonly isFindingFiltered = computed<boolean>(() => {
+    return (
+      this.violationSearch().trim() !== '' ||
+      this.selectedSeverityFilter() !== 'all' ||
+      this.findingRuleFilter() !== 'all' ||
+      this.findingFileFilter() !== 'all'
+    );
+  });
+
+  // Filtered Violations / Findings List (Multi-criteria Search, Rule, File & Severity)
+  readonly filteredViolations = computed<CodeViolation[]>(() => {
+    const query = this.violationSearch().toLowerCase().trim();
+    const sevFilter = this.selectedSeverityFilter();
+    const ruleFilter = this.findingRuleFilter();
+    const fileFilter = this.findingFileFilter();
+
+    let list = this.allFindings();
 
     if (query) {
       list = list.filter(v => 
-        v.message.toLowerCase().includes(query) ||
-        v.fileName.toLowerCase().includes(query) ||
-        v.ruleId.toLowerCase().includes(query) ||
+        (v.message && v.message.toLowerCase().includes(query)) ||
+        (v.fileName && v.fileName.toLowerCase().includes(query)) ||
+        (v.ruleId && v.ruleId.toLowerCase().includes(query)) ||
+        (v.astNode && v.astNode.toLowerCase().includes(query)) ||
+        (v.snippet && v.snippet.toLowerCase().includes(query)) ||
+        (v.remediation && v.remediation.toLowerCase().includes(query)) ||
         (v.author && v.author.toLowerCase().includes(query))
       );
     }
 
-    if (filter !== 'all') {
-      list = list.filter(v => v.severity === filter);
+    if (sevFilter !== 'all') {
+      list = list.filter(v => 
+        v.severity === sevFilter || 
+        (sevFilter === 'P0_BLOCKING' && v.severity === 'P0') || 
+        (sevFilter === 'P1_WARNING' && v.severity === 'P1') || 
+        (sevFilter === 'P2_INFO' && (v.severity === 'P2' || v.severity === 'P3' || v.severity === 'INFO'))
+      );
+    }
+
+    if (ruleFilter !== 'all') {
+      list = list.filter(v => v.ruleId === ruleFilter);
+    }
+
+    if (fileFilter !== 'all') {
+      list = list.filter(v => v.fileName === fileFilter);
     }
 
     return list;
@@ -615,7 +830,10 @@ export class App {
     return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
   });
   readonly activeRulesCount = computed(() => {
-    return this.rules().filter(r => r.status === 'active').length;
+    return this.rules().filter(r => (r.status || '').toLowerCase() === 'active' || (r.enabled !== false && (r.status || '').toLowerCase() !== 'inactive')).length;
+  });
+  readonly hasExecutedAudit = computed(() => {
+    return this.history().length > 0 || this.currentAuditedFiles().length > 0;
   });
   readonly totalFilesAnalyzedCount = computed(() => {
     return this.history().reduce((sum, item) => sum + (item.violations ? 1 : 0), 0) + this.currentAuditedFiles().length;
@@ -715,6 +933,8 @@ export class App {
       return `Branch: ${this.sourceBranch()} → ${this.compareBranch()}`;
     } else if (mode === 'working_tree') {
       return `Working Tree (${this.workingTreeInfo().isClean ? 'Clean' : this.workingTreeInfo().changedFiles.length + ' changed files'})`;
+    } else if (mode === 'full_repo') {
+      return `Whole Repository (All Source Files${this.includeBuildDirs() ? ' + Build Dirs' : ''})`;
     } else {
       return `Commit: ${this.commitShaInput()}`;
     }
@@ -773,8 +993,71 @@ export class App {
       window.addEventListener('resize', () => {
         this.isMobile.set(window.innerWidth < 768);
       });
+
+      // Browser popstate listener for Back / Forward buttons
+      window.addEventListener('popstate', (event: PopStateEvent) => {
+        let targetTab: TabId | null = null;
+        if (event.state && event.state.tab && this.isValidTab(event.state.tab)) {
+          targetTab = event.state.tab;
+        } else {
+          const params = new URLSearchParams(window.location.search);
+          const urlTab = params.get('tab');
+          if (urlTab && this.isValidTab(urlTab)) {
+            targetTab = urlTab;
+          }
+        }
+
+        if (targetTab && this.isValidTab(targetTab)) {
+          this.isNavigatingFromHistory = true;
+          this.activeTab.set(targetTab);
+          
+          if (event.state && typeof event.state.index === 'number') {
+            this.navHistoryIndex.set(event.state.index);
+          } else {
+            const lastIdx = this.navHistory().lastIndexOf(targetTab);
+            if (lastIdx !== -1) {
+              this.navHistoryIndex.set(lastIdx);
+            } else {
+              this.navHistory.update(h => [...h, targetTab]);
+              this.navHistoryIndex.set(this.navHistory().length - 1);
+            }
+          }
+          this.isNavigatingFromHistory = false;
+          if (typeof document !== 'undefined') {
+            document.title = `Bend DevOps Guardian - ${this.tabDisplayNames[targetTab] || targetTab}`;
+          }
+        }
+      });
+
+      // Keyboard shortcuts: Alt + ArrowLeft (Back), Alt + ArrowRight (Forward)
+      window.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.altKey && e.key === 'ArrowLeft') {
+          if (this.canGoBack()) {
+            e.preventDefault();
+            this.goBack();
+          }
+        } else if (e.altKey && e.key === 'ArrowRight') {
+          if (this.canGoForward()) {
+            e.preventDefault();
+            this.goForward();
+          }
+        }
+      });
+
       try {
         const params = new URLSearchParams(window.location.search);
+        const urlTab = params.get('tab');
+        if (urlTab && this.isValidTab(urlTab)) {
+          this.activeTab.set(urlTab);
+          this.navHistory.set([urlTab]);
+          this.navHistoryIndex.set(0);
+          if (window.history) {
+            window.history.replaceState({ tab: urlTab, index: 0 }, '', window.location.href);
+          }
+        } else if (window.history) {
+          window.history.replaceState({ tab: 'dashboard', index: 0 }, '', window.location.href);
+        }
+
         if (params.get('mode') === 'mock' || params.has('scenario')) {
           const scenario = params.get('scenario') || 'clean-repository';
           this.isMockMode.set(true);
@@ -783,6 +1066,12 @@ export class App {
         } else {
           this.guardianService.discoverLocalRepositories();
           this.guardianService.inspectWorkingTree();
+          this.guardianService.fetchRules().then(loadedRules => {
+            if (loadedRules && loadedRules.length > 0) {
+              this.selectedCustomRuleIds.set(new Set(loadedRules.map(r => r.id)));
+            }
+          });
+          this.guardianService.fetchRuleMetadata();
         }
       } catch (e) {
       }
@@ -880,6 +1169,11 @@ export class App {
       this.currentAuditedFiles.set([]);
       this.isAudited.set(false);
       this.isReviewingSpecificFile.set(false);
+
+      if (this.engineSettings().autoScanFrameworkOnRepoSelect) {
+        this.pendingRepoForFrameworkScan.set(found);
+        this.showFrameworkDetectionModal.set(true);
+      }
     } else {
       this.clearRepositoryState();
     }
@@ -916,6 +1210,11 @@ export class App {
       this.currentAuditedFiles.set([]);
       this.isAudited.set(false);
       this.isReviewingSpecificFile.set(false);
+
+      if (this.engineSettings().autoScanFrameworkOnRepoSelect) {
+        this.pendingRepoForFrameworkScan.set(res.repository);
+        this.showFrameworkDetectionModal.set(true);
+      }
     } else {
       this.clearRepositoryState();
       this.inputRepo.set('');
@@ -991,13 +1290,31 @@ export class App {
   }
 
   // Stage 2 Helper Methods
-  setAnalysisTargetMode(mode: 'working_tree' | 'branch' | 'commit'): void {
+  setAnalysisTargetMode(mode: 'working_tree' | 'branch' | 'commit' | 'full_repo'): void {
     this.analysisTargetMode.set(mode);
     if (mode === 'working_tree') {
       this.guardianService.inspectWorkingTree(this.selectedLocalRepoId());
     } else if (mode === 'commit') {
       this.validateCommitInput(this.commitShaInput());
     }
+  }
+
+  onIncludeBuildDirsChange(checked: boolean): void {
+    if (checked) {
+      this.showBuildDirsWarningModal.set(true);
+    } else {
+      this.includeBuildDirs.set(false);
+    }
+  }
+
+  confirmIncludeBuildDirs(): void {
+    this.includeBuildDirs.set(true);
+    this.showBuildDirsWarningModal.set(false);
+  }
+
+  cancelIncludeBuildDirs(): void {
+    this.includeBuildDirs.set(false);
+    this.showBuildDirsWarningModal.set(false);
   }
 
   async validateCommitInput(sha: string): Promise<void> {
@@ -1151,6 +1468,7 @@ export class App {
         targetMode,
         baseBranch,
         commitSha,
+        this.includeBuildDirs(),
         (progress, step) => {
           this.analysisProgress.set(progress);
           this.analysisProgressStep.set(step);
@@ -1161,13 +1479,21 @@ export class App {
       const report = result.report;
       const statusText = report.p0Count > 0 ? 'Blocked' : report.score === 100 ? 'Full compliance' : 'Completed';
 
+      const isFullRepo = targetMode === 'full_repo';
+      const projectLabel = isFullRepo
+        ? `${this.activeRepoName()} · Whole Repository`
+        : `${this.activeRepoName()} · Branch ${branch}`;
+      const mrTitleLabel = isFullRepo
+        ? `Whole Repository Audit (${result.files.length} files audited${this.includeBuildDirs() ? ' + builds' : ''})`
+        : `Branch ${branch} (${result.files.length} files audited)`;
+
       const newRun: AnalysisRun = {
         id: `${Date.now()}`,
         date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        project: `${this.activeRepoName()} · Branch ${branch}`,
-        mrTitle: `Branch ${branch} (${result.files.length} files audited)`,
+        project: projectLabel,
+        mrTitle: mrTitleLabel,
         author: this.inputAuthor(),
-        targetBranch: branch,
+        targetBranch: isFullRepo ? 'all' : branch,
         platform: this.selectedPlatform(),
         issues: report.totalViolations,
         p0Count: report.p0Count,
@@ -1356,7 +1682,19 @@ export class App {
     };
 
     this.history.update(h => [newRun, ...h]);
-    this.activeTab.set('results');
+    this.navigateToTab('results');
+  }
+
+  openRulesTab(): void {
+    this.navigateToTab('rules');
+    this.guardianService.fetchRules();
+  }
+
+  clearFindingFilters(): void {
+    this.violationSearch.set('');
+    this.selectedSeverityFilter.set('all');
+    this.findingRuleFilter.set('all');
+    this.findingFileFilter.set('all');
   }
 
   toggleRuleStatus(ruleId: string): void {
@@ -1403,6 +1741,109 @@ export class App {
       `Policy Applied: ${policyDesc}\n` +
       `Status: Webhook payload parsed into canonical WebhookEvent. Ready for parallel HVM reduction.`
     );
+  }
+
+  // Real VCS Webhook API Connection & Live Ingestion Methods
+  readonly generatedCurlSnippet = computed<string>(() => {
+    const payload = {
+      platform: this.webhookPlatform(),
+      event: this.webhookEventType(),
+      repo: this.webhookRepo(),
+      branch: this.webhookBranch(),
+      commitSha: this.webhookCommitSha(),
+      prNumber: this.webhookPrNumber(),
+      prTitle: this.webhookPrTitle(),
+      author: this.webhookAuthor()
+    };
+    const token = this.webhookSecretToken();
+    const tokenHeader = token ? ` \\\n  -H "X-Hub-Signature-256: sha256=${token}" \\\n  -H "Authorization: Bearer ${token}"` : '';
+    return `curl -X POST http://localhost:8000${this.webhookApiUrl()} \\\n  -H "Content-Type: application/json"${tokenHeader} \\\n  -d '${JSON.stringify(payload, null, 2)}'`;
+  });
+
+  async testWebhookApiConnection(): Promise<void> {
+    this.isTestingApiConnection.set(true);
+    this.apiConnectionResult.set(null);
+    try {
+      const res = await this.guardianService.testVcsApiConnection(this.webhookPingUrl());
+      if (res.success) {
+        this.apiConnectionResult.set({
+          success: true,
+          latency: res.latency,
+          message: `Conectado com sucesso ao servidor VCS Guardian (${res.data?.service || 'API Online'})`,
+          version: res.data?.version || '2.0.0'
+        });
+      } else {
+        this.apiConnectionResult.set({
+          success: false,
+          latency: res.latency,
+          message: `Falha na conexão: ${res.error || 'Endpoint inacessível'}`
+        });
+      }
+    } finally {
+      this.isTestingApiConnection.set(false);
+    }
+  }
+
+  async dispatchWebhookViaApi(): Promise<void> {
+    this.isDispatchingWebhook.set(true);
+    const payload = {
+      platform: this.webhookPlatform(),
+      event: this.webhookEventType(),
+      repo: this.webhookRepo(),
+      branch: this.webhookBranch(),
+      commitSha: this.webhookCommitSha(),
+      prNumber: this.webhookPrNumber(),
+      prTitle: this.webhookPrTitle(),
+      author: this.webhookAuthor()
+    };
+
+    try {
+      const res = await this.guardianService.dispatchVcsWebhook(
+        this.webhookApiUrl(),
+        payload,
+        this.webhookSecretToken()
+      );
+      this.webhookHttpResponse.set({
+        statusCode: res.statusCode,
+        latency: res.latency,
+        data: res.responseBody,
+        headers: res.headers,
+        error: res.error
+      });
+
+      const isMain = this.webhookBranch() === 'main' || this.webhookBranch() === 'master';
+      const policyDesc = isMain 
+        ? 'Strict Gating Policy: 0 P0 violations required, minimum score >= 80%.' 
+        : 'Permissive Branch Policy: Non-blocking warning mode enabled for feature branch.';
+
+      const httpStatusBadge = res.statusCode === 200 ? 'HTTP 200 OK' : `HTTP ${res.statusCode || 'ERROR'}`;
+      this.webhookResult.set(
+        `📡 [API DISPATCH - ${httpStatusBadge} in ${res.latency}]\n` +
+        `✅ Ingested Webhook [${payload.platform.toUpperCase()}] Event: "${payload.event}" via API\n` +
+        `Repository: ${payload.repo} | Branch: ${payload.branch} | SHA: ${payload.commitSha.substring(0, 8)}\n` +
+        `Policy Applied: ${policyDesc}\n` +
+        `Decision: ${res.responseBody?.decision || (res.statusCode === 200 ? 'PASS' : 'BLOCKED')} | Latency: ${res.latency} (Bend HVM API)`
+      );
+    } finally {
+      this.isDispatchingWebhook.set(false);
+    }
+  }
+
+  // Architecture Profile Status Management
+  readonly activeArchitectureProfilesCount = computed(() => {
+    return this.architectureProfiles().filter(p => p.enabled !== false).length;
+  });
+
+  toggleArchitectureProfile(profileId: ArchitectureProfileId): void {
+    this.guardianService.toggleArchitectureProfile(profileId);
+  }
+
+  enableAllProfiles(): void {
+    this.architectureProfiles().forEach(p => this.guardianService.setArchitectureProfileStatus(p.id, true));
+  }
+
+  disableAllProfiles(): void {
+    this.architectureProfiles().forEach(p => this.guardianService.setArchitectureProfileStatus(p.id, false));
   }
 
   openExport(format: 'sarif' | 'gitlab' | 'bitbucket' | 'markdown'): void {
@@ -1946,6 +2387,230 @@ export class App {
 
   closeAuditTrail(): void {
     this.isAuditTrailOpen.set(false);
+  }
+
+  // SETTINGS & BRANCH POLICIES METHODS
+  setSettingsSubTab(tab: 'policies' | 'engine' | 'framework' | 'raw_json'): void {
+    this.settingsSubTab.set(tab);
+  }
+
+  openAddPolicyModal(): void {
+    this.newPolicyForm.set({
+      id: `policy-${Date.now()}`,
+      name: 'Custom Branch Policy',
+      branchPattern: 'staging | release/*',
+      minScore: 80,
+      allowP0: false,
+      allowP1: true,
+      requireCleanBuild: true,
+      requireCiApproval: true,
+      blockOnPragmaWithoutReason: true,
+      enabled: true,
+      description: 'Enforces quality gates before merging into release branches.'
+    });
+    this.isAddingPolicy.set(true);
+  }
+
+  closeAddPolicyModal(): void {
+    this.isAddingPolicy.set(false);
+  }
+
+  submitNewPolicy(): void {
+    const policy = this.newPolicyForm();
+    if (!policy.branchPattern.trim()) return;
+    this.guardianService.addBranchPolicy(policy);
+    this.isAddingPolicy.set(false);
+    this.showSettingsToast('Nova Branch Policy adicionada com sucesso!');
+  }
+
+  deletePolicy(index: number): void {
+    this.guardianService.removeBranchPolicy(index);
+    this.showSettingsToast('Branch Policy removida.');
+  }
+
+  togglePolicy(index: number): void {
+    this.guardianService.toggleBranchPolicy(index);
+  }
+
+  updatePolicyField<K extends keyof BranchPolicy>(index: number, key: K, value: BranchPolicy[K]): void {
+    this.guardianService.updateBranchPolicy(index, { [key]: value });
+  }
+
+  updateEngineSettingField<K extends keyof GuardianEngineSettings>(key: K, value: GuardianEngineSettings[K]): void {
+    this.guardianService.updateEngineSettings({ [key]: value });
+  }
+
+  saveEngineSettings(): void {
+    this.showSettingsToast('Configurações do Guardian e Políticas de Branch salvas com sucesso!');
+  }
+
+  resetEngineSettingsToDefault(): void {
+    this.guardianService.resetEngineSettingsToDefault();
+    this.guardianService.resetBranchPoliciesToDefault();
+    this.showSettingsToast('Configurações restauradas para os padrões recomendados.');
+  }
+
+  showSettingsToast(msg: string): void {
+    this.settingsSavedToast.set(msg);
+    setTimeout(() => {
+      if (this.settingsSavedToast() === msg) {
+        this.settingsSavedToast.set(null);
+      }
+    }, 4000);
+  }
+
+  closeSettingsToast(): void {
+    this.settingsSavedToast.set(null);
+  }
+
+  exportSettingsJson(): string {
+    return JSON.stringify({
+      engineSettings: this.engineSettings(),
+      branchPolicies: this.branchPolicies()
+    }, null, 2);
+  }
+
+  importSettingsJson(jsonStr: string): boolean {
+    try {
+      const parsed = JSON.parse(jsonStr);
+      if (parsed.engineSettings) {
+        this.guardianService.updateEngineSettings(parsed.engineSettings);
+      }
+      if (Array.isArray(parsed.branchPolicies)) {
+        this.guardianService.branchPolicies.set(parsed.branchPolicies);
+      }
+      this.showSettingsToast('Configurações importadas com sucesso via JSON.');
+      return true;
+    } catch (e) {
+      this.showSettingsToast('Erro ao importar JSON de configurações.');
+      return false;
+    }
+  }
+
+  // FRAMEWORK DETECTION MODAL & CUSTOMIZATION
+  async confirmFrameworkScan(): Promise<void> {
+    const repo = this.pendingRepoForFrameworkScan() || this.selectedLocalRepo();
+    const targetPath = repo?.path || this.selectedRepositoryPath() || this.customLocalPathInput() || 'ai-bend-devops';
+    this.isScanningFramework.set(true);
+    try {
+      const result = await this.guardianService.detectRepositoryFramework(targetPath);
+      this.lastFrameworkDetectionResult.set(result);
+      const appSummary = this.guardianService.applyFrameworkProfileAndRules(result);
+      this.selectedProfile.set(result.recommendedProfile);
+
+      const activeIds = this.rules().filter(r => r.status === 'active' || r.enabled !== false).map(r => r.id);
+      this.selectedCustomRuleIds.set(new Set(activeIds));
+
+      this.frameworkToastMessage.set(appSummary.message);
+      setTimeout(() => {
+        if (this.frameworkToastMessage() === appSummary.message) {
+          this.frameworkToastMessage.set(null);
+        }
+      }, 7000);
+    } catch (e) {
+      console.error('Framework detection error', e);
+    } finally {
+      this.isScanningFramework.set(false);
+      this.showFrameworkDetectionModal.set(false);
+      this.pendingRepoForFrameworkScan.set(null);
+    }
+  }
+
+  cancelFrameworkScan(): void {
+    this.showFrameworkDetectionModal.set(false);
+    this.pendingRepoForFrameworkScan.set(null);
+  }
+
+  async triggerManualFrameworkScan(): Promise<void> {
+    const repo = this.selectedLocalRepo();
+    const repoIdOrPath = repo?.path || this.selectedRepositoryPath() || this.customLocalPathInput() || 'ai-bend-devops';
+    this.isScanningFramework.set(true);
+    try {
+      const result = await this.guardianService.detectRepositoryFramework(repoIdOrPath);
+      this.lastFrameworkDetectionResult.set(result);
+      const appSummary = this.guardianService.applyFrameworkProfileAndRules(result);
+      this.selectedProfile.set(result.recommendedProfile);
+
+      const activeIds = this.rules().filter(r => r.status === 'active' || r.enabled !== false).map(r => r.id);
+      this.selectedCustomRuleIds.set(new Set(activeIds));
+
+      this.frameworkToastMessage.set(appSummary.message);
+      setTimeout(() => {
+        if (this.frameworkToastMessage() === appSummary.message) {
+          this.frameworkToastMessage.set(null);
+        }
+      }, 7000);
+    } catch (e) {
+      console.error('Manual framework scan error', e);
+    } finally {
+      this.isScanningFramework.set(false);
+    }
+  }
+
+  closeFrameworkToast(): void {
+    this.frameworkToastMessage.set(null);
+  }
+
+  quickApplyFrameworkPreset(preset: 'dotnet' | 'angular' | 'fullstack' | 'python'): void {
+    let mockResult: FrameworkDetectionResult;
+    if (preset === 'dotnet') {
+      mockResult = {
+        valid: true,
+        repositoryPath: this.localRepoPath() || '/project',
+        detectedFrameworks: [{ name: '.NET 8 / C# Web API', category: 'backend', language: 'C#', version: '8.0', confidence: 1.0, indicators: ['Controllers/.NET 8 detected'] }],
+        primaryFramework: '.NET 8 / C# Web API',
+        recommendedProfile: 'clean_architecture',
+        matchingRuleIds: ['CULT01', 'CULT02', 'CULT03', 'CULT04', 'CULT05', 'ARCH-LAYER-01', 'ARCH-LAYER-02', 'ARCH-LAYER-03', 'ARCH-LAYER-04', 'DOTNET-ASYNC-01'],
+        disabledRuleIds: ['ARCH-FE-01'],
+        suggestedTiers: ['Domain', 'Application', 'Infrastructure', 'Presentation'],
+        summary: 'Perfil e regras ajustados para .NET 8 (CancellationToken e Clean Architecture ativados).'
+      };
+    } else if (preset === 'angular') {
+      mockResult = {
+        valid: true,
+        repositoryPath: this.localRepoPath() || '/project',
+        detectedFrameworks: [{ name: 'Angular / TypeScript SPA', category: 'frontend', language: 'TypeScript', version: '18.0', confidence: 1.0, indicators: ['angular.json detected'] }],
+        primaryFramework: 'Angular / TypeScript SPA',
+        recommendedProfile: 'frontend_clean',
+        matchingRuleIds: ['CULT01', 'CULT02', 'CULT03', 'CULT04', 'CULT05', 'ARCH-FE-01', 'ARCH-LAYER-01'],
+        disabledRuleIds: ['DOTNET-ASYNC-01'],
+        suggestedTiers: ['Presentational UI', 'Container Components', 'State/Services', 'API Adapters'],
+        summary: 'Perfil e regras ajustados para Angular / TypeScript (Pureza de componentes e tipagem estrita ativadas).'
+      };
+    } else if (preset === 'python') {
+      mockResult = {
+        valid: true,
+        repositoryPath: this.localRepoPath() || '/project',
+        detectedFrameworks: [{ name: 'Python (FastAPI / Backend)', category: 'backend', language: 'Python', version: '3.11+', confidence: 1.0, indicators: ['pyproject.toml detected'] }],
+        primaryFramework: 'Python (FastAPI / Backend)',
+        recommendedProfile: 'layered_mvc',
+        matchingRuleIds: ['CULT01', 'CULT02', 'CULT03', 'CULT04', 'CULT05', 'ARCH-LAYER-01', 'ARCH-LAYER-02', 'ARCH-LAYER-03', 'ARCH-LAYER-04'],
+        disabledRuleIds: ['DOTNET-ASYNC-01', 'ARCH-FE-01'],
+        suggestedTiers: ['Model', 'Service', 'Controller', 'Infrastructure'],
+        summary: 'Perfil e regras ajustados para Python Backend.'
+      };
+    } else {
+      mockResult = {
+        valid: true,
+        repositoryPath: this.localRepoPath() || '/project',
+        detectedFrameworks: [
+          { name: '.NET 8 / C# Web API', category: 'backend', language: 'C#', version: '8.0', confidence: 0.98, indicators: ['C# Controllers'] },
+          { name: 'Angular / TypeScript SPA', category: 'frontend', language: 'TypeScript', version: '18.0', confidence: 0.99, indicators: ['Angular components'] }
+        ],
+        primaryFramework: 'Full-Stack Enterprise (.NET 8 + Angular)',
+        recommendedProfile: 'clean_architecture',
+        matchingRuleIds: ['CULT01', 'CULT02', 'CULT03', 'CULT04', 'CULT05', 'ARCH-LAYER-01', 'ARCH-LAYER-02', 'ARCH-LAYER-03', 'ARCH-LAYER-04', 'DOTNET-ASYNC-01', 'ARCH-FE-01'],
+        disabledRuleIds: [],
+        suggestedTiers: ['Domain', 'Application', 'Infrastructure', 'Presentation'],
+        summary: 'Perfil e regras ajustados para Full-Stack (.NET 8 + Angular).'
+      };
+    }
+
+    const appSummary = this.guardianService.applyFrameworkProfileAndRules(mockResult);
+    this.selectedProfile.set(mockResult.recommendedProfile);
+    const activeIds = this.rules().filter(r => r.status === 'active' || r.enabled !== false).map(r => r.id);
+    this.selectedCustomRuleIds.set(new Set(activeIds));
+    this.showSettingsToast(appSummary.message);
   }
 }
 

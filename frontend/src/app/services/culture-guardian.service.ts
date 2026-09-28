@@ -6,6 +6,10 @@ import {
   ArchitecturalLayer,
   AuditReport,
   BranchPolicy,
+  GuardianEngineSettings,
+  DetectedFrameworkItem,
+  FrameworkDetectionResult,
+  FrameworkApplicationSummary,
   CodeViolation,
   CodeDiff,
   DiffLine,
@@ -413,6 +417,19 @@ export class CultureGuardianService {
       remediation: 'Delegate API calls to container components, custom hooks, or state managers.',
       languages: ['TypeScript', 'JavaScript'],
       status: 'active'
+    },
+    {
+      id: 'DOTNET-ASYNC-01',
+      name: 'Mandatory CancellationToken in .NET 8 Async Controllers',
+      category: 'Backend & Framework Standards (.NET 8)',
+      layer: 'Controller, Endpoint, Application',
+      severity: 'P0_BLOCKING',
+      penaltyPoints: 30,
+      description: 'Strictly requires all asynchronous actions in .NET 8 Controllers/Endpoints to accept and propagate a CancellationToken parameter.',
+      rationale: 'Prevents resource waste, unneeded database processing, and memory leaks when client HTTP connections are cancelled.',
+      remediation: 'Add CancellationToken cancellationToken = default as an action parameter and pass it down to async service/repo calls.',
+      languages: ['C#'],
+      status: 'active'
     }
   ]);
 
@@ -476,20 +493,49 @@ export class CultureGuardianService {
   // 4. Branch Policies (from backend/rules/4_scanner/ & scripts/vcs_adapters/policy_engine.py)
   readonly branchPolicies = signal<BranchPolicy[]>([
     {
+      id: 'policy-prod',
+      name: 'Production Release Gate',
       branchPattern: 'main | master | release/*',
       minScore: 80,
       allowP0: false,
       allowP1: true,
+      requireCleanBuild: true,
+      requireCiApproval: true,
+      blockOnPragmaWithoutReason: true,
+      enabled: true,
       description: 'Production branches require 0 blocking (P0) violations and a minimum quality score of 80%.'
     },
     {
+      id: 'policy-dev',
+      name: 'Feature Branch Development Policy',
       branchPattern: 'feature/* | fix/* | chore/*',
       minScore: 50,
       allowP0: true,
       allowP1: true,
+      requireCleanBuild: false,
+      requireCiApproval: false,
+      blockOnPragmaWithoutReason: false,
+      enabled: true,
       description: 'Feature development branches emit warning annotations without blocking CI pipeline progression.'
     }
   ]);
+
+  // 4b. Guardian Engine Global Settings
+  readonly engineSettings = signal<GuardianEngineSettings>({
+    strictQualityGate: true,
+    minGlobalPassingScore: 80,
+    maxP0BlockingThreshold: 0,
+    maxP1WarningsThreshold: 5,
+    autoRollbackOnFailure: false,
+    hvmWorkerThreads: 64,
+    hvmReductionMode: 'high_performance',
+    strictFrameworkEnforcement: true,
+    autoScanFrameworkOnRepoSelect: true,
+    requireSuppressionReason: true,
+    minSuppressionReasonLength: 10,
+    notificationWebhookUrl: 'https://ci.internal.corp/webhooks/quality-gate',
+    includeBuildDirsDefault: false
+  });
 
   // 5. Real Audit History State (strictly populated by real session runs)
   readonly history = signal<AnalysisRun[]>([]);
@@ -936,14 +982,15 @@ class LegacyConnector:
       f.violations.forEach(v => {
         totalViolations++;
         totalPenalty += v.penalty;
-        if (v.severity === 'P0_BLOCKING') p0Count++;
-        else if (v.severity === 'P1_WARNING') p1Count++;
+        const sev = (v.severity || '').toUpperCase();
+        if (sev === 'P0_BLOCKING' || sev === 'P0') p0Count++;
+        else if (sev === 'P1_WARNING' || sev === 'P1') p1Count++;
         else p2Count++;
       });
     });
 
-    const score = files.length === 0 ? 0 : Math.max(0, 100 - totalPenalty);
-    const isApproved = files.length > 0 && p0Count === 0 && score >= 80;
+    const score = Math.max(0, 100 - totalPenalty);
+    const isApproved = p0Count === 0 && score >= 80;
 
     return {
       totalFiles: files.length,
@@ -969,6 +1016,7 @@ class LegacyConnector:
     targetType: string = 'branch',
     baseBranch: string = '',
     commitSha: string = '',
+    includeBuildDirs: boolean = false,
     onProgress?: (progress: number, step: string) => void
   ): Promise<{
     files: FileAuditInfo[];
@@ -999,7 +1047,8 @@ class LegacyConnector:
             targetType: targetType,
             commitSha: commitSha,
             profile: profileId,
-            rules: rulesList
+            rules: rulesList,
+            includeBuildDirs: includeBuildDirs
           })
         });
 
@@ -1118,6 +1167,119 @@ class LegacyConnector:
       }
     } catch (e) {}
     return null;
+  }
+
+  // 12.1. Architecture Profile Status Management
+  toggleArchitectureProfile(profileId: ArchitectureProfileId): void {
+    this.architectureProfiles.update(profiles =>
+      profiles.map(p => p.id === profileId ? { ...p, enabled: p.enabled === false ? true : false } : p)
+    );
+  }
+
+  setArchitectureProfileStatus(profileId: ArchitectureProfileId, enabled: boolean): void {
+    this.architectureProfiles.update(profiles =>
+      profiles.map(p => p.id === profileId ? { ...p, enabled } : p)
+    );
+  }
+
+  // 12.2. Real VCS Webhook API Connection & Ingestion
+  async testVcsApiConnection(endpointUrl: string = '/api/v1/vcs/ping'): Promise<{
+    success: boolean;
+    statusCode: number;
+    latency: string;
+    data?: any;
+    error?: string;
+  }> {
+    const start = performance.now();
+    try {
+      const resp = await fetch(endpointUrl, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      const end = performance.now();
+      const latency = `${((end - start) / 1000).toFixed(3)}s`;
+      if (resp.ok) {
+        const data = await resp.json();
+        return { success: true, statusCode: resp.status, latency, data };
+      } else {
+        return { success: false, statusCode: resp.status, latency, error: `HTTP ${resp.status} ${resp.statusText}` };
+      }
+    } catch (e: any) {
+      const end = performance.now();
+      const latency = `${((end - start) / 1000).toFixed(3)}s`;
+      return { success: false, statusCode: 0, latency, error: e?.message || 'Failed to connect to VCS Webhook endpoint' };
+    }
+  }
+
+  async dispatchVcsWebhook(
+    endpointUrl: string = '/api/v1/webhook',
+    payload: any = {},
+    secretToken: string = ''
+  ): Promise<{
+    success: boolean;
+    statusCode: number;
+    latency: string;
+    responseBody?: any;
+    headers?: Record<string, string>;
+    error?: string;
+  }> {
+    const start = performance.now();
+    try {
+      const reqHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+      if (secretToken) {
+        reqHeaders['X-Hub-Signature-256'] = `sha256=${secretToken}`;
+        reqHeaders['X-Gitlab-Token'] = secretToken;
+        reqHeaders['Authorization'] = `Bearer ${secretToken}`;
+      }
+      if (payload.platform === 'github') {
+        reqHeaders['X-GitHub-Event'] = payload.event || 'pull_request';
+      } else if (payload.platform === 'gitlab') {
+        reqHeaders['X-Gitlab-Event'] = payload.event || 'Merge Request Hook';
+      }
+
+      const resp = await fetch(endpointUrl, {
+        method: 'POST',
+        headers: reqHeaders,
+        body: JSON.stringify(payload)
+      });
+      const end = performance.now();
+      const latency = `${((end - start) / 1000).toFixed(3)}s`;
+
+      const resHeaders: Record<string, string> = {};
+      resp.headers.forEach((val, key) => { resHeaders[key] = val; });
+
+      let data: any = {};
+      try {
+        data = await resp.json();
+      } catch (e) {
+        data = { raw: await resp.text() };
+      }
+
+      return {
+        success: resp.ok,
+        statusCode: resp.status,
+        latency,
+        responseBody: data,
+        headers: resHeaders
+      };
+    } catch (e: any) {
+      const end = performance.now();
+      const latency = `${((end - start) / 1000).toFixed(3)}s`;
+      return {
+        success: false,
+        statusCode: 0,
+        latency,
+        error: e?.message || 'Connection refused / Network error',
+        responseBody: {
+          status: 'error',
+          error: e?.message,
+          hint: 'Ensure Guardian Server API is running on localhost:8000 (./scripts/guardian_server.py)'
+        }
+      };
+    }
   }
 
   // 13. Multi-Platform VCS Exporters
@@ -2247,5 +2409,230 @@ namespace Enterprise.Presentation.Pages
         }
       }
     } catch (e) {}
+  }
+
+  // Settings & Branch Policy Management Methods
+  updateEngineSettings(partial: Partial<GuardianEngineSettings>): void {
+    this.engineSettings.update(current => ({ ...current, ...partial }));
+  }
+
+  resetEngineSettingsToDefault(): void {
+    this.engineSettings.set({
+      strictQualityGate: true,
+      minGlobalPassingScore: 80,
+      maxP0BlockingThreshold: 0,
+      maxP1WarningsThreshold: 5,
+      autoRollbackOnFailure: false,
+      hvmWorkerThreads: 64,
+      hvmReductionMode: 'high_performance',
+      strictFrameworkEnforcement: true,
+      autoScanFrameworkOnRepoSelect: true,
+      requireSuppressionReason: true,
+      minSuppressionReasonLength: 10,
+      notificationWebhookUrl: 'https://ci.internal.corp/webhooks/quality-gate',
+      includeBuildDirsDefault: false
+    });
+  }
+
+  addBranchPolicy(policy: BranchPolicy): void {
+    this.branchPolicies.update(policies => [
+      ...policies,
+      {
+        id: policy.id || `policy-${Date.now()}`,
+        name: policy.name || policy.branchPattern,
+        enabled: policy.enabled ?? true,
+        requireCleanBuild: policy.requireCleanBuild ?? true,
+        requireCiApproval: policy.requireCiApproval ?? true,
+        blockOnPragmaWithoutReason: policy.blockOnPragmaWithoutReason ?? true,
+        ...policy
+      }
+    ]);
+  }
+
+  updateBranchPolicy(index: number, policy: Partial<BranchPolicy>): void {
+    this.branchPolicies.update(policies => {
+      if (index < 0 || index >= policies.length) return policies;
+      const copy = [...policies];
+      copy[index] = { ...copy[index], ...policy };
+      return copy;
+    });
+  }
+
+  removeBranchPolicy(index: number): void {
+    this.branchPolicies.update(policies => policies.filter((_, i) => i !== index));
+  }
+
+  toggleBranchPolicy(index: number): void {
+    this.branchPolicies.update(policies => {
+      if (index < 0 || index >= policies.length) return policies;
+      const copy = [...policies];
+      const cur = copy[index].enabled !== false;
+      copy[index] = { ...copy[index], enabled: !cur };
+      return copy;
+    });
+  }
+
+  resetBranchPoliciesToDefault(): void {
+    this.branchPolicies.set([
+      {
+        id: 'policy-prod',
+        name: 'Production Release Gate',
+        branchPattern: 'main | master | release/*',
+        minScore: 80,
+        allowP0: false,
+        allowP1: true,
+        requireCleanBuild: true,
+        requireCiApproval: true,
+        blockOnPragmaWithoutReason: true,
+        enabled: true,
+        description: 'Production branches require 0 blocking (P0) violations and a minimum quality score of 80%.'
+      },
+      {
+        id: 'policy-dev',
+        name: 'Feature Branch Development Policy',
+        branchPattern: 'feature/* | fix/* | chore/*',
+        minScore: 50,
+        allowP0: true,
+        allowP1: true,
+        requireCleanBuild: false,
+        requireCiApproval: false,
+        blockOnPragmaWithoutReason: false,
+        enabled: true,
+        description: 'Feature development branches emit warning annotations without blocking CI pipeline progression.'
+      }
+    ]);
+  }
+
+  // Framework Detection & Automated Rule Customization
+  async detectRepositoryFramework(repoPathOrId: string): Promise<FrameworkDetectionResult> {
+    try {
+      if (typeof window !== 'undefined' && window.location) {
+        let res = await fetch(`/api/repositories/${encodeURIComponent(repoPathOrId)}/framework-detect`).catch(() => null);
+        if (!res || !res.ok) {
+          res = await fetch('/api/repositories/local/framework-detect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: repoPathOrId, repository: repoPathOrId })
+          }).catch(() => null);
+        }
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data && data.valid) {
+            return data as FrameworkDetectionResult;
+          }
+        }
+      }
+    } catch (e) {}
+
+    // Fallback heuristic based on repository identifier or path
+    const pathLower = (repoPathOrId || '').toLowerCase();
+    const isDotnet = pathLower.includes('dotnet') || pathLower.includes('csharp') || pathLower.includes('api') || pathLower.includes('bend');
+    const isAngular = pathLower.includes('angular') || pathLower.includes('frontend') || pathLower.includes('bend');
+    const isPython = pathLower.includes('py');
+
+    const detectedFrameworks: DetectedFrameworkItem[] = [];
+    if (isDotnet) {
+      detectedFrameworks.push({
+        name: '.NET 8 / C# Web API & Enterprise',
+        category: 'backend',
+        language: 'C#',
+        version: '8.0',
+        confidence: 0.95,
+        indicators: ['Controllers/.NET 8 detected', 'Clean Architecture structure']
+      });
+    }
+    if (isAngular) {
+      detectedFrameworks.push({
+        name: 'Angular / TypeScript SPA',
+        category: 'frontend',
+        language: 'TypeScript',
+        version: '18.0',
+        confidence: 0.98,
+        indicators: ['angular.json configuration', 'TypeScript components']
+      });
+    }
+    if (isPython && !isDotnet) {
+      detectedFrameworks.push({
+        name: 'Python (FastAPI / Backend)',
+        category: 'backend',
+        language: 'Python',
+        version: '3.11+',
+        confidence: 0.90,
+        indicators: ['pyproject.toml / requirements.txt']
+      });
+    }
+
+    const matchingRuleIds = [
+      'CULT01', 'CULT02', 'CULT03', 'CULT04', 'CULT05',
+      'ARCH-LAYER-01', 'ARCH-LAYER-02', 'ARCH-LAYER-03', 'ARCH-LAYER-04'
+    ];
+    if (isDotnet) matchingRuleIds.push('DOTNET-ASYNC-01');
+    if (isAngular) matchingRuleIds.push('ARCH-FE-01');
+
+    return {
+      valid: true,
+      repositoryId: repoPathOrId,
+      repositoryPath: repoPathOrId,
+      detectedFrameworks,
+      primaryFramework: (isDotnet && isAngular) ? 'Full-Stack Enterprise (.NET 8 + Angular)' : (isDotnet ? '.NET 8 / C# Web API' : (isAngular ? 'Angular / TypeScript SPA' : 'Universal Multi-Tier')),
+      recommendedProfile: isAngular && !isDotnet ? 'frontend_clean' : 'clean_architecture',
+      matchingRuleIds,
+      disabledRuleIds: [],
+      suggestedTiers: ['Domain', 'Application', 'Infrastructure', 'Presentation'],
+      summary: (isDotnet && isAngular)
+        ? 'Repositório Full-Stack detectado (.NET 8 C# + Angular). Regras de CancellationToken, isolamento de camadas e pureza de componentes visuais ativadas.'
+        : (isDotnet ? 'Repositório .NET 8 detectado. Regras de CancellationToken e Clean Architecture ativadas.' : 'Repositório Frontend SPA detectado. Regras de pureza visual e TypeScript ativadas.')
+    };
+  }
+
+  applyFrameworkProfileAndRules(detected: FrameworkDetectionResult): FrameworkApplicationSummary {
+    const recommendedProfile = detected.recommendedProfile || 'clean_architecture';
+    const matchingIds = new Set(detected.matchingRuleIds || []);
+
+    let activatedCount = 0;
+    let deactivatedCount = 0;
+    const activatedIds: string[] = [];
+
+    // 1. Activate recommended Architecture Profile & update profiles
+    this.architectureProfiles.update(profiles =>
+      profiles.map(p => {
+        if (p.id === recommendedProfile || (detected.primaryFramework.includes('Full-Stack') && (p.id === 'clean_architecture' || p.id === 'frontend_clean'))) {
+          return { ...p, enabled: true };
+        }
+        return p;
+      })
+    );
+
+    // 2. Adjust and activate matching framework rules
+    this.rules.update(allRules =>
+      allRules.map(rule => {
+        const isMatch = matchingIds.has(rule.id);
+        if (isMatch) {
+          activatedCount++;
+          activatedIds.push(rule.id);
+          return { ...rule, status: 'active', enabled: true };
+        } else {
+          if (rule.id === 'DOTNET-ASYNC-01' && !detected.detectedFrameworks.some(f => f.language === 'C#')) {
+            deactivatedCount++;
+            return { ...rule, status: 'inactive', enabled: false };
+          }
+          if (rule.id === 'ARCH-FE-01' && !detected.detectedFrameworks.some(f => f.category === 'frontend')) {
+            deactivatedCount++;
+            return { ...rule, status: 'inactive', enabled: false };
+          }
+          return rule;
+        }
+      })
+    );
+
+    const message = `Framework '${detected.primaryFramework}' configurado com sucesso! ${activatedCount} regras adaptadas e Perfil '${recommendedProfile}' ativado.`;
+
+    return {
+      appliedProfile: recommendedProfile,
+      activatedRulesCount: activatedCount,
+      deactivatedRulesCount: deactivatedCount,
+      activatedRuleIds: activatedIds,
+      message
+    };
   }
 }
