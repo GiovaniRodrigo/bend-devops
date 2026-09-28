@@ -977,5 +977,144 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     expect(app.selectedRuleForDrawer()).toBeNull();
     expect(compiled.querySelector('[data-testid="rule-detail-modal"]')).toBeNull();
   });
+
+  it('should render pipeline flowchart with nodes and support node selection, creation, editing, cloning, and deletion', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    expect(app.pipelineNodes().length).toBeGreaterThanOrEqual(5);
+
+    // Select a node
+    app.selectPipelineNode('node_bend');
+    expect(app.selectedNodeId()).toBe('node_bend');
+    expect(app.selectedPipelineNode()?.name).toContain('Bend HVM');
+
+    // Add a custom node
+    const initialCount = app.pipelineNodes().length;
+    app.openAddNodeModal('node_gate');
+    expect(app.isAddingNode()).toBe(true);
+    app.nodeForm.update(form => ({
+      ...form,
+      id: 'node_custom_smoke_test',
+      name: 'Smoke Test & Health Check',
+      shortName: 'SMOKE',
+      type: 'test',
+      command: './scripts/smoke-test.sh',
+      runner: 'ubuntu-latest'
+    }));
+    app.saveNodeForm();
+    expect(app.isAddingNode()).toBe(false);
+    expect(app.pipelineNodes().length).toBe(initialCount + 1);
+    expect(app.pipelineNodes().some(n => n.id === 'node_custom_smoke_test')).toBe(true);
+
+    // Edit the created node
+    const createdNode = app.pipelineNodes().find(n => n.id === 'node_custom_smoke_test')!;
+    app.openEditNodeModal(createdNode);
+    expect(app.isEditingNode()).toBe(true);
+    app.nodeForm.update(form => ({
+      ...form,
+      name: 'Smoke Test & Health Check (Updated)'
+    }));
+    app.saveNodeForm();
+    expect(app.isEditingNode()).toBe(false);
+    expect(app.pipelineNodes().find(n => n.id === 'node_custom_smoke_test')?.name).toBe('Smoke Test & Health Check (Updated)');
+
+    // Duplicate node
+    app.duplicatePipelineNode('node_custom_smoke_test');
+    expect(app.pipelineNodes().length).toBe(initialCount + 2);
+
+    // Move node
+    app.movePipelineNode('node_custom_smoke_test', 'left');
+
+    // Toggle node status and allowFailure
+    app.toggleNodeStatus('node_custom_smoke_test');
+    app.toggleNodeAllowFailure('node_custom_smoke_test');
+    const updated = app.pipelineNodes().find(n => n.id === 'node_custom_smoke_test');
+    expect(updated?.allowFailure).toBe(true);
+
+    // Delete nodes
+    app.deletePipelineNode('node_custom_smoke_test');
+    expect(app.pipelineNodes().some(n => n.id === 'node_custom_smoke_test')).toBe(false);
+  });
+
+  it('should generate valid synchronized Mermaid diagram flowchart code and CI/CD YAML configurations', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    // Mermaid code generation
+    const mermaid = app.generatedMermaidCode();
+    expect(mermaid).toContain('flowchart LR');
+    expect(mermaid).toContain('classDef passed');
+    expect(mermaid).toContain('node_trigger');
+    expect(mermaid).toContain('node_bend');
+    expect(mermaid).toContain('-->');
+
+    // GitHub Actions YAML
+    app.setPipelineTargetPlatform('github');
+    const githubYaml = app.generatedPipelineYaml();
+    expect(githubYaml).toContain('name: Bend DevOps Guardian Quality Gate');
+    expect(githubYaml).toContain('runs-on:');
+    expect(githubYaml).toContain('actions/checkout@v4');
+
+    // GitLab CI YAML
+    app.setPipelineTargetPlatform('gitlab');
+    const gitlabYaml = app.generatedPipelineYaml();
+    expect(gitlabYaml).toContain('stages:');
+    expect(gitlabYaml).toContain('script:');
+
+    // Azure Pipelines YAML
+    app.setPipelineTargetPlatform('azure');
+    const azureYaml = app.generatedPipelineYaml();
+    expect(azureYaml).toContain('vmImage:');
+    expect(azureYaml).toContain('displayName:');
+
+    // Bitbucket Pipelines YAML
+    app.setPipelineTargetPlatform('bitbucket');
+    const bitbucketYaml = app.generatedPipelineYaml();
+    expect(bitbucketYaml).toContain('pipelines:');
+  });
+
+  it('should switch pipeline blueprints/templates and simulate execution step by step', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    // Switch blueprint to Clean Architecture GitOps
+    app.applyPipelineBlueprint('clean_arch_gitops');
+    expect(app.selectedPipelineBlueprint()).toBe('clean_arch_gitops');
+    expect(app.pipelineTargetPlatform()).toBe('gitlab');
+    expect(app.pipelineNodes().some(n => n.id === 'node_build_oci')).toBe(true);
+
+    // Switch blueprint to Fast Feedback CI
+    app.applyPipelineBlueprint('fast_feedback_ci');
+    expect(app.selectedPipelineBlueprint()).toBe('fast_feedback_ci');
+    expect(app.pipelineNodes().some(n => n.id === 'node_notify')).toBe(true);
+
+    // Switch back to Bend Strict and simulate
+    app.applyPipelineBlueprint('bend_strict');
+    expect(app.selectedPipelineBlueprint()).toBe('bend_strict');
+
+    // Run simulation (with 0ms delay for instant test execution)
+    const simPromise = app.runPipelineSimulation(0);
+    await simPromise;
+    expect(app.isPipelineSimulating()).toBe(false);
+    expect(app.pipelineSimulationProgress()).toBe(100);
+    expect(app.pipelineSimulationLog().length).toBeGreaterThan(0);
+
+    // Reset simulation
+    app.resetPipelineSimulation();
+    expect(app.pipelineSimulationProgress()).toBe(0);
+    expect(app.pipelineSimulationLog().length).toBe(0);
+
+    // Zoom controls
+    app.setPipelineZoom(120);
+    expect(app.pipelineZoom()).toBe(120);
+    app.zoomInPipeline();
+    expect(app.pipelineZoom()).toBe(135);
+    app.zoomOutPipeline();
+    expect(app.pipelineZoom()).toBe(120);
+    app.resetPipelineZoom();
+    expect(app.pipelineZoom()).toBe(100);
+  });
 });
+
 

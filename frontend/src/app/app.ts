@@ -35,7 +35,11 @@ import {
   DirectoryBrowseResult,
   GitHubRepositoryInfo,
   WorkingTreeInfo,
-  CommitValidationResult
+  CommitValidationResult,
+  PipelineNodeType,
+  PipelineNodeStatus,
+  PipelineNode,
+  PipelineBlueprint
 } from './models/culture.model';
 
 export type TabId = 
@@ -553,10 +557,443 @@ export class App {
   readonly showExportPreview = signal<boolean>(false);
   readonly showTechnicalDetails = signal<boolean>(false);
 
-  // Interactive Pipeline Visualization State
+  // Interactive Pipeline Visualization & Flowchart Editor State
   readonly selectedPipelineStage = signal<'code' | 'rules' | 'scanner' | 'gate' | 'cicd'>('gate');
   readonly isPipelineSimulating = signal<boolean>(false);
   readonly pipelineStatus = signal<'passed' | 'running' | 'blocked'>('passed');
+
+  // Pipeline Flowchart & DAG Designer State
+  readonly pipelineSubTab = signal<'flowchart' | 'editor' | 'mermaid' | 'yaml' | 'simulator'>('flowchart');
+  readonly selectedPipelineBlueprint = signal<string>('bend_strict');
+  readonly selectedNodeId = signal<string | null>('node_bend');
+  readonly isEditingNode = signal<boolean>(false);
+  readonly isAddingNode = signal<boolean>(false);
+  readonly pipelineZoom = signal<number>(100);
+  readonly pipelineLayoutMode = signal<'horizontal' | 'grid'>('horizontal');
+  readonly pipelineTargetPlatform = signal<'github' | 'gitlab' | 'azure' | 'bitbucket'>('github');
+  readonly pipelineSimulationProgress = signal<number>(0);
+  readonly pipelineSimulationLog = signal<string[]>([]);
+  readonly pipelineSimulationActiveStep = signal<string | null>(null);
+  readonly pipelineToastMessage = signal<string | null>(null);
+
+  readonly nodeForm = signal<PipelineNode>({
+    id: 'node_custom',
+    name: 'Nova Etapa do Pipeline',
+    shortName: 'CUSTOM',
+    type: 'custom',
+    status: 'pending',
+    duration: '0.02s',
+    summary: 'Execução de tarefa customizada de CI/CD',
+    detail: 'Ambiente de execução automatizado',
+    command: 'echo "Executando etapa"',
+    runner: 'ubuntu-latest',
+    dependsOn: ['node_gate'],
+    allowFailure: false,
+    timeoutMinutes: 10,
+    condition: 'on_success',
+    metrics: [{ label: 'Tempo Limite', value: '10m' }],
+    icon: '⚡'
+  });
+
+  readonly pipelineBlueprints: PipelineBlueprint[] = [
+    {
+      id: 'bend_strict',
+      name: 'Bend HVM Strict Architecture Gate',
+      description: 'Pipeline completo de 9 estágios com redução HVM em 64 threads, varredura SAST e Quality Gate estrito.',
+      category: 'Architecture & DevOps',
+      platform: 'github',
+      nodes: [
+        {
+          id: 'node_trigger',
+          name: 'VCS Trigger & Webhook Event',
+          shortName: 'TRIGGER',
+          type: 'trigger',
+          status: 'passed',
+          duration: '0.01s',
+          summary: 'Gatilho de Push e Pull Request no repositório',
+          detail: 'Branches monitoradas: main, release/*, develop',
+          command: 'on: [push, pull_request]',
+          runner: 'github-webhook-agent',
+          dependsOn: [],
+          allowFailure: false,
+          timeoutMinutes: 5,
+          condition: 'always',
+          metrics: [{ label: 'Event', value: 'pull_request' }, { label: 'Action', value: 'synchronize' }],
+          icon: '⚡'
+        },
+        {
+          id: 'node_checkout',
+          name: 'Git Checkout & Diff Normalizer',
+          shortName: 'CHECKOUT',
+          type: 'checkout',
+          status: 'passed',
+          duration: '0.02s',
+          summary: 'Clonagem rasa e normalização de diffs de arquivos',
+          detail: 'Fetch depth completo para análise determinística de histórico',
+          command: 'actions/checkout@v4 --fetch-depth=0',
+          runner: 'ubuntu-latest',
+          dependsOn: ['node_trigger'],
+          allowFailure: false,
+          timeoutMinutes: 5,
+          condition: 'on_success',
+          metrics: [{ label: 'Commit', value: 'HEAD' }, { label: 'Depth', value: 'Full' }],
+          icon: '📥'
+        },
+        {
+          id: 'node_security',
+          name: 'SAST & Secret Scanner',
+          shortName: 'SECURITY',
+          type: 'security',
+          status: 'passed',
+          duration: '0.03s',
+          summary: 'Detecção estática de segredos vazados e vulnerabilidades',
+          detail: 'Varredura com regras de tokens sensíveis, chaves AWS/Azure e certificados',
+          command: 'gitleaks detect --verbose && trivy fs .',
+          runner: 'ubuntu-latest',
+          dependsOn: ['node_checkout'],
+          allowFailure: false,
+          timeoutMinutes: 10,
+          condition: 'on_success',
+          metrics: [{ label: 'Scanner', value: 'Gitleaks v8' }, { label: 'Severidade', value: 'Zero-Leaking' }],
+          icon: '🔒'
+        },
+        {
+          id: 'node_manifest',
+          name: 'Lexer & AST Rule Manifest Matcher',
+          shortName: 'LEXER',
+          type: 'lint',
+          status: 'passed',
+          duration: '0.02s',
+          summary: 'Tokenização e mapeamento de vocabulário de camadas',
+          detail: 'Validação de sintaxe Bend e manifesto JSON de regras arquiteturais',
+          command: 'bend check backend/src/guardian.bend && python3 -m unittest discover tests',
+          runner: 'ubuntu-latest',
+          dependsOn: ['node_checkout'],
+          allowFailure: false,
+          timeoutMinutes: 10,
+          condition: 'on_success',
+          metrics: [{ label: 'Tokens', value: 'Normalized' }, { label: 'Manifests', value: '26 Regras' }],
+          icon: '🧹'
+        },
+        {
+          id: 'node_bend',
+          name: 'Bend HVM Parallel Reduction',
+          shortName: 'BEND HVM',
+          type: 'bend_analyzer',
+          status: 'passed',
+          duration: '0.04s',
+          summary: 'Redução funcional massivamente paralela em 64 threads virtuais',
+          detail: 'Avalia árvores de sintaxe e violações de fronteiras em complexidade O(log N)',
+          command: 'bend run-rs backend/src/guardian.bend --threads 64',
+          runner: 'hvm-accelerated-64x',
+          dependsOn: ['node_security', 'node_manifest'],
+          allowFailure: false,
+          timeoutMinutes: 15,
+          condition: 'on_success',
+          metrics: [{ label: 'Threads', value: '64 HVM' }, { label: 'Depth', value: 'O(log N)' }, { label: 'Speedup', value: '32x' }],
+          icon: '🧬'
+        },
+        {
+          id: 'node_test',
+          name: 'Unit & Contract Quality Tests',
+          shortName: 'TESTS',
+          type: 'test',
+          status: 'passed',
+          duration: '0.03s',
+          summary: 'Execução de testes de regressão de regras e contratos',
+          detail: 'Suíte de testes atômicos e validações de pirâmide de testes',
+          command: 'npm run test -- --watch=false && dotnet test --configuration Release',
+          runner: 'ubuntu-latest',
+          dependsOn: ['node_manifest'],
+          allowFailure: false,
+          timeoutMinutes: 15,
+          condition: 'on_success',
+          metrics: [{ label: 'Unit Tests', value: '43 Passed' }, { label: 'Coverage', value: '98.5%' }],
+          icon: '🧪'
+        },
+        {
+          id: 'node_gate',
+          name: 'Quality Gate & Branch Policy Decision',
+          shortName: 'GATE',
+          type: 'quality_gate',
+          status: 'passed',
+          duration: '0.01s',
+          summary: 'Avaliação estrita de pontuação mínima e zero violações P0',
+          detail: 'Decisão de bloqueio ou aprovação com cálculo de penalidade acumulada',
+          command: 'python3 scripts/culture_guard.py --enforce-gate --branch main',
+          runner: 'guardian-engine',
+          dependsOn: ['node_bend', 'node_test'],
+          allowFailure: false,
+          timeoutMinutes: 5,
+          condition: 'on_success',
+          metrics: [{ label: 'Gate Policy', value: 'Strict' }, { label: 'P0 Blocker Threshold', value: '0' }],
+          icon: '🛡️'
+        },
+        {
+          id: 'node_sarif',
+          name: 'SARIF Telemetry & PR Annotations',
+          shortName: 'SARIF / CI',
+          type: 'sarif_export',
+          status: 'passed',
+          duration: '0.02s',
+          summary: 'Publicação de anotações no Pull Request e artefatos SARIF v2.1.0',
+          detail: 'Integração bidirecional com GitHub Security Code Scanning e GitLab SAST',
+          command: 'github/codeql-action/upload-sarif --sarif-file=report.sarif',
+          runner: 'ubuntu-latest',
+          dependsOn: ['node_gate'],
+          allowFailure: true,
+          timeoutMinutes: 5,
+          condition: 'always',
+          metrics: [{ label: 'Format', value: 'SARIF v2.1.0' }, { label: 'Annotations', value: 'Synced' }],
+          icon: '📊'
+        },
+        {
+          id: 'node_deploy',
+          name: 'Staging Deployment & Release Gate',
+          shortName: 'DEPLOY',
+          type: 'deploy',
+          status: 'passed',
+          duration: '0.05s',
+          summary: 'Deploy automático para ambiente de validação contínua',
+          detail: 'Executa migrações idempotentes e deploy em cluster Kubernetes',
+          command: 'kubectl apply -k k8s/overlays/staging && ./scripts/smoke-test.sh',
+          runner: 'production-runner',
+          dependsOn: ['node_gate'],
+          allowFailure: false,
+          timeoutMinutes: 20,
+          condition: 'on_success',
+          metrics: [{ label: 'Environment', value: 'Staging' }, { label: 'Rollback', value: 'Automated' }],
+          icon: '🚀'
+        }
+      ]
+    },
+    {
+      id: 'clean_arch_gitops',
+      name: 'Clean Architecture GitOps & CD',
+      description: 'Pipeline orientado a microsserviços com validação de camadas, build de contêiner OCI e promoção GitOps.',
+      category: 'GitOps & Cloud Native',
+      platform: 'gitlab',
+      nodes: [
+        {
+          id: 'node_trigger',
+          name: 'GitLab Push / MR Hook',
+          shortName: 'TRIGGER',
+          type: 'trigger',
+          status: 'passed',
+          duration: '0.01s',
+          summary: 'Trigger automático em Merge Requests',
+          detail: 'Pipeline multi-branch para branches de feature e main',
+          command: 'workflow: rules: [if: $CI_PIPELINE_SOURCE == "merge_request_event"]',
+          runner: 'gitlab-runner',
+          dependsOn: [],
+          allowFailure: false,
+          timeoutMinutes: 5,
+          condition: 'always',
+          metrics: [{ label: 'Runner', value: 'GitLab SaaS' }],
+          icon: '⚡'
+        },
+        {
+          id: 'node_checkout',
+          name: 'Source Checkout',
+          shortName: 'CHECKOUT',
+          type: 'checkout',
+          status: 'passed',
+          duration: '0.02s',
+          summary: 'Download do workspace com cache de pacotes',
+          detail: 'Cache centralizado para npm e NuGet',
+          command: 'git checkout $CI_COMMIT_SHA',
+          runner: 'ubuntu-latest',
+          dependsOn: ['node_trigger'],
+          allowFailure: false,
+          timeoutMinutes: 5,
+          condition: 'on_success',
+          metrics: [{ label: 'Cache', value: 'Hit' }],
+          icon: '📥'
+        },
+        {
+          id: 'node_bend',
+          name: 'Clean Layer Rule Engine',
+          shortName: 'CLEAN ARCH',
+          type: 'bend_analyzer',
+          status: 'passed',
+          duration: '0.03s',
+          summary: 'Verificação de isolamento do Domain e proibição de dependências cíclicas',
+          detail: 'Garante que Domain não referencia Infraestrutura nem Apresentação',
+          command: 'bend run-rs backend/src/guardian.bend --profile clean_architecture',
+          runner: 'hvm-accelerated-64x',
+          dependsOn: ['node_checkout'],
+          allowFailure: false,
+          timeoutMinutes: 10,
+          condition: 'on_success',
+          metrics: [{ label: 'Layer Rule', value: 'Strict Isolation' }],
+          icon: '🧬'
+        },
+        {
+          id: 'node_test',
+          name: 'Automated Test Matrix',
+          shortName: 'TESTS',
+          type: 'test',
+          status: 'passed',
+          duration: '0.04s',
+          summary: 'Execução de testes de unidade e contratos de API',
+          detail: 'Cobertura de testes com threshold de 80%',
+          command: 'dotnet test --collect:"XPlat Code Coverage"',
+          runner: 'ubuntu-latest',
+          dependsOn: ['node_checkout'],
+          allowFailure: false,
+          timeoutMinutes: 10,
+          condition: 'on_success',
+          metrics: [{ label: 'Test Suite', value: 'Passing' }],
+          icon: '🧪'
+        },
+        {
+          id: 'node_gate',
+          name: 'GitOps Policy Gate',
+          shortName: 'GATE',
+          type: 'quality_gate',
+          status: 'passed',
+          duration: '0.01s',
+          summary: 'Checagem de conformidade GitOps e branch protection',
+          detail: 'Exige pontuação 100% para prosseguir com o build de release',
+          command: 'python3 scripts/culture_guard.py --gitops-mode',
+          runner: 'guardian-engine',
+          dependsOn: ['node_bend', 'node_test'],
+          allowFailure: false,
+          timeoutMinutes: 5,
+          condition: 'on_success',
+          metrics: [{ label: 'GitOps Gate', value: 'Approved' }],
+          icon: '🛡️'
+        },
+        {
+          id: 'node_build_oci',
+          name: 'OCI Container Image Build',
+          shortName: 'BUILD OCI',
+          type: 'build',
+          status: 'passed',
+          duration: '0.06s',
+          summary: 'Build de imagem Docker multi-stage sem root',
+          detail: 'Publicação de imagem assinada no container registry com Cosign',
+          command: 'docker buildx build --platform linux/amd64,linux/arm64 -t registry/app:$CI_COMMIT_SHORT_SHA .',
+          runner: 'docker-dind-runner',
+          dependsOn: ['node_gate'],
+          allowFailure: false,
+          timeoutMinutes: 15,
+          condition: 'on_success',
+          metrics: [{ label: 'Image', value: 'Distroless' }, { label: 'Signature', value: 'Cosign Signed' }],
+          icon: '📦'
+        },
+        {
+          id: 'node_deploy',
+          name: 'GitOps Manifest Sync (ArgoCD)',
+          shortName: 'ARGOCD SYNC',
+          type: 'deploy',
+          status: 'passed',
+          duration: '0.03s',
+          summary: 'Commit automatizado no repositório de configuração ArgoCD',
+          detail: 'Sincronização contínua com cluster de produção',
+          command: 'argocd app sync guardian-app --prune',
+          runner: 'gitops-agent',
+          dependsOn: ['node_build_oci'],
+          allowFailure: false,
+          timeoutMinutes: 10,
+          condition: 'on_success',
+          metrics: [{ label: 'Sync Status', value: 'Synced' }, { label: 'Health', value: 'Healthy' }],
+          icon: '🚀'
+        }
+      ]
+    },
+    {
+      id: 'fast_feedback_ci',
+      name: 'Microservices Fast Feedback CI',
+      description: 'Pipeline ultra-rápido otimizado para feedback em menos de 10 segundos com paralelismo máximo.',
+      category: 'Developer Experience',
+      platform: 'github',
+      nodes: [
+        {
+          id: 'node_trigger',
+          name: 'PR Quick Hook',
+          shortName: 'HOOK',
+          type: 'trigger',
+          status: 'passed',
+          duration: '0.01s',
+          summary: 'Gatilho de abertura de PR',
+          detail: 'Fail-fast instantâneo',
+          command: 'on: pull_request',
+          runner: 'fast-runner',
+          dependsOn: [],
+          allowFailure: false,
+          timeoutMinutes: 3,
+          condition: 'always',
+          metrics: [{ label: 'Trigger', value: 'FastHook' }],
+          icon: '⚡'
+        },
+        {
+          id: 'node_bend',
+          name: 'HVM Rapid Audit',
+          shortName: 'FAST HVM',
+          type: 'bend_analyzer',
+          status: 'passed',
+          duration: '0.02s',
+          summary: 'Avaliação instantânea de regras arquiteturais',
+          detail: 'Execução direta em memória sem I/O de disco',
+          command: 'bend run-rs backend/src/guardian.bend --fast-mode',
+          runner: 'hvm-in-memory',
+          dependsOn: ['node_trigger'],
+          allowFailure: false,
+          timeoutMinutes: 3,
+          condition: 'on_success',
+          metrics: [{ label: 'Time', value: '0.02s' }],
+          icon: '🧬'
+        },
+        {
+          id: 'node_gate',
+          name: 'Instant Quality Feedback',
+          shortName: 'GATE',
+          type: 'quality_gate',
+          status: 'passed',
+          duration: '0.01s',
+          summary: 'Aprovação expressa de PR',
+          detail: 'Bloqueia se houver P0s e libera em caso de zero violações',
+          command: 'python3 scripts/culture_guard.py --fast',
+          runner: 'guardian-engine',
+          dependsOn: ['node_bend'],
+          allowFailure: false,
+          timeoutMinutes: 2,
+          condition: 'on_success',
+          metrics: [{ label: 'Status', value: 'PASS' }],
+          icon: '🛡️'
+        },
+        {
+          id: 'node_notify',
+          name: 'PR Inline Comment Bot',
+          shortName: 'NOTIFY',
+          type: 'notify',
+          status: 'passed',
+          duration: '0.01s',
+          summary: 'Comenta resumo diretamente no PR',
+          detail: 'Tabela de conformidade e sugestões de correção',
+          command: 'gh pr comment $PR_NUMBER --body-file=summary.md',
+          runner: 'github-actions',
+          dependsOn: ['node_gate'],
+          allowFailure: true,
+          timeoutMinutes: 2,
+          condition: 'always',
+          metrics: [{ label: 'Bot', value: 'Active' }],
+          icon: '📡'
+        }
+      ]
+    }
+  ];
+
+  readonly pipelineNodes = signal<PipelineNode[]>(
+    JSON.parse(JSON.stringify(this.pipelineBlueprints[0].nodes))
+  );
+
+  readonly selectedPipelineNode = computed<PipelineNode | undefined>(() => {
+    const id = this.selectedNodeId();
+    if (!id) return undefined;
+    return this.pipelineNodes().find(n => n.id === id);
+  });
 
   // Architecture Health Layer Explorer State
   readonly selectedLayerTierIndex = signal<number>(0);
@@ -687,6 +1124,178 @@ export class App {
         ]
       }
     ];
+  });
+
+  // Pipeline Flowchart Computed: Total Estimated Duration
+  readonly pipelineTotalDuration = computed<string>(() => {
+    let totalSec = 0;
+    this.pipelineNodes().forEach(n => {
+      const match = n.duration.match(/([0-9.]+)/);
+      if (match) totalSec += parseFloat(match[1]);
+    });
+    return `${totalSec.toFixed(2)}s`;
+  });
+
+  // Pipeline Flowchart Computed: Status Summary Count
+  readonly pipelineStatusSummary = computed(() => {
+    const nodes = this.pipelineNodes();
+    const passed = nodes.filter(n => n.status === 'passed').length;
+    const blocked = nodes.filter(n => n.status === 'blocked').length;
+    const running = nodes.filter(n => n.status === 'running').length;
+    const pending = nodes.filter(n => n.status === 'pending').length;
+    const skipped = nodes.filter(n => n.status === 'skipped').length;
+    const overallStatus: PipelineNodeStatus = blocked > 0 ? 'blocked' : (running > 0 ? 'running' : 'passed');
+    return { passed, blocked, running, pending, skipped, total: nodes.length, overallStatus };
+  });
+
+  // Generated Mermaid Diagram Code (Real-Time Synchronized)
+  readonly generatedMermaidCode = computed<string>(() => {
+    const nodes = this.pipelineNodes();
+    let code = 'flowchart LR\n';
+    code += '  %% Styling classes for pipeline status\n';
+    code += '  classDef passed fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#f8fafc;\n';
+    code += '  classDef blocked fill:#881337,stroke:#f43f5e,stroke-width:2px,color:#f8fafc;\n';
+    code += '  classDef running fill:#164e63,stroke:#06b6d4,stroke-width:2px,color:#f8fafc;\n';
+    code += '  classDef pending fill:#1e293b,stroke:#64748b,stroke-width:1px,color:#94a3b8;\n';
+    code += '  classDef skipped fill:#78350f,stroke:#f59e0b,stroke-width:1px,color:#f8fafc;\n\n';
+
+    nodes.forEach(n => {
+      const icon = n.icon || this.getNodeTypeIcon(n.type);
+      const shapeStart = n.type === 'quality_gate' ? '{"' : '["';
+      const shapeEnd = n.type === 'quality_gate' ? '}"' : '"]';
+      code += `  ${n.id}${shapeStart}${icon} ${n.name}${shapeEnd}:::${n.status}\n`;
+    });
+
+    code += '\n  %% Connections & Dependencies\n';
+    let hasConnections = false;
+    nodes.forEach(n => {
+      if (n.dependsOn && n.dependsOn.length > 0) {
+        n.dependsOn.forEach(parentId => {
+          if (nodes.some(x => x.id === parentId)) {
+            code += `  ${parentId} --> ${n.id}\n`;
+            hasConnections = true;
+          }
+        });
+      }
+    });
+
+    if (!hasConnections && nodes.length > 1) {
+      for (let i = 0; i < nodes.length - 1; i++) {
+        code += `  ${nodes[i].id} --> ${nodes[i + 1].id}\n`;
+      }
+    }
+
+    return code;
+  });
+
+  // Generated CI/CD Platform YAML (GitHub Actions, GitLab CI, Azure Pipelines, Bitbucket)
+  readonly generatedPipelineYaml = computed<string>(() => {
+    const platform = this.pipelineTargetPlatform();
+    const nodes = this.pipelineNodes();
+    const repo = this.inputRepo();
+    const branch = this.selectedBranch();
+
+    if (platform === 'github') {
+      let y = `# ==============================================================================\n`;
+      y += `# Bend DevOps Guardian - GitHub Actions Workflow\n`;
+      y += `# Repository: ${repo} | Target Branch: ${branch}\n`;
+      y += `# Generated automatically by Pipeline Flowchart Designer\n`;
+      y += `# ==============================================================================\n`;
+      y += `name: Bend DevOps Guardian Quality Gate\n\n`;
+      y += `on:\n`;
+      y += `  push:\n`;
+      y += `    branches: [ ${branch}, release/*, develop ]\n`;
+      y += `  pull_request:\n`;
+      y += `    branches: [ ${branch}, release/* ]\n\n`;
+      y += `permissions:\n`;
+      y += `  contents: read\n`;
+      y += `  pull-requests: write\n`;
+      y += `  security-events: write\n\n`;
+      y += `jobs:\n`;
+
+      nodes.forEach(n => {
+        const jobId = n.id.replace(/[^a-zA-Z0-9_]/g, '_');
+        y += `  ${jobId}:\n`;
+        y += `    name: "${n.name}"\n`;
+        y += `    runs-on: ${n.runner || 'ubuntu-latest'}\n`;
+        y += `    timeout-minutes: ${n.timeoutMinutes || 10}\n`;
+        if (n.allowFailure) {
+          y += `    continue-on-error: true\n`;
+        }
+        if (n.dependsOn && n.dependsOn.length > 0) {
+          const parentJobIds = n.dependsOn.map(p => p.replace(/[^a-zA-Z0-9_]/g, '_'));
+          y += `    needs: [ ${parentJobIds.join(', ')} ]\n`;
+        }
+        y += `    steps:\n`;
+        if (n.type === 'checkout') {
+          y += `      - name: Checkout repository\n`;
+          y += `        uses: actions/checkout@v4\n`;
+          y += `        with:\n`;
+          y += `          fetch-depth: 0\n`;
+        } else if (n.type === 'sarif_export') {
+          y += `      - name: Upload SARIF report\n`;
+          y += `        uses: github/codeql-action/upload-sarif@v3\n`;
+          y += `        with:\n`;
+          y += `          sarif_file: guardian-report.sarif\n`;
+        } else {
+          y += `      - name: Execute ${n.shortName}\n`;
+          y += `        run: |\n`;
+          y += `          ${n.command || 'echo "Step executed"'}\n`;
+        }
+        y += `\n`;
+      });
+      return y;
+    } else if (platform === 'gitlab') {
+      let y = `# ==============================================================================\n`;
+      y += `# Bend DevOps Guardian - GitLab CI/CD Configuration (.gitlab-ci.yml)\n`;
+      y += `# ==============================================================================\n`;
+      y += `stages:\n`;
+      const stageSet = Array.from(new Set(nodes.map(n => n.type)));
+      stageSet.forEach(st => {
+        y += `  - ${st}\n`;
+      });
+      y += `\n`;
+      nodes.forEach(n => {
+        y += `${n.id}:\n`;
+        y += `  stage: ${n.type}\n`;
+        y += `  image: ${n.runner.includes('hvm') ? 'bendlang/bend:latest' : 'ubuntu:22.04'}\n`;
+        if (n.allowFailure) y += `  allow_failure: true\n`;
+        if (n.dependsOn && n.dependsOn.length > 0) {
+          y += `  needs: [ ${n.dependsOn.join(', ')} ]\n`;
+        }
+        y += `  script:\n`;
+        y += `    - ${n.command || 'echo "Step executed"'}\n\n`;
+      });
+      return y;
+    } else if (platform === 'azure') {
+      let y = `# ==============================================================================\n`;
+      y += `# Bend DevOps Guardian - Azure Pipelines Configuration (azure-pipelines.yml)\n`;
+      y += `# ==============================================================================\n`;
+      y += `trigger:\n  - ${branch}\n\npool:\n  vmImage: 'ubuntu-latest'\n\nstages:\n`;
+      y += `  - stage: GuardianPipeline\n    displayName: 'Bend DevOps Guardian Quality Gate'\n    jobs:\n`;
+      nodes.forEach(n => {
+        y += `      - job: ${n.id.replace(/[^a-zA-Z0-9_]/g, '_')}\n`;
+        y += `        displayName: '${n.name}'\n`;
+        if (n.dependsOn && n.dependsOn.length > 0) {
+          y += `        dependsOn: [ ${n.dependsOn.map(p => p.replace(/[^a-zA-Z0-9_]/g, '_')).join(', ')} ]\n`;
+        }
+        y += `        steps:\n`;
+        y += `          - script: |\n              ${n.command || 'echo "Running"'}\n            displayName: '${n.shortName}'\n\n`;
+      });
+      return y;
+    } else {
+      let y = `# ==============================================================================\n`;
+      y += `# Bitbucket Pipelines Configuration (bitbucket-pipelines.yml)\n`;
+      y += `# ==============================================================================\n`;
+      y += `pipelines:\n  default:\n`;
+      nodes.forEach(n => {
+        y += `    - step:\n`;
+        y += `        name: ${n.name}\n`;
+        y += `        script:\n`;
+        y += `          - ${n.command || 'echo "Running"'}\n`;
+      });
+      return y;
+    }
   });
 
   // Filtered Rules List
@@ -1938,6 +2547,387 @@ export class App {
 
   selectPipelineStage(stageId: 'code' | 'rules' | 'scanner' | 'gate' | 'cicd'): void {
     this.selectedPipelineStage.set(stageId);
+    const nodeMap: Record<string, string> = {
+      code: 'node_checkout',
+      rules: 'node_manifest',
+      scanner: 'node_bend',
+      gate: 'node_gate',
+      cicd: 'node_sarif'
+    };
+    if (nodeMap[stageId]) {
+      this.selectedNodeId.set(nodeMap[stageId]);
+    }
+  }
+
+  selectPipelineNode(nodeId: string): void {
+    this.selectedNodeId.set(nodeId);
+    const node = this.pipelineNodes().find(n => n.id === nodeId);
+    if (node) {
+      this.nodeForm.set({ ...node, dependsOn: [...node.dependsOn], metrics: [...node.metrics] });
+    }
+  }
+
+  openAddNodeModal(parentId?: string): void {
+    const newId = `node_${Date.now().toString(36)}`;
+    const depends = parentId ? [parentId] : (this.selectedNodeId() ? [this.selectedNodeId()!] : []);
+    this.nodeForm.set({
+      id: newId,
+      name: 'Nova Etapa do Pipeline',
+      shortName: 'CUSTOM',
+      type: 'custom',
+      status: 'pending',
+      duration: '0.02s',
+      summary: 'Execução de tarefa customizada',
+      detail: 'Passo adicionado pelo usuário',
+      command: 'echo "Executando passo customizado"',
+      runner: 'ubuntu-latest',
+      dependsOn: depends,
+      allowFailure: false,
+      timeoutMinutes: 10,
+      condition: 'on_success',
+      metrics: [{ label: 'Ambiente', value: 'ubuntu-latest' }],
+      icon: '⚡'
+    });
+    this.isAddingNode.set(true);
+    this.isEditingNode.set(false);
+  }
+
+  openEditNodeModal(node: PipelineNode): void {
+    this.selectedNodeId.set(node.id);
+    this.nodeForm.set({ ...node, dependsOn: [...node.dependsOn], metrics: [...node.metrics] });
+    this.isEditingNode.set(true);
+    this.isAddingNode.set(false);
+  }
+
+  closeNodeModal(): void {
+    this.isAddingNode.set(false);
+    this.isEditingNode.set(false);
+  }
+
+  toggleNodeDependency(depId: string): void {
+    const current = this.nodeForm();
+    const currentDeps = current.dependsOn || [];
+    let updatedDeps: string[];
+    if (currentDeps.includes(depId)) {
+      updatedDeps = currentDeps.filter(id => id !== depId);
+    } else {
+      updatedDeps = [...currentDeps, depId];
+    }
+    this.nodeForm.set({ ...current, dependsOn: updatedDeps });
+  }
+
+  saveNodeForm(): void {
+    const form = this.nodeForm();
+    if (!form.name.trim()) return;
+
+    const icon = form.icon || this.getNodeTypeIcon(form.type);
+    const nodeToSave: PipelineNode = {
+      ...form,
+      icon,
+      shortName: form.shortName || form.name.substring(0, 8).toUpperCase()
+    };
+
+    if (this.isAddingNode()) {
+      this.pipelineNodes.update(nodes => [...nodes, nodeToSave]);
+      this.selectedNodeId.set(nodeToSave.id);
+      this.pipelineToastMessage.set(`Etapa "${nodeToSave.name}" adicionada ao fluxo com sucesso!`);
+    } else {
+      this.pipelineNodes.update(nodes =>
+        nodes.map(n => (n.id === nodeToSave.id ? nodeToSave : n))
+      );
+      this.pipelineToastMessage.set(`Etapa "${nodeToSave.name}" atualizada com sucesso!`);
+    }
+
+    this.closeNodeModal();
+    setTimeout(() => this.pipelineToastMessage.set(null), 4000);
+  }
+
+  deletePipelineNode(nodeId: string): void {
+    const node = this.pipelineNodes().find(n => n.id === nodeId);
+    const nodeName = node?.name || nodeId;
+    
+    this.pipelineNodes.update(nodes => {
+      return nodes
+        .filter(n => n.id !== nodeId)
+        .map(n => ({
+          ...n,
+          dependsOn: n.dependsOn.filter(d => d !== nodeId)
+        }));
+    });
+
+    if (this.selectedNodeId() === nodeId) {
+      const remaining = this.pipelineNodes();
+      this.selectedNodeId.set(remaining.length > 0 ? remaining[0].id : null);
+    }
+
+    this.pipelineToastMessage.set(`Etapa "${nodeName}" removida do pipeline.`);
+    setTimeout(() => this.pipelineToastMessage.set(null), 4000);
+  }
+
+  duplicatePipelineNode(nodeId: string): void {
+    const original = this.pipelineNodes().find(n => n.id === nodeId);
+    if (!original) return;
+
+    const newId = `${original.id}_copy_${Date.now().toString(36).substring(4)}`;
+    const cloned: PipelineNode = {
+      ...original,
+      id: newId,
+      name: `${original.name} (Cópia)`,
+      shortName: `${original.shortName}_CP`,
+      status: 'pending',
+      dependsOn: [...original.dependsOn],
+      metrics: [...original.metrics]
+    };
+
+    this.pipelineNodes.update(nodes => {
+      const idx = nodes.findIndex(n => n.id === nodeId);
+      const updated = [...nodes];
+      updated.splice(idx + 1, 0, cloned);
+      return updated;
+    });
+
+    this.selectedNodeId.set(newId);
+    this.pipelineToastMessage.set(`Etapa duplicada como "${cloned.name}".`);
+    setTimeout(() => this.pipelineToastMessage.set(null), 4000);
+  }
+
+  movePipelineNode(nodeId: string, direction: 'up' | 'down' | 'left' | 'right'): void {
+    this.pipelineNodes.update(nodes => {
+      const idx = nodes.findIndex(n => n.id === nodeId);
+      if (idx === -1) return nodes;
+
+      const targetIdx = (direction === 'up' || direction === 'left') ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= nodes.length) return nodes;
+
+      const updated = [...nodes];
+      const temp = updated[idx];
+      updated[idx] = updated[targetIdx];
+      updated[targetIdx] = temp;
+      return updated;
+    });
+  }
+
+  toggleNodeStatus(nodeId: string): void {
+    this.pipelineNodes.update(nodes =>
+      nodes.map(n => {
+        if (n.id === nodeId) {
+          const nextStatus: PipelineNodeStatus = n.status === 'passed' ? 'blocked' : (n.status === 'blocked' ? 'running' : 'passed');
+          return { ...n, status: nextStatus };
+        }
+        return n;
+      })
+    );
+  }
+
+  toggleNodeAllowFailure(nodeId: string): void {
+    this.pipelineNodes.update(nodes =>
+      nodes.map(n => (n.id === nodeId ? { ...n, allowFailure: !n.allowFailure } : n))
+    );
+  }
+
+  applyPipelineBlueprint(blueprintId: string): void {
+    const bp = this.pipelineBlueprints.find(b => b.id === blueprintId);
+    if (!bp) return;
+
+    this.selectedPipelineBlueprint.set(blueprintId);
+    this.pipelineTargetPlatform.set(bp.platform);
+    this.pipelineNodes.set(JSON.parse(JSON.stringify(bp.nodes)));
+    if (bp.nodes.length > 0) {
+      this.selectedNodeId.set(bp.nodes[0].id);
+    }
+    this.pipelineToastMessage.set(`Template "${bp.name}" carregado no editor de fluxo!`);
+    setTimeout(() => this.pipelineToastMessage.set(null), 4000);
+  }
+
+  setPipelineSubTab(tab: 'flowchart' | 'editor' | 'mermaid' | 'yaml' | 'simulator'): void {
+    this.pipelineSubTab.set(tab);
+  }
+
+  setPipelineTargetPlatform(platform: 'github' | 'gitlab' | 'azure' | 'bitbucket'): void {
+    this.pipelineTargetPlatform.set(platform);
+  }
+
+  setPipelineZoom(zoom: number): void {
+    this.pipelineZoom.set(zoom);
+  }
+
+  zoomInPipeline(): void {
+    this.pipelineZoom.update(z => Math.min(150, z + 15));
+  }
+
+  zoomOutPipeline(): void {
+    this.pipelineZoom.update(z => Math.max(60, z - 15));
+  }
+
+  resetPipelineZoom(): void {
+    this.pipelineZoom.set(100);
+  }
+
+  async runPipelineSimulation(delayMs: number = 300): Promise<void> {
+    if (this.isPipelineSimulating()) return;
+
+    this.isPipelineSimulating.set(true);
+    this.pipelineSimulationProgress.set(0);
+    this.pipelineSimulationLog.set(['[00:00.00] 🚀 Iniciando simulação de execução do pipeline...']);
+    
+    // Set all nodes to pending
+    this.pipelineNodes.update(nodes => nodes.map(n => ({ ...n, status: 'pending' })));
+
+    const nodes = this.pipelineNodes();
+    const total = nodes.length;
+
+    for (let i = 0; i < total; i++) {
+      const node = nodes[i];
+      this.pipelineSimulationActiveStep.set(node.name);
+      
+      this.pipelineNodes.update(curr =>
+        curr.map(n => (n.id === node.id ? { ...n, status: 'running' } : n))
+      );
+
+      const progress = Math.round(((i + 0.5) / total) * 100);
+      this.pipelineSimulationProgress.set(progress);
+      this.pipelineSimulationLog.update(logs => [
+        ...logs,
+        `[00:0${i + 1}.20] ⏳ Executando etapa [${node.shortName}]: ${node.name} no runner (${node.runner})...`,
+        `[00:0${i + 1}.35] $ ${node.command}`
+      ]);
+
+      if (delayMs > 0) {
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+
+      const isBlocked = node.type === 'quality_gate' && this.currentReport().p0Count > 0 && !node.allowFailure;
+      const finalStatus: PipelineNodeStatus = isBlocked ? 'blocked' : 'passed';
+
+      this.pipelineNodes.update(curr =>
+        curr.map(n => (n.id === node.id ? { ...n, status: finalStatus } : n))
+      );
+
+      this.pipelineSimulationLog.update(logs => [
+        ...logs,
+        `[00:0${i + 1}.80] ${finalStatus === 'passed' ? '✅' : '❌'} Etapa [${node.shortName}] finalizada com status: ${finalStatus.toUpperCase()} (${node.duration})`
+      ]);
+
+      if (isBlocked) {
+        this.pipelineSimulationLog.update(logs => [
+          ...logs,
+          `[00:0${i + 1}.90] 🚫 Pipeline interrompido devido a bloqueio arquitetural no Quality Gate!`
+        ]);
+        break;
+      }
+    }
+
+    this.pipelineSimulationProgress.set(100);
+    this.pipelineSimulationActiveStep.set(null);
+    this.isPipelineSimulating.set(false);
+    this.pipelineSimulationLog.update(logs => [
+      ...logs,
+      `[00:09.99] 🎉 Simulação concluída com sucesso! Telemetria gerada.`
+    ]);
+  }
+
+  resetPipelineSimulation(): void {
+    const bp = this.pipelineBlueprints.find(b => b.id === this.selectedPipelineBlueprint()) || this.pipelineBlueprints[0];
+    this.pipelineNodes.set(JSON.parse(JSON.stringify(bp.nodes)));
+    this.pipelineSimulationProgress.set(0);
+    this.pipelineSimulationLog.set([]);
+    this.pipelineSimulationActiveStep.set(null);
+    this.isPipelineSimulating.set(false);
+    this.pipelineToastMessage.set('Status de execução do pipeline restaurado.');
+    setTimeout(() => this.pipelineToastMessage.set(null), 3000);
+  }
+
+  copyMermaidToClipboard(): void {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(this.generatedMermaidCode());
+      this.pipelineToastMessage.set('Código do diagrama Mermaid copiado para a área de transferência!');
+      setTimeout(() => this.pipelineToastMessage.set(null), 3000);
+    }
+  }
+
+  copyYamlToClipboard(): void {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(this.generatedPipelineYaml());
+      this.pipelineToastMessage.set(`Configuração YAML (${this.pipelineTargetPlatform().toUpperCase()}) copiada com sucesso!`);
+      setTimeout(() => this.pipelineToastMessage.set(null), 3000);
+    }
+  }
+
+  downloadPipelineYaml(): void {
+    const yaml = this.generatedPipelineYaml();
+    const platform = this.pipelineTargetPlatform();
+    const filename = platform === 'github' ? 'guardian.yml' : (platform === 'gitlab' ? '.gitlab-ci.yml' : 'azure-pipelines.yml');
+    const blob = new Blob([yaml], { type: 'text/yaml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  getNodeTypeIcon(type: PipelineNodeType): string {
+    const icons: Record<PipelineNodeType, string> = {
+      trigger: '⚡',
+      checkout: '📥',
+      lint: '🧹',
+      security: '🔒',
+      bend_analyzer: '🧬',
+      test: '🧪',
+      quality_gate: '🛡️',
+      build: '📦',
+      deploy: '🚀',
+      sarif_export: '📊',
+      notify: '📡',
+      custom: '⚙️'
+    };
+    return icons[type] || '⚙️';
+  }
+
+  getNodeTypeColor(type: PipelineNodeType): { bg: string; text: string; border: string; badge: string } {
+    const colors: Record<PipelineNodeType, { bg: string; text: string; border: string; badge: string }> = {
+      trigger: { bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/30', badge: 'bg-amber-500/20 text-amber-300' },
+      checkout: { bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/30', badge: 'bg-blue-500/20 text-blue-300' },
+      lint: { bg: 'bg-slate-500/10', text: 'text-slate-300', border: 'border-slate-500/30', badge: 'bg-slate-500/20 text-slate-300' },
+      security: { bg: 'bg-rose-500/10', text: 'text-rose-400', border: 'border-rose-500/30', badge: 'bg-rose-500/20 text-rose-300' },
+      bend_analyzer: { bg: 'bg-purple-500/15', text: 'text-purple-300', border: 'border-purple-500/40 shadow-[0_0_15px_rgba(168,85,247,0.15)]', badge: 'bg-purple-500/20 text-purple-300' },
+      test: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', border: 'border-emerald-500/30', badge: 'bg-emerald-500/20 text-emerald-300' },
+      quality_gate: { bg: 'bg-cyan-500/15', text: 'text-cyan-300', border: 'border-cyan-500/50 shadow-[0_0_20px_rgba(6,182,212,0.15)]', badge: 'bg-cyan-500/20 text-cyan-300' },
+      build: { bg: 'bg-indigo-500/10', text: 'text-indigo-400', border: 'border-indigo-500/30', badge: 'bg-indigo-500/20 text-indigo-300' },
+      deploy: { bg: 'bg-emerald-500/15', text: 'text-emerald-300', border: 'border-emerald-500/40', badge: 'bg-emerald-500/20 text-emerald-300' },
+      sarif_export: { bg: 'bg-cyan-500/10', text: 'text-cyan-400', border: 'border-cyan-500/30', badge: 'bg-cyan-500/20 text-cyan-300' },
+      notify: { bg: 'bg-purple-500/10', text: 'text-purple-400', border: 'border-purple-500/30', badge: 'bg-purple-500/20 text-purple-300' },
+      custom: { bg: 'bg-slate-500/10', text: 'text-slate-400', border: 'border-slate-500/30', badge: 'bg-slate-500/20 text-slate-300' }
+    };
+    return colors[type] || colors.custom;
+  }
+
+  getNodeStatusBadgeClass(status: PipelineNodeStatus): string {
+    switch (status) {
+      case 'passed':
+        return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+      case 'blocked':
+        return 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+      case 'running':
+        return 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40 animate-pulse';
+      case 'skipped':
+        return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+      case 'pending':
+      default:
+        return 'bg-slate-800 text-slate-400 border-slate-700';
+    }
+  }
+
+  getNodeDependsOnNames(node: PipelineNode): string[] {
+    const nodes = this.pipelineNodes();
+    return (node.dependsOn || []).map(id => {
+      const found = nodes.find(n => n.id === id);
+      return found ? found.shortName : id;
+    });
+  }
+
+  closePipelineToast(): void {
+    this.pipelineToastMessage.set(null);
   }
 
   selectLayerTier(index: number): void {

@@ -437,3 +437,50 @@ export interface CodeDiff {
   explanations: DiffExplanation[];
 }
 
+export type PipelineNodeType = 
+  | 'trigger'
+  | 'checkout'
+  | 'lint'
+  | 'security'
+  | 'bend_analyzer'
+  | 'test'
+  | 'quality_gate'
+  | 'build'
+  | 'deploy'
+  | 'sarif_export'
+  | 'notify'
+  | 'custom';
+
+export type PipelineNodeStatus = 'passed' | 'running' | 'blocked' | 'pending' | 'skipped';
+
+export interface PipelineNode {
+  id: string;
+  name: string;
+  shortName: string;
+  type: PipelineNodeType;
+  status: PipelineNodeStatus;
+  duration: string;
+  summary: string;
+  detail: string;
+  command: string;
+  runner: string;
+  dependsOn: string[];
+  allowFailure: boolean;
+  timeoutMinutes: number;
+  condition: 'on_success' | 'always' | 'on_failure';
+  metrics: { label: string; value: string }[];
+  logs?: string[];
+  environment?: string;
+  icon?: string;
+}
+
+export interface PipelineBlueprint {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  platform: 'github' | 'gitlab' | 'azure' | 'bitbucket';
+  nodes: PipelineNode[];
+}
+
+

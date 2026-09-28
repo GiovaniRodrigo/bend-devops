@@ -3383,15 +3383,601 @@
         <!-- VIEW 8: PIPELINES, ARCHITECTURE & SETTINGS (Preserved Views)          -->
         <!-- ===================================================================== -->
         @if (activeTab() === 'pipelines') {
-          <div class="space-y-5">
-            <h2 class="text-2xl font-bold text-white">CI/CD Pipeline Stages</h2>
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
-              <div *ngFor="let stage of pipelineStages()" (click)="selectPipelineStage(stage.id)" [class]="'card-guardian p-4 cursor-pointer ' + (selectedPipelineStage() === stage.id ? 'border-cyan-500/50 bg-cyan-950/10' : '')">
-                <span [class]="'badge-tech text-[10px] ' + (stage.status === 'passed' ? 'badge-pass' : 'badge-fail')">{{ stage.shortName }}</span>
-                <p class="text-xs font-bold text-slate-200 mt-2">{{ stage.name }}</p>
-                <p class="text-[11px] text-slate-400 mt-1">{{ stage.duration }}</p>
+          <div class="space-y-6 font-mono" data-testid="pipelines-view">
+            
+            <!-- 1. Pipeline Header & Master Controls -->
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+              <div class="space-y-1">
+                <div class="flex items-center gap-3 flex-wrap">
+                  <h2 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                    <span>⚡</span>
+                    <span>CI/CD Pipeline Flowchart &amp; DAG Designer</span>
+                  </h2>
+                  <span [class]="'badge-tech text-xs font-mono font-bold ' + getNodeStatusBadgeClass(pipelineStatusSummary().overallStatus)">
+                    ● {{ pipelineStatusSummary().overallStatus.toUpperCase() }}
+                  </span>
+                  <span class="badge-tech text-xs badge-cyan font-mono">
+                    {{ pipelineNodes().length }} Etapas
+                  </span>
+                  <span class="badge-tech text-xs badge-hvm font-mono">
+                    ⏱ {{ pipelineTotalDuration() }}
+                  </span>
+                </div>
+                <p class="text-xs text-slate-400 font-mono">
+                  Renderizador e editor visual interativo de fluxo de integração e entrega contínua do Bend DevOps Guardian.
+                </p>
+              </div>
+
+              <!-- Top Action Controls -->
+              <div class="flex items-center gap-2.5 flex-wrap shrink-0">
+                <!-- Blueprints / Templates Dropdown -->
+                <div class="flex items-center gap-1.5 bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1 text-xs">
+                  <span class="text-slate-400">Template:</span>
+                  <select
+                    [ngModel]="selectedPipelineBlueprint()"
+                    (ngModelChange)="applyPipelineBlueprint($event)"
+                    class="bg-transparent text-cyan-300 font-bold focus:outline-none cursor-pointer"
+                    title="Selecione um blueprint pré-configurado de pipeline"
+                  >
+                    <option *ngFor="let bp of pipelineBlueprints" [value]="bp.id" class="bg-[#0B0F19] text-white">
+                      {{ bp.name }}
+                    </option>
+                  </select>
+                </div>
+
+                <!-- Simulation Trigger -->
+                <button
+                  type="button"
+                  (click)="runPipelineSimulation()"
+                  [disabled]="isPipelineSimulating()"
+                  class="btn-guardian btn-guardian-primary h-9 px-4 text-xs font-bold flex items-center gap-2"
+                  data-testid="simulate-pipeline-btn"
+                  title="Executar simulação interativa da pipeline com telemetria"
+                >
+                  <span *ngIf="isPipelineSimulating()" class="animate-spin">⏳</span>
+                  <span *ngIf="!isPipelineSimulating()">▶</span>
+                  <span>{{ isPipelineSimulating() ? 'Simulando Execução...' : 'Simular Pipeline' }}</span>
+                </button>
+
+                <!-- Add Step Button -->
+                <button
+                  type="button"
+                  (click)="openAddNodeModal()"
+                  class="btn-guardian btn-guardian-secondary h-9 px-3.5 text-xs font-bold flex items-center gap-1.5 text-cyan-300 border-cyan-500/40 hover:bg-cyan-500/10"
+                  data-testid="add-pipeline-stage-btn"
+                  title="Adicionar nova etapa ou ferramenta ao pipeline"
+                >
+                  <span>➕</span>
+                  <span>Nova Etapa</span>
+                </button>
+
+                <!-- Reset Flowchart Button -->
+                <button
+                  type="button"
+                  (click)="resetPipelineSimulation()"
+                  class="btn-guardian btn-guardian-secondary h-9 px-3 text-xs text-slate-400 hover:text-white"
+                  title="Restaurar fluxo padrão da pipeline"
+                >
+                  <span>🔄</span>
+                </button>
               </div>
             </div>
+
+            <!-- 2. Sub-Navigation Tabs (Flowchart, Mermaid, YAML, Simulator) -->
+            <div class="flex items-center justify-between gap-4 border-b border-slate-800/80 pb-1 overflow-x-auto">
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  (click)="setPipelineSubTab('flowchart')"
+                  [class]="'px-3.5 py-2 text-xs font-semibold rounded-t-lg transition-all flex items-center gap-2 ' + (pipelineSubTab() === 'flowchart' ? 'bg-cyan-500/15 text-cyan-300 border-b-2 border-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40')"
+                  data-testid="subtab-flowchart"
+                >
+                  <span>📊</span>
+                  <span>Fluxograma Visual &amp; DAG</span>
+                </button>
+                <button
+                  type="button"
+                  (click)="setPipelineSubTab('mermaid')"
+                  [class]="'px-3.5 py-2 text-xs font-semibold rounded-t-lg transition-all flex items-center gap-2 ' + (pipelineSubTab() === 'mermaid' ? 'bg-cyan-500/15 text-cyan-300 border-b-2 border-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40')"
+                  data-testid="subtab-mermaid"
+                >
+                  <span>🧬</span>
+                  <span>Diagrama Mermaid</span>
+                </button>
+                <button
+                  type="button"
+                  (click)="setPipelineSubTab('yaml')"
+                  [class]="'px-3.5 py-2 text-xs font-semibold rounded-t-lg transition-all flex items-center gap-2 ' + (pipelineSubTab() === 'yaml' ? 'bg-cyan-500/15 text-cyan-300 border-b-2 border-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40')"
+                  data-testid="subtab-yaml"
+                >
+                  <span>📄</span>
+                  <span>Gerador de CI/CD YAML</span>
+                </button>
+                <button
+                  type="button"
+                  (click)="setPipelineSubTab('simulator')"
+                  [class]="'px-3.5 py-2 text-xs font-semibold rounded-t-lg transition-all flex items-center gap-2 ' + (pipelineSubTab() === 'simulator' ? 'bg-cyan-500/15 text-cyan-300 border-b-2 border-cyan-400 font-bold' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40')"
+                  data-testid="subtab-simulator"
+                >
+                  <span>⚡</span>
+                  <span>Console &amp; Telemetria</span>
+                  <span *ngIf="isPipelineSimulating()" class="h-2 w-2 rounded-full bg-cyan-400 animate-ping"></span>
+                </button>
+              </div>
+
+              <!-- Quick Status Summary KPI Badges -->
+              <div class="hidden sm:flex items-center gap-2 text-[11px] font-mono">
+                <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  ✓ {{ pipelineStatusSummary().passed }} Passed
+                </span>
+                <span *ngIf="pipelineStatusSummary().blocked > 0" class="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                  ✕ {{ pipelineStatusSummary().blocked }} Blocked
+                </span>
+                <span *ngIf="pipelineStatusSummary().running > 0" class="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 animate-pulse">
+                  ⏳ {{ pipelineStatusSummary().running }} Running
+                </span>
+              </div>
+            </div>
+
+            <!-- ================================================================= -->
+            <!-- SUB-VIEW 1: VISUAL FLOWCHART & DAG CANVAS                         -->
+            <!-- ================================================================= -->
+            @if (pipelineSubTab() === 'flowchart') {
+              <div class="space-y-4">
+                
+                <!-- Flowchart Controls Bar -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-[#0B0F19] border border-slate-800">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-400">Zoom:</span>
+                    <button type="button" (click)="zoomOutPipeline()" class="btn-guardian btn-guardian-secondary h-7 w-7 text-xs" title="Reduzir Zoom">-</button>
+                    <span class="text-xs font-bold text-white px-1.5">{{ pipelineZoom() }}%</span>
+                    <button type="button" (click)="zoomInPipeline()" class="btn-guardian btn-guardian-secondary h-7 w-7 text-xs" title="Aumentar Zoom">+</button>
+                    <button type="button" (click)="resetPipelineZoom()" class="btn-guardian btn-guardian-secondary h-7 px-2 text-[10px] text-slate-400" title="Resetar Zoom">100%</button>
+                  </div>
+
+                  <div class="flex items-center gap-3 text-xs text-slate-400">
+                    <span class="flex items-center gap-1.5">
+                      <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                      <span>Sucesso</span>
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                      <span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                      <span>Bloqueado</span>
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                      <span class="inline-block w-2.5 h-2.5 rounded-full bg-purple-500"></span>
+                      <span>HVM Parallel</span>
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                      <span class="inline-block w-2.5 h-2.5 rounded-full bg-cyan-500"></span>
+                      <span>Quality Gate</span>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Interactive Flowchart DAG Diagram Canvas -->
+                <div class="relative bg-[#080B12] bg-tech-grid border border-slate-800/90 rounded-2xl p-6 overflow-x-auto min-h-[420px] shadow-2xl transition-all">
+                  
+                  <!-- Flowchart Nodes Sequence Container -->
+                  <div
+                    class="flex items-stretch gap-6 transition-transform duration-200 min-w-max py-4"
+                    [style.transform]="'scale(' + (pipelineZoom() / 100) + ')'"
+                    [style.transformOrigin]="'top left'"
+                  >
+                    @for (node of pipelineNodes(); track node.id; let idx = $index; let last = $last) {
+                      <div class="flex items-center gap-6">
+                        
+                        <!-- Flowchart Node Card -->
+                        <div
+                          (click)="selectPipelineNode(node.id)"
+                          [class]="'relative w-72 rounded-xl border p-4 transition-all cursor-pointer flex flex-col justify-between ' + 
+                            (selectedNodeId() === node.id 
+                              ? 'border-cyan-400 shadow-[0_0_25px_rgba(6,182,212,0.25)] bg-[#111722] ring-1 ring-cyan-400/50' 
+                              : 'border-slate-800 bg-[#0B0F19]/90 hover:border-slate-700 hover:bg-[#111722]/80') + ' ' +
+                            (node.type === 'quality_gate' ? 'ring-1 ring-cyan-500/30' : '') + ' ' +
+                            (node.type === 'bend_analyzer' ? 'ring-1 ring-purple-500/30' : '')"
+                          [attr.data-testid]="'pipeline-node-' + node.id"
+                        >
+                          
+                          <!-- Top Node Badge & Type Header -->
+                          <div class="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-800/80">
+                            <div class="flex items-center gap-2 min-w-0">
+                              <span class="text-base">{{ node.icon || getNodeTypeIcon(node.type) }}</span>
+                              <span [class]="'text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider font-mono ' + getNodeTypeColor(node.type).badge">
+                                {{ node.shortName }}
+                              </span>
+                            </div>
+
+                            <!-- Status Badge -->
+                            <div class="flex items-center gap-1.5 shrink-0">
+                              <span [class]="'badge-tech text-[10px] font-mono ' + getNodeStatusBadgeClass(node.status)">
+                                <span *ngIf="node.status === 'running'" class="animate-spin text-xs">⏳</span>
+                                <span *ngIf="node.status === 'passed'">✓</span>
+                                <span *ngIf="node.status === 'blocked'">✕</span>
+                                <span>{{ node.status.toUpperCase() }}</span>
+                              </span>
+                            </div>
+                          </div>
+
+                          <!-- Node Body Content -->
+                          <div class="py-3 space-y-2">
+                            <h4 class="text-xs font-bold text-white font-mono leading-snug line-clamp-2">
+                              {{ node.name }}
+                            </h4>
+                            <p class="text-[11px] text-slate-400 line-clamp-2 leading-relaxed">
+                              {{ node.summary }}
+                            </p>
+
+                            <!-- Command preview pill -->
+                            <div class="p-1.5 rounded bg-[#080B12] border border-slate-800/80 text-[10px] text-cyan-300 font-mono truncate" title="{{ node.command }}">
+                              $ {{ node.command }}
+                            </div>
+
+                            <!-- Dependencies list -->
+                            <div class="text-[10px] text-slate-500 font-mono flex items-center gap-1 truncate">
+                              <span class="text-slate-400 font-semibold">Dep:</span>
+                              <span class="text-slate-300 truncate">
+                                {{ getNodeDependsOnNames(node).join(', ') || 'Nenhuma (Trigger)' }}
+                              </span>
+                            </div>
+                          </div>
+
+                          <!-- Node Card Footer & Action Toolbar -->
+                          <div class="pt-2.5 border-t border-slate-800/80 flex items-center justify-between gap-2 text-[10px] font-mono">
+                            <div class="flex items-center gap-1.5 text-slate-400">
+                              <span>⏱ {{ node.duration }}</span>
+                              <span *ngIf="node.allowFailure" class="px-1 rounded bg-amber-500/20 text-amber-300 text-[9px]">AllowFail</span>
+                            </div>
+
+                            <!-- Quick Action Buttons -->
+                            <div class="flex items-center gap-1 shrink-0" (click)="$event.stopPropagation()">
+                              <!-- Reorder Left -->
+                              <button
+                                type="button"
+                                *ngIf="idx > 0"
+                                (click)="movePipelineNode(node.id, 'left')"
+                                class="h-6 w-6 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 flex items-center justify-center text-[10px]"
+                                title="Mover etapa para a esquerda"
+                              >
+                                ◀
+                              </button>
+                              <!-- Reorder Right -->
+                              <button
+                                type="button"
+                                *ngIf="!last"
+                                (click)="movePipelineNode(node.id, 'right')"
+                                class="h-6 w-6 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 flex items-center justify-center text-[10px]"
+                                title="Mover etapa para a direita"
+                              >
+                                ▶
+                              </button>
+                              <!-- Edit Button -->
+                              <button
+                                type="button"
+                                (click)="openEditNodeModal(node)"
+                                class="h-6 px-1.5 rounded bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center justify-center text-[10px]"
+                                title="Editar configurações da etapa"
+                                [attr.data-testid]="'edit-node-btn-' + node.id"
+                              >
+                                ✏️
+                              </button>
+                              <!-- Duplicate Button -->
+                              <button
+                                type="button"
+                                (click)="duplicatePipelineNode(node.id)"
+                                class="h-6 px-1.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 flex items-center justify-center text-[10px]"
+                                title="Duplicar etapa"
+                              >
+                                📑
+                              </button>
+                              <!-- Delete Button -->
+                              <button
+                                type="button"
+                                (click)="deletePipelineNode(node.id)"
+                                class="h-6 px-1.5 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center justify-center text-[10px]"
+                                title="Excluir etapa"
+                                [attr.data-testid]="'delete-node-btn-' + node.id"
+                              >
+                                🗑️
+                              </button>
+                            </div>
+                          </div>
+
+                        </div>
+
+                        <!-- Connector Arrow between nodes -->
+                        @if (!last) {
+                          <div class="flex items-center justify-center text-slate-600 shrink-0">
+                            <div class="flex items-center">
+                              <div class="h-0.5 w-8 bg-gradient-to-r from-slate-700 to-cyan-500/60"></div>
+                              <div class="text-cyan-400 font-bold -ml-1 text-sm">&rarr;</div>
+                            </div>
+                          </div>
+                        }
+
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- 3. Selected Node Inspector & Property Editor Drawer -->
+                @if (selectedPipelineNode(); as node) {
+                  <div class="card-guardian p-5 border-cyan-500/30 bg-[#0B0F19] space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                      <div class="flex items-center gap-3">
+                        <span class="text-2xl">{{ node.icon || getNodeTypeIcon(node.type) }}</span>
+                        <div>
+                          <div class="flex items-center gap-2">
+                            <h3 class="text-sm font-bold text-white font-mono">{{ node.name }}</h3>
+                            <span [class]="'text-[10px] font-bold px-2 py-0.5 rounded font-mono ' + getNodeTypeColor(node.type).badge">
+                              {{ node.type.toUpperCase() }}
+                            </span>
+                          </div>
+                          <p class="text-xs text-slate-400 mt-0.5 font-mono">{{ node.detail }}</p>
+                        </div>
+                      </div>
+
+                      <div class="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          (click)="toggleNodeStatus(node.id)"
+                          [class]="'btn-guardian text-xs h-8 px-3 ' + (node.status === 'passed' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30')"
+                          title="Alternar status de simulação desta etapa"
+                        >
+                          {{ node.status === 'passed' ? 'Simular Bloqueio (✕)' : 'Simular Sucesso (✓)' }}
+                        </button>
+                        <button
+                          type="button"
+                          (click)="openEditNodeModal(node)"
+                          class="btn-guardian btn-guardian-primary text-xs h-8 px-3.5"
+                          data-testid="edit-selected-node-btn"
+                        >
+                          ✏️ Editar Etapa
+                        </button>
+                        <button
+                          type="button"
+                          (click)="openAddNodeModal(node.id)"
+                          class="btn-guardian btn-guardian-secondary text-xs h-8 px-3"
+                        >
+                          ➕ Passo Seguinte
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Node Specifications Grid -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#080B12] p-3.5 rounded-lg border border-slate-800/80 text-xs font-mono">
+                      <div>
+                        <span class="text-slate-500 text-[10px] block">Runner / Ambiente:</span>
+                        <strong class="text-cyan-300">{{ node.runner }}</strong>
+                      </div>
+                      <div>
+                        <span class="text-slate-500 text-[10px] block">Duração Estimada:</span>
+                        <strong class="text-slate-200">{{ node.duration }}</strong>
+                      </div>
+                      <div>
+                        <span class="text-slate-500 text-[10px] block">Timeout Máximo:</span>
+                        <strong class="text-slate-200">{{ node.timeoutMinutes }} min</strong>
+                      </div>
+                      <div>
+                        <span class="text-slate-500 text-[10px] block">Allow Failure:</span>
+                        <strong [class]="node.allowFailure ? 'text-amber-400' : 'text-slate-400'">
+                          {{ node.allowFailure ? 'Sim (Opcional)' : 'Não (Obrigatório)' }}
+                        </strong>
+                      </div>
+                    </div>
+
+                    <!-- Command Execution Box -->
+                    <div class="space-y-1 text-xs font-mono">
+                      <span class="text-slate-400 font-bold block text-[11px] uppercase tracking-wider">Comando / Script Executado:</span>
+                      <pre class="p-3 rounded-lg bg-[#080B12] border border-slate-800 text-[11px] text-cyan-300 overflow-x-auto">{{ node.command }}</pre>
+                    </div>
+
+                    <!-- Metrics -->
+                    @if (node.metrics && node.metrics.length > 0) {
+                      <div class="flex flex-wrap items-center gap-3 pt-2 text-xs font-mono text-slate-400">
+                        <span class="text-slate-500 text-[11px]">Métricas:</span>
+                        @for (m of node.metrics; track m.label) {
+                          <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 text-[11px]">
+                            {{ m.label }}: <strong class="text-cyan-300">{{ m.value }}</strong>
+                          </span>
+                        }
+                      </div>
+                    }
+
+                  </div>
+                }
+
+              </div>
+            }
+
+            <!-- ================================================================= -->
+            <!-- SUB-VIEW 2: MERMAID FLOWCHART CODE & RENDERER                     -->
+            <!-- ================================================================= -->
+            @if (pipelineSubTab() === 'mermaid') {
+              <div class="space-y-4 font-mono">
+                <div class="card-guardian p-5 space-y-4">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                    <div>
+                      <h3 class="text-sm font-bold text-white font-mono flex items-center gap-2">
+                        <span>🧬</span>
+                        <span>Diagrama de Fluxo Mermaid (Sincronizado)</span>
+                      </h3>
+                      <p class="text-xs text-slate-400 mt-0.5">
+                        Código Mermaid gerado dinamicamente para documentação em repositórios (README.md, CI/CD docs).
+                      </p>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                      <button
+                        type="button"
+                        (click)="copyMermaidToClipboard()"
+                        class="btn-guardian btn-guardian-primary h-8 px-3.5 text-xs font-bold flex items-center gap-1.5"
+                        data-testid="copy-mermaid-btn"
+                      >
+                        <span>📋</span>
+                        <span>Copiar Mermaid</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Code block -->
+                  <div class="relative">
+                    <pre class="p-4 rounded-xl bg-[#080B12] border border-slate-800 text-xs text-emerald-300 overflow-x-auto leading-relaxed max-h-96 font-mono">{{ generatedMermaidCode() }}</pre>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- ================================================================= -->
+            <!-- SUB-VIEW 3: CI/CD PLATFORM YAML SPEC GENERATOR                    -->
+            <!-- ================================================================= -->
+            @if (pipelineSubTab() === 'yaml') {
+              <div class="space-y-4 font-mono">
+                <div class="card-guardian p-5 space-y-4">
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                    <div>
+                      <h3 class="text-sm font-bold text-white font-mono flex items-center gap-2">
+                        <span>📄</span>
+                        <span>Especificação de Workflow CI/CD Autogerada</span>
+                      </h3>
+                      <p class="text-xs text-slate-400 mt-0.5">
+                        Tradução direta do fluxograma visual para arquivos de configuração executáveis.
+                      </p>
+                    </div>
+
+                    <!-- Platform Selector & Actions -->
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <div class="flex items-center bg-slate-900 p-0.5 rounded-lg border border-slate-800">
+                        <button
+                          type="button"
+                          (click)="setPipelineTargetPlatform('github')"
+                          [class]="'px-2.5 py-1 rounded text-xs transition-colors ' + (pipelineTargetPlatform() === 'github' ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30' : 'text-slate-400 hover:text-white')"
+                        >
+                          GitHub Actions
+                        </button>
+                        <button
+                          type="button"
+                          (click)="setPipelineTargetPlatform('gitlab')"
+                          [class]="'px-2.5 py-1 rounded text-xs transition-colors ' + (pipelineTargetPlatform() === 'gitlab' ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30' : 'text-slate-400 hover:text-white')"
+                        >
+                          GitLab CI
+                        </button>
+                        <button
+                          type="button"
+                          (click)="setPipelineTargetPlatform('azure')"
+                          [class]="'px-2.5 py-1 rounded text-xs transition-colors ' + (pipelineTargetPlatform() === 'azure' ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30' : 'text-slate-400 hover:text-white')"
+                        >
+                          Azure DevOps
+                        </button>
+                        <button
+                          type="button"
+                          (click)="setPipelineTargetPlatform('bitbucket')"
+                          [class]="'px-2.5 py-1 rounded text-xs transition-colors ' + (pipelineTargetPlatform() === 'bitbucket' ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30' : 'text-slate-400 hover:text-white')"
+                        >
+                          Bitbucket
+                        </button>
+                      </div>
+
+                      <button
+                        type="button"
+                        (click)="copyYamlToClipboard()"
+                        class="btn-guardian btn-guardian-primary h-8 px-3 text-xs font-bold"
+                        data-testid="copy-yaml-btn"
+                      >
+                        📋 Copiar YAML
+                      </button>
+                      <button
+                        type="button"
+                        (click)="downloadPipelineYaml()"
+                        class="btn-guardian btn-guardian-secondary h-8 px-3 text-xs font-bold"
+                      >
+                        💾 Baixar Arquivo
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- YAML Code Container -->
+                  <div class="relative">
+                    <pre class="p-4 rounded-xl bg-[#080B12] border border-slate-800 text-xs text-cyan-300 overflow-x-auto leading-relaxed max-h-[500px] font-mono">{{ generatedPipelineYaml() }}</pre>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- ================================================================= -->
+            <!-- SUB-VIEW 4: INTERACTIVE SIMULATOR & TELEMETRY                     -->
+            <!-- ================================================================= -->
+            @if (pipelineSubTab() === 'simulator') {
+              <div class="space-y-4 font-mono">
+                <div class="card-guardian p-5 space-y-4">
+                  
+                  <!-- Simulation Status Header -->
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                    <div class="space-y-1">
+                      <div class="flex items-center gap-2">
+                        <h3 class="text-sm font-bold text-white font-mono">Simulador de Execução &amp; Telemetria HVM</h3>
+                        <span *ngIf="isPipelineSimulating()" class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-[10px] animate-pulse">
+                          EXECUTANDO
+                        </span>
+                      </div>
+                      <p class="text-xs text-slate-400">
+                        {{ pipelineSimulationActiveStep() ? 'Etapa ativa: ' + pipelineSimulationActiveStep() : 'Pipeline pronto para execução' }}
+                      </p>
+                    </div>
+
+                    <div class="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        (click)="runPipelineSimulation()"
+                        [disabled]="isPipelineSimulating()"
+                        class="btn-guardian btn-guardian-primary h-8 px-4 text-xs font-bold flex items-center gap-2"
+                      >
+                        <span>{{ isPipelineSimulating() ? 'Executando...' : 'Iniciar Simulação' }}</span>
+                      </button>
+                      <button
+                        type="button"
+                        (click)="resetPipelineSimulation()"
+                        class="btn-guardian btn-guardian-secondary h-8 px-3 text-xs"
+                      >
+                        Limpar Logs
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Real-time Progress Bar -->
+                  <div class="space-y-1.5">
+                    <div class="flex items-center justify-between text-xs text-slate-400 font-mono">
+                      <span>Progresso do Fluxo:</span>
+                      <strong class="text-cyan-300">{{ pipelineSimulationProgress() }}%</strong>
+                    </div>
+                    <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-800">
+                      <div
+                        class="bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-600 h-2.5 rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(6,182,212,0.5)]"
+                        [style.width.%]="pipelineSimulationProgress()"
+                      ></div>
+                    </div>
+                  </div>
+
+                  <!-- Terminal Console Output Stream -->
+                  <div class="space-y-1">
+                    <span class="text-slate-400 text-xs font-bold uppercase tracking-wider block">Terminal Telemetry Output:</span>
+                    <div class="p-4 rounded-xl bg-[#080B12] border border-slate-800 font-mono text-xs max-h-72 overflow-y-auto space-y-1 text-slate-300 shadow-inner">
+                      @if (pipelineSimulationLog().length === 0) {
+                        <p class="text-slate-600 italic">Nenhuma execução registrada. Clique em "Iniciar Simulação" para executar o fluxo.</p>
+                      } @else {
+                        @for (line of pipelineSimulationLog(); track line) {
+                          <div class="leading-relaxed font-mono">
+                            {{ line }}
+                          </div>
+                        }
+                      }
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            }
+
           </div>
         }
 
@@ -4622,7 +5208,205 @@
     </div>
   }
 
-  <!-- TOAST ALERTS (SETTINGS & FRAMEWORK) -->
+  <!-- PIPELINE STAGE EDIT & ADD MODAL -->
+  @if (isAddingNode() || isEditingNode()) {
+    <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" data-testid="pipeline-node-modal">
+      <div class="card-guardian max-w-2xl w-full p-6 space-y-4 border-cyan-500/50 shadow-2xl bg-[#0D131F] font-mono text-xs max-h-[90vh] flex flex-col justify-between">
+        
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div class="flex items-center gap-2.5">
+            <div class="h-9 w-9 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-bold text-lg">
+              {{ isAddingNode() ? '➕' : '✏️' }}
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-white font-mono">
+                {{ isAddingNode() ? 'Adicionar Nova Etapa ao Pipeline' : 'Editar Etapa do Pipeline' }}
+              </h3>
+              <p class="text-[11px] text-slate-400 font-mono mt-0.5">
+                Configure os parâmetros de execução, runner e dependências do fluxograma
+              </p>
+            </div>
+          </div>
+          <button (click)="closeNodeModal()" class="text-slate-400 hover:text-white text-lg font-mono">&times;</button>
+        </div>
+
+        <!-- Form Body with Scrolling -->
+        <div class="flex-1 overflow-y-auto space-y-4 pr-1">
+          
+          <!-- Row 1: Name and ID -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold text-slate-300 block">Nome da Etapa *</label>
+              <input
+                type="text"
+                [(ngModel)]="nodeForm().name"
+                class="w-full bg-[#080B12] border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none"
+                placeholder="Ex: Varredura de Vulnerabilidades SAST"
+              />
+            </div>
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold text-slate-300 block">Identificador Único (ID) *</label>
+              <input
+                type="text"
+                [(ngModel)]="nodeForm().id"
+                [disabled]="isEditingNode()"
+                class="w-full bg-[#080B12] border border-slate-800 rounded-lg px-3 py-2 text-xs text-cyan-300 disabled:opacity-60 focus:border-cyan-400 focus:outline-none"
+                placeholder="node_sast"
+              />
+            </div>
+          </div>
+
+          <!-- Row 2: Type, ShortName & Runner -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold text-slate-300 block">Tipo de Etapa</label>
+              <select
+                [(ngModel)]="nodeForm().type"
+                class="w-full bg-[#080B12] border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none"
+              >
+                <option value="trigger">⚡ Trigger / Webhook</option>
+                <option value="checkout">📥 Checkout Git</option>
+                <option value="lint">🧹 Linter / Lexer</option>
+                <option value="security">🔒 SAST / Segurança</option>
+                <option value="bend_analyzer">🧬 Motor Bend HVM</option>
+                <option value="test">🧪 Testes / Cobertura</option>
+                <option value="quality_gate">🛡️ Quality Gate</option>
+                <option value="build">📦 Build de Imagem</option>
+                <option value="deploy">🚀 Deploy / Release</option>
+                <option value="sarif_export">📊 SARIF / PR Check</option>
+                <option value="notify">📡 Notificação</option>
+                <option value="custom">⚙️ Customizado</option>
+              </select>
+            </div>
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold text-slate-300 block">Tag Curta (Badge)</label>
+              <input
+                type="text"
+                [(ngModel)]="nodeForm().shortName"
+                class="w-full bg-[#080B12] border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none"
+                placeholder="SAST"
+              />
+            </div>
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold text-slate-300 block">Runner / Ambiente</label>
+              <input
+                type="text"
+                [(ngModel)]="nodeForm().runner"
+                class="w-full bg-[#080B12] border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none"
+                placeholder="ubuntu-latest"
+              />
+            </div>
+          </div>
+
+          <!-- Row 3: Command Script -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-bold text-slate-300 block">Comando / Script Shell</label>
+            <textarea
+              [(ngModel)]="nodeForm().command"
+              rows="2"
+              class="w-full bg-[#080B12] border border-slate-800 rounded-lg p-2.5 text-xs text-cyan-300 font-mono focus:border-cyan-400 focus:outline-none leading-relaxed"
+              placeholder="bend run-rs backend/src/guardian.bend"
+            ></textarea>
+          </div>
+
+          <!-- Row 4: Upstream Dependencies (Multi-select) -->
+          <div class="space-y-1.5">
+            <label class="text-[11px] font-bold text-slate-300 block">Depende de (Upstream DAG Connections):</label>
+            <div class="flex flex-wrap items-center gap-2 p-2.5 rounded-lg bg-[#080B12] border border-slate-800">
+              @for (otherNode of pipelineNodes(); track otherNode.id) {
+                @if (otherNode.id !== nodeForm().id) {
+                  <button
+                    type="button"
+                    (click)="toggleNodeDependency(otherNode.id)"
+                    [class]="'px-2.5 py-1 rounded text-[11px] font-mono transition-all flex items-center gap-1.5 ' + 
+                      (nodeForm().dependsOn.includes(otherNode.id) 
+                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 font-bold' 
+                        : 'bg-slate-900 text-slate-400 border border-slate-800 hover:text-white')"
+                  >
+                    <span>{{ otherNode.icon || getNodeTypeIcon(otherNode.type) }}</span>
+                    <span>{{ otherNode.shortName }}</span>
+                    <span *ngIf="nodeForm().dependsOn.includes(otherNode.id)">✓</span>
+                  </button>
+                }
+              }
+              @if (pipelineNodes().length <= 1) {
+                <span class="text-slate-500 text-[11px]">Nenhuma outra etapa disponível.</span>
+              }
+            </div>
+          </div>
+
+          <!-- Row 5: Timeouts, Allow Failure & Summary -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold text-slate-300 block">Duração Estimada</label>
+              <input
+                type="text"
+                [(ngModel)]="nodeForm().duration"
+                class="w-full bg-[#080B12] border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none"
+                placeholder="0.04s"
+              />
+            </div>
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold text-slate-300 block">Timeout (Minutos)</label>
+              <input
+                type="number"
+                [(ngModel)]="nodeForm().timeoutMinutes"
+                class="w-full bg-[#080B12] border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none"
+                min="1"
+                max="120"
+              />
+            </div>
+            <div class="space-y-1 flex flex-col justify-center pt-3">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  [(ngModel)]="nodeForm().allowFailure"
+                  class="rounded bg-slate-900 border-slate-800 text-cyan-500 focus:ring-0"
+                />
+                <span class="text-[11px] text-slate-300">Permitir Falha (Allow Failure)</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Row 6: Summary Description -->
+          <div class="space-y-1">
+            <label class="text-[11px] font-bold text-slate-300 block">Descrição Resumida</label>
+            <input
+              type="text"
+              [(ngModel)]="nodeForm().summary"
+              class="w-full bg-[#080B12] border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none"
+              placeholder="Resumo explicativo do objetivo da etapa no pipeline"
+            />
+          </div>
+
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="pt-3 border-t border-slate-800 flex items-center justify-end gap-2.5">
+          <button
+            type="button"
+            (click)="closeNodeModal()"
+            class="btn-guardian btn-guardian-secondary h-9 px-4 text-xs font-semibold"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            (click)="saveNodeForm()"
+            [disabled]="!nodeForm().name || !nodeForm().id"
+            class="btn-guardian btn-guardian-primary h-9 px-5 text-xs font-bold"
+            data-testid="save-pipeline-node-btn"
+          >
+            💾 {{ isAddingNode() ? 'Adicionar ao Fluxo' : 'Salvar Alterações' }}
+          </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- TOAST ALERTS (SETTINGS, FRAMEWORK & PIPELINE) -->
   @if (settingsSavedToast()) {
     <div class="fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl bg-emerald-950/90 border border-emerald-500/40 text-emerald-200 text-xs font-mono shadow-2xl animate-in slide-in-from-bottom duration-200 backdrop-blur-md" data-testid="settings-saved-toast">
       <span class="text-base">✓</span>
@@ -4636,6 +5420,14 @@
       <span class="text-base">🚀</span>
       <span class="flex-1 leading-relaxed">{{ frameworkToastMessage() }}</span>
       <button (click)="closeFrameworkToast()" class="text-cyan-400 hover:text-white text-sm ml-2">&times;</button>
+    </div>
+  }
+
+  @if (pipelineToastMessage()) {
+    <div class="fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-xl bg-cyan-950/90 border border-cyan-500/40 text-cyan-200 text-xs font-mono shadow-2xl animate-in slide-in-from-bottom duration-200 backdrop-blur-md max-w-md" data-testid="pipeline-toast">
+      <span class="text-base">⚡</span>
+      <span class="flex-1 leading-relaxed">{{ pipelineToastMessage() }}</span>
+      <button (click)="closePipelineToast()" class="text-cyan-400 hover:text-white text-sm ml-2">&times;</button>
     </div>
   }
 
