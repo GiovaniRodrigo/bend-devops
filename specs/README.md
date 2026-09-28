@@ -14,7 +14,9 @@ Todas as funcionalidades do **Bend DevOps Guardian** são concebidas e documenta
 | **004** | [`004-false-positive-suppression-engine/`](./004-false-positive-suppression-engine/) | **False-Positive Suppression Engine**: Motor de supressão por pragmas (`@guardian-ignore`) e delimitação léxica de tokens. | ✅ Implementado |
 | **005** | [`005-live-code-diff-auditor/`](./005-live-code-diff-auditor/) | **Live Code & Diff Auditor**: Auditoria interativa em tempo real com visualizador de diff unificado e split para PRs/commits. | ✅ Implementado |
 | **006** | [`006-extensible-rule-management/`](./006-extensible-rule-management/) | **Extensible Rule Management**: Catálogo de regras de 4 camadas, wizard de criação de regras customizadas e console de teste. | ✅ Implementado |
-| **007** | [`007-escopo-e-regras-arquiteturais-do-usuario/`](./007-escopo-e-regras-arquiteturais-do-usuario/) | **Escopo e Regras Arquiteturais do Usuário**: Parametrização de escopo (Full, Diff, Subdir, File) e composição modular de regras complementares pelo usuário. | 🚀 Pronto para Implementação |
+| **007** | [`007-escopo-e-regras-arquiteturais-do-usuario/`](./007-escopo-e-regras-arquiteturais-do-usuario/) | **Escopo e Regras Arquiteturais do Usuário**: Parametrização de escopo (Full, Diff, Subdir, File) e composição modular de regras complementares pelo usuário. | ✅ Implementado |
+| **008** | [`008-pipeline-flow-architecture-profiles-and-split-diff/`](./008-pipeline-flow-architecture-profiles-and-split-diff/) | **Pipeline Flow, Architecture Profiles, Split Diff & Coverage**: Fluxograma interativo com Drag & Drop, turnover de perfis (Ativo/Inativo), modal de regras, split diff lado a lado e governança com Coverage.py. | ✅ Implementado |
+
 
 ---
 
