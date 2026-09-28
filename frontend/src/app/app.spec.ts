@@ -1115,6 +1115,123 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     app.resetPipelineZoom();
     expect(app.pipelineZoom()).toBe(100);
   });
+
+  it('should open edit sequence modal, reorder stages up/down/top/bottom, and save changes', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    const initialFirstNode = app.pipelineNodes()[0].id;
+    const initialSecondNode = app.pipelineNodes()[1].id;
+
+    // Open sequence editor modal
+    app.openEditSequenceModal();
+    expect(app.isEditingSequence()).toBe(true);
+    expect(app.tempSequenceNodes().length).toBe(app.pipelineNodes().length);
+
+    // Move first item down
+    app.moveSequenceItem(0, 'down');
+    expect(app.tempSequenceNodes()[0].id).toBe(initialSecondNode);
+    expect(app.tempSequenceNodes()[1].id).toBe(initialFirstNode);
+
+    // Move item back up
+    app.moveSequenceItem(1, 'up');
+    expect(app.tempSequenceNodes()[0].id).toBe(initialFirstNode);
+
+    // Move first item to bottom
+    const totalNodes = app.tempSequenceNodes().length;
+    app.moveSequenceItem(0, 'bottom');
+    expect(app.tempSequenceNodes()[totalNodes - 1].id).toBe(initialFirstNode);
+
+    // Move it back to top
+    app.moveSequenceItem(totalNodes - 1, 'top');
+    expect(app.tempSequenceNodes()[0].id).toBe(initialFirstNode);
+
+    // Toggle dependency sync
+    expect(app.syncDependenciesOnReorder()).toBe(true);
+    app.toggleSyncDependenciesOnReorder();
+    expect(app.syncDependenciesOnReorder()).toBe(false);
+    app.toggleSyncDependenciesOnReorder();
+    expect(app.syncDependenciesOnReorder()).toBe(true);
+
+    // Move second item to first position and save
+    app.moveSequenceItem(1, 'up');
+    app.saveSequenceChanges();
+
+    expect(app.isEditingSequence()).toBe(false);
+    expect(app.pipelineNodes()[0].id).toBe(initialSecondNode);
+    expect(app.pipelineNodes()[1].id).toBe(initialFirstNode);
+    // Check that dependencies are synced sequentially
+    expect(app.pipelineNodes()[0].dependsOn).toEqual([]);
+    expect(app.pipelineNodes()[1].dependsOn).toEqual([initialSecondNode]);
+    expect(app.pipelineToastMessage()).toContain('atualizada com sucesso');
+
+    // Test close/cancel modal
+    app.openEditSequenceModal();
+    expect(app.isEditingSequence()).toBe(true);
+    app.closeEditSequenceModal();
+    expect(app.isEditingSequence()).toBe(false);
+    expect(app.tempSequenceNodes().length).toBe(0);
+  });
+
+  it('should support reordering pipeline sequence via HTML5 Drag and Drop events', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    app.openEditSequenceModal();
+    expect(app.isEditingSequence()).toBe(true);
+
+    const firstNode = app.tempSequenceNodes()[0].id;
+    const thirdNode = app.tempSequenceNodes()[2].id;
+
+    // Mock drag start on index 0
+    const mockDataTransfer = {
+      effectAllowed: 'uninitialized',
+      dropEffect: 'none',
+      data: {} as Record<string, string>,
+      setData(key: string, val: string) { this.data[key] = val; },
+      getData(key: string) { return this.data[key]; }
+    };
+    const dragStartEvent = {
+      dataTransfer: mockDataTransfer
+    } as unknown as DragEvent;
+
+    app.onSequenceDragStart(dragStartEvent, 0);
+    expect(app.draggedSequenceIndex()).toBe(0);
+    expect(app.isDraggingSequence()).toBe(true);
+
+    // Mock drag over index 2
+    let defaultPrevented = false;
+    const dragOverEvent = {
+      preventDefault: () => { defaultPrevented = true; },
+      dataTransfer: mockDataTransfer
+    } as unknown as DragEvent;
+
+    app.onSequenceDragOver(dragOverEvent, 2);
+    expect(defaultPrevented).toBe(true);
+    expect(app.dragOverSequenceIndex()).toBe(2);
+
+    // Mock drag leave index 1 (should not clear if not the same index)
+    app.onSequenceDragLeave({} as DragEvent, 1);
+    expect(app.dragOverSequenceIndex()).toBe(2);
+
+    // Mock drop on index 2 (moving item 0 to index 2)
+    let dropPrevented = false;
+    const dropEvent = {
+      preventDefault: () => { dropPrevented = true; },
+      dataTransfer: mockDataTransfer
+    } as unknown as DragEvent;
+
+    app.onSequenceDrop(dropEvent, 2);
+    expect(dropPrevented).toBe(true);
+    expect(app.tempSequenceNodes()[2].id).toBe(firstNode);
+    expect(app.draggedSequenceIndex()).toBeNull();
+    expect(app.dragOverSequenceIndex()).toBeNull();
+    expect(app.isDraggingSequence()).toBe(false);
+
+    // Save changes
+    app.saveSequenceChanges();
+    expect(app.pipelineNodes()[2].id).toBe(firstNode);
+  });
 });
 
 

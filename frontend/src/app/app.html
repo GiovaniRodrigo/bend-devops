@@ -3439,11 +3439,23 @@
                   <span>{{ isPipelineSimulating() ? 'Simulando Execução...' : 'Simular Pipeline' }}</span>
                 </button>
 
+                <!-- Edit Sequence Button -->
+                <button
+                  type="button"
+                  (click)="openEditSequenceModal()"
+                  class="btn-guardian btn-guardian-secondary h-9 px-3.5 text-xs font-bold flex items-center gap-1.5 text-cyan-300 border-cyan-500/40 hover:bg-cyan-500/10"
+                  data-testid="edit-sequence-btn"
+                  title="Editar e reordenar a sequência de execução das etapas do pipeline"
+                >
+                  <span>↕️</span>
+                  <span>Editar Sequência</span>
+                </button>
+
                 <!-- Add Step Button -->
                 <button
                   type="button"
                   (click)="openAddNodeModal()"
-                  class="btn-guardian btn-guardian-secondary h-9 px-3.5 text-xs font-bold flex items-center gap-1.5 text-cyan-300 border-cyan-500/40 hover:bg-cyan-500/10"
+                  class="btn-guardian btn-guardian-secondary h-9 px-3.5 text-xs font-bold flex items-center gap-1.5 text-slate-200 border-slate-700 hover:bg-slate-800"
                   data-testid="add-pipeline-stage-btn"
                   title="Adicionar nova etapa ou ferramenta ao pipeline"
                 >
@@ -3527,12 +3539,25 @@
                 
                 <!-- Flowchart Controls Bar -->
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-[#0B0F19] border border-slate-800">
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-2 flex-wrap">
                     <span class="text-xs text-slate-400">Zoom:</span>
                     <button type="button" (click)="zoomOutPipeline()" class="btn-guardian btn-guardian-secondary h-7 w-7 text-xs" title="Reduzir Zoom">-</button>
                     <span class="text-xs font-bold text-white px-1.5">{{ pipelineZoom() }}%</span>
                     <button type="button" (click)="zoomInPipeline()" class="btn-guardian btn-guardian-secondary h-7 w-7 text-xs" title="Aumentar Zoom">+</button>
                     <button type="button" (click)="resetPipelineZoom()" class="btn-guardian btn-guardian-secondary h-7 px-2 text-[10px] text-slate-400" title="Resetar Zoom">100%</button>
+
+                    <div class="h-4 w-[1px] bg-slate-800 mx-1"></div>
+
+                    <button
+                      type="button"
+                      (click)="openEditSequenceModal()"
+                      class="btn-guardian btn-guardian-secondary h-7 px-2.5 text-[11px] font-bold text-cyan-300 border-cyan-500/30 hover:bg-cyan-500/10 flex items-center gap-1"
+                      data-testid="flowchart-edit-sequence-btn"
+                      title="Reordenar sequência das etapas do pipeline"
+                    >
+                      <span>↕️</span>
+                      <span>Reordenar Sequência</span>
+                    </button>
                   </div>
 
                   <div class="flex items-center gap-3 text-xs text-slate-400">
@@ -5400,6 +5425,186 @@
           >
             💾 {{ isAddingNode() ? 'Adicionar ao Fluxo' : 'Salvar Alterações' }}
           </button>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- PIPELINE SEQUENCE REORDER MODAL -->
+  @if (isEditingSequence()) {
+    <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" data-testid="edit-sequence-modal">
+      <div class="card-guardian max-w-3xl w-full p-6 space-y-4 border-cyan-500/50 shadow-2xl bg-[#0D131F] font-mono text-xs max-h-[90vh] flex flex-col justify-between">
+        
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div class="flex items-center gap-2.5">
+            <div class="h-9 w-9 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-bold text-lg">
+              ↕️
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-white font-mono">
+                Editar Sequência de Execução do Pipeline
+              </h3>
+              <p class="text-[11px] text-slate-400 font-mono mt-0.5">
+                Reordene as etapas para definir a prioridade e ordem de fluxo de integração contínua
+              </p>
+            </div>
+          </div>
+          <button (click)="closeEditSequenceModal()" class="text-slate-400 hover:text-white text-lg font-mono">&times;</button>
+        </div>
+
+        <!-- Options Banner & Drag Instructions -->
+        <div class="p-3 rounded-xl bg-[#080B12] border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="sync-deps-check"
+              [ngModel]="syncDependenciesOnReorder()"
+              (ngModelChange)="toggleSyncDependenciesOnReorder()"
+              class="rounded bg-slate-900 border-slate-800 text-cyan-500 focus:ring-0 cursor-pointer"
+            />
+            <label for="sync-deps-check" class="text-[11px] text-slate-300 font-mono cursor-pointer">
+              Sincronizar dependências lineares automaticamente (<span class="text-cyan-300">dependsOn</span> sequencial)
+            </label>
+          </div>
+          <div class="flex items-center gap-2 text-[10px] text-slate-400">
+            <span class="px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 flex items-center gap-1 font-mono">
+              <span>🖱️</span>
+              <span>Arraste e solte para reordenar</span>
+            </span>
+            <span class="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 font-mono">
+              {{ tempSequenceNodes().length }} Etapas
+            </span>
+          </div>
+        </div>
+
+        <!-- Reorderable List Container with Drag & Drop -->
+        <div class="flex-1 overflow-y-auto space-y-2.5 pr-1 max-h-[50vh]">
+          @for (node of tempSequenceNodes(); track node.id; let idx = $index; let first = $first; let last = $last) {
+            <div
+              draggable="true"
+              (dragstart)="onSequenceDragStart($event, idx)"
+              (dragover)="onSequenceDragOver($event, idx)"
+              (dragleave)="onSequenceDragLeave($event, idx)"
+              (drop)="onSequenceDrop($event, idx)"
+              (dragend)="onSequenceDragEnd()"
+              [class]="'group flex items-center justify-between gap-3 p-3 rounded-xl border transition-all duration-150 font-mono cursor-grab active:cursor-grabbing select-none ' + 
+                (draggedSequenceIndex() === idx 
+                  ? 'opacity-40 border-dashed border-cyan-400 bg-cyan-950/20 scale-[0.98]' 
+                  : (dragOverSequenceIndex() === idx 
+                      ? 'border-cyan-400 ring-2 ring-cyan-400/50 bg-cyan-500/15 shadow-[0_0_20px_rgba(6,182,212,0.35)] scale-[1.01]' 
+                      : 'bg-[#080B12]/90 border-slate-800/90 hover:border-slate-700 hover:bg-[#111722]/80'))"
+              [attr.data-testid]="'sequence-item-' + idx"
+            >
+              <!-- Left: Drag Handle, Position Badge & Node Details -->
+              <div class="flex items-center gap-3 min-w-0 flex-1">
+                <!-- Drag Grip Icon Handle -->
+                <div
+                  class="p-1 rounded text-slate-500 group-hover:text-cyan-400 transition-colors flex items-center justify-center shrink-0 cursor-grab active:cursor-grabbing"
+                  title="Clique e arraste para reordenar"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16" />
+                  </svg>
+                </div>
+
+                <div class="h-7 w-7 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 font-bold text-xs flex items-center justify-center shrink-0 font-mono">
+                  #{{ idx + 1 }}
+                </div>
+
+                <span class="text-lg shrink-0">{{ node.icon || getNodeTypeIcon(node.type) }}</span>
+
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h4 class="text-xs font-bold text-white font-mono truncate group-hover:text-cyan-200 transition-colors">
+                      {{ node.name }}
+                    </h4>
+                    <span [class]="'text-[9px] font-bold px-1.5 py-0.5 rounded uppercase font-mono ' + getNodeTypeColor(node.type).badge">
+                      {{ node.shortName }}
+                    </span>
+                  </div>
+                  <p class="text-[10px] text-slate-400 truncate mt-0.5">
+                    Runner: <span class="text-slate-300">{{ node.runner }}</span> | Duração: <span class="text-cyan-300">{{ node.duration }}</span> | $ {{ node.command }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Right: Move Controls (Alternative to Drag & Drop) -->
+              <div class="flex items-center gap-1 shrink-0" (click)="$event.stopPropagation()">
+                <!-- Move Top -->
+                <button
+                  type="button"
+                  [disabled]="first"
+                  (click)="moveSequenceItem(idx, 'top')"
+                  class="h-7 px-2 rounded bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 text-[10px] font-bold"
+                  title="Mover para o topo da sequência"
+                  [attr.data-testid]="'move-top-' + idx"
+                >
+                  🔝
+                </button>
+                <!-- Move Up -->
+                <button
+                  type="button"
+                  [disabled]="first"
+                  (click)="moveSequenceItem(idx, 'up')"
+                  class="h-7 w-7 rounded bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 text-xs font-bold flex items-center justify-center"
+                  title="Mover uma posição acima"
+                  [attr.data-testid]="'move-up-' + idx"
+                >
+                  ⬆️
+                </button>
+                <!-- Move Down -->
+                <button
+                  type="button"
+                  [disabled]="last"
+                  (click)="moveSequenceItem(idx, 'down')"
+                  class="h-7 w-7 rounded bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 text-xs font-bold flex items-center justify-center"
+                  title="Mover uma posição abaixo"
+                  [attr.data-testid]="'move-down-' + idx"
+                >
+                  ⬇️
+                </button>
+                <!-- Move Bottom -->
+                <button
+                  type="button"
+                  [disabled]="last"
+                  (click)="moveSequenceItem(idx, 'bottom')"
+                  class="h-7 px-2 rounded bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30 disabled:hover:text-slate-400 text-[10px] font-bold"
+                  title="Mover para o final da sequência"
+                  [attr.data-testid]="'move-bottom-' + idx"
+                >
+                  🔚
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="pt-3 border-t border-slate-800 flex items-center justify-between gap-3">
+          <span class="text-[11px] text-slate-500">
+            * As alterações serão refletidas em tempo real no Fluxograma, Mermaid e YAML.
+          </span>
+          <div class="flex items-center gap-2.5">
+            <button
+              type="button"
+              (click)="closeEditSequenceModal()"
+              class="btn-guardian btn-guardian-secondary h-9 px-4 text-xs font-semibold"
+              data-testid="cancel-sequence-btn"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              (click)="saveSequenceChanges()"
+              class="btn-guardian btn-guardian-primary h-9 px-5 text-xs font-bold flex items-center gap-1.5"
+              data-testid="save-sequence-btn"
+            >
+              <span>💾</span>
+              <span>Salvar Sequência</span>
+            </button>
+          </div>
         </div>
 
       </div>

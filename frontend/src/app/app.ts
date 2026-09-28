@@ -568,6 +568,12 @@ export class App {
   readonly selectedNodeId = signal<string | null>('node_bend');
   readonly isEditingNode = signal<boolean>(false);
   readonly isAddingNode = signal<boolean>(false);
+  readonly isEditingSequence = signal<boolean>(false);
+  readonly tempSequenceNodes = signal<PipelineNode[]>([]);
+  readonly syncDependenciesOnReorder = signal<boolean>(true);
+  readonly draggedSequenceIndex = signal<number | null>(null);
+  readonly dragOverSequenceIndex = signal<number | null>(null);
+  readonly isDraggingSequence = signal<boolean>(false);
   readonly pipelineZoom = signal<number>(100);
   readonly pipelineLayoutMode = signal<'horizontal' | 'grid'>('horizontal');
   readonly pipelineTargetPlatform = signal<'github' | 'gitlab' | 'azure' | 'bitbucket'>('github');
@@ -2705,6 +2711,111 @@ export class App {
       updated[targetIdx] = temp;
       return updated;
     });
+  }
+
+  openEditSequenceModal(): void {
+    this.tempSequenceNodes.set(JSON.parse(JSON.stringify(this.pipelineNodes())));
+    this.draggedSequenceIndex.set(null);
+    this.dragOverSequenceIndex.set(null);
+    this.isDraggingSequence.set(false);
+    this.isEditingSequence.set(true);
+  }
+
+  closeEditSequenceModal(): void {
+    this.isEditingSequence.set(false);
+    this.tempSequenceNodes.set([]);
+    this.draggedSequenceIndex.set(null);
+    this.dragOverSequenceIndex.set(null);
+    this.isDraggingSequence.set(false);
+  }
+
+  toggleSyncDependenciesOnReorder(): void {
+    this.syncDependenciesOnReorder.update(v => !v);
+  }
+
+  moveSequenceItem(index: number, direction: 'up' | 'down' | 'top' | 'bottom'): void {
+    const list = [...this.tempSequenceNodes()];
+    if (index < 0 || index >= list.length) return;
+
+    let targetIndex = index;
+    if (direction === 'up') targetIndex = index - 1;
+    else if (direction === 'down') targetIndex = index + 1;
+    else if (direction === 'top') targetIndex = 0;
+    else if (direction === 'bottom') targetIndex = list.length - 1;
+
+    if (targetIndex < 0 || targetIndex >= list.length || targetIndex === index) return;
+
+    const [item] = list.splice(index, 1);
+    list.splice(targetIndex, 0, item);
+    this.tempSequenceNodes.set(list);
+  }
+
+  onSequenceDragStart(event: DragEvent, index: number): void {
+    this.draggedSequenceIndex.set(index);
+    this.isDraggingSequence.set(true);
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', index.toString());
+    }
+  }
+
+  onSequenceDragOver(event: DragEvent, index: number): void {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+    if (this.dragOverSequenceIndex() !== index) {
+      this.dragOverSequenceIndex.set(index);
+    }
+  }
+
+  onSequenceDragLeave(event: DragEvent, index: number): void {
+    if (this.dragOverSequenceIndex() === index) {
+      this.dragOverSequenceIndex.set(null);
+    }
+  }
+
+  onSequenceDrop(event: DragEvent, dropIndex: number): void {
+    event.preventDefault();
+    const sourceIndex = this.draggedSequenceIndex();
+    if (sourceIndex !== null && sourceIndex !== dropIndex) {
+      const list = [...this.tempSequenceNodes()];
+      if (sourceIndex >= 0 && sourceIndex < list.length && dropIndex >= 0 && dropIndex < list.length) {
+        const [movedItem] = list.splice(sourceIndex, 1);
+        list.splice(dropIndex, 0, movedItem);
+        this.tempSequenceNodes.set(list);
+      }
+    }
+    this.draggedSequenceIndex.set(null);
+    this.dragOverSequenceIndex.set(null);
+    this.isDraggingSequence.set(false);
+  }
+
+  onSequenceDragEnd(): void {
+    this.draggedSequenceIndex.set(null);
+    this.dragOverSequenceIndex.set(null);
+    this.isDraggingSequence.set(false);
+  }
+
+  saveSequenceChanges(): void {
+    let reordered = [...this.tempSequenceNodes()];
+    if (this.syncDependenciesOnReorder() && reordered.length > 0) {
+      reordered = reordered.map((node, idx) => {
+        if (idx === 0) {
+          return { ...node, dependsOn: [] };
+        }
+        return { ...node, dependsOn: [reordered[idx - 1].id] };
+      });
+    }
+
+    this.pipelineNodes.set(reordered);
+    this.isEditingSequence.set(false);
+    this.tempSequenceNodes.set([]);
+    this.draggedSequenceIndex.set(null);
+    this.dragOverSequenceIndex.set(null);
+    this.isDraggingSequence.set(false);
+    this.pipelineToastMessage.set('Sequência de etapas do pipeline atualizada com sucesso!');
+    setTimeout(() => this.pipelineToastMessage.set(null), 4000);
   }
 
   toggleNodeStatus(nodeId: string): void {
