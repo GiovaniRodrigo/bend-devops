@@ -52,6 +52,12 @@
     @apply border-border;
   }
 
+  html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+  }
+
   body {
     background-color: #080B12;
     color: #F8FAFC;
