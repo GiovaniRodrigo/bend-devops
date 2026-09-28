@@ -66,4 +66,26 @@ describe('CultureGuardianService (Specs 006 & 007)', () => {
     const stripped = service.stripComments(codeWithComments, 'TypeScript');
     expect(stripped.trim()).toBe('let x = 10;');
   });
+
+  it('should update and toggle architecture profiles', () => {
+    const profile = service.architectureProfiles()[0];
+
+    // Toggle status
+    service.toggleArchitectureProfile(profile.id);
+    expect(service.architectureProfiles().find(p => p.id === profile.id)?.enabled).toBe(false);
+
+    service.setArchitectureProfileStatus(profile.id, true);
+    expect(service.architectureProfiles().find(p => p.id === profile.id)?.enabled).toBe(true);
+
+    // Update profile
+    service.updateArchitectureProfile({
+      ...profile,
+      name: 'Clean Architecture (Edited)',
+      category: 'Updated Category'
+    });
+
+    const updated = service.architectureProfiles().find(p => p.id === profile.id);
+    expect(updated?.name).toBe('Clean Architecture (Edited)');
+    expect(updated?.category).toBe('Updated Category');
+  });
 });

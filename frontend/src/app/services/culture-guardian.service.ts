@@ -1182,6 +1182,16 @@ class LegacyConnector:
     );
   }
 
+  updateArchitectureProfile(updatedProfile: ArchitectureProfile): void {
+    this.architectureProfiles.update(profiles => {
+      const exists = profiles.some(p => p.id === updatedProfile.id);
+      if (exists) {
+        return profiles.map(p => p.id === updatedProfile.id ? { ...updatedProfile } : p);
+      }
+      return [...profiles, { ...updatedProfile }];
+    });
+  }
+
   // 12.2. Real VCS Webhook API Connection & Ingestion
   async testVcsApiConnection(endpointUrl: string = '/api/v1/vcs/ping'): Promise<{
     success: boolean;

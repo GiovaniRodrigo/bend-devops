@@ -1232,6 +1232,58 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     app.saveSequenceChanges();
     expect(app.pipelineNodes()[2].id).toBe(firstNode);
   });
+
+  it('should support editing, modifying tiers, and creating architecture profiles', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    const originalProfile = app.architectureProfiles()[0];
+
+    // Open edit modal for first profile
+    app.openEditArchitectureProfileModal(originalProfile);
+    expect(app.isEditingArchitectureProfile()).toBe(true);
+    expect(app.editingProfileForm().id).toBe(originalProfile.id);
+
+    // Edit profile name and category
+    app.editingProfileForm.update(f => ({
+      ...f,
+      name: 'Clean Architecture (Strict Custom)',
+      category: 'Custom Category'
+    }));
+
+    // Add a new tier
+    const initialTiersCount = app.editingProfileForm().tiers.length;
+    app.addTierToProfileForm();
+    expect(app.editingProfileForm().tiers.length).toBe(initialTiersCount + 1);
+
+    // Update forbidden dependencies on the new tier
+    app.updateTierForbiddenDeps(initialTiersCount, 'Database, LegacyService, DirectSQL');
+    expect(app.editingProfileForm().tiers[initialTiersCount].forbiddenDependencies).toEqual(['Database', 'LegacyService', 'DirectSQL']);
+
+    // Update allowed dependencies on the new tier
+    app.updateTierAllowedDeps(initialTiersCount, 'Domain, SharedKernel');
+    expect(app.editingProfileForm().tiers[initialTiersCount].allowedDependencies).toEqual(['Domain', 'SharedKernel']);
+
+    // Remove the newly added tier
+    app.removeTierFromProfileForm(initialTiersCount);
+    expect(app.editingProfileForm().tiers.length).toBe(initialTiersCount);
+
+    // Save profile changes
+    app.saveArchitectureProfileForm();
+    expect(app.isEditingArchitectureProfile()).toBe(false);
+
+    const saved = app.architectureProfiles().find(p => p.id === originalProfile.id);
+    expect(saved?.name).toBe('Clean Architecture (Strict Custom)');
+    expect(saved?.category).toBe('Custom Category');
+    expect(app.frameworkToastMessage()).toContain('salvo com sucesso');
+
+    // Test creating a new profile
+    app.openCreateArchitectureProfileModal();
+    expect(app.isEditingArchitectureProfile()).toBe(true);
+    expect(app.editingProfileForm().id).toContain('profile_custom_');
+    app.closeEditArchitectureProfileModal();
+    expect(app.isEditingArchitectureProfile()).toBe(false);
+  });
 });
 
 

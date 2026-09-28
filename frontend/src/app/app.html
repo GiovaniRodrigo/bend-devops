@@ -4022,9 +4022,20 @@
                 </p>
               </div>
 
-              <!-- Bulk Actions -->
-              <div class="flex items-center gap-2 shrink-0">
+              <!-- Bulk Actions & Create Button -->
+              <div class="flex items-center gap-2 shrink-0 flex-wrap">
                 <button
+                  type="button"
+                  (click)="openCreateArchitectureProfileModal()"
+                  class="btn-guardian btn-guardian-primary text-xs h-8 px-3 font-mono font-bold flex items-center gap-1.5"
+                  data-testid="add-architecture-profile-btn"
+                  title="Criar novo perfil de arquitetura customizado"
+                >
+                  <span>➕</span>
+                  <span>Novo Perfil</span>
+                </button>
+                <button
+                  type="button"
                   (click)="enableAllProfiles()"
                   class="btn-guardian btn-guardian-secondary text-xs h-8 px-3 font-mono"
                   title="Ativar todos os perfis de arquitetura"
@@ -4032,6 +4043,7 @@
                   ✓ Ativar Todos
                 </button>
                 <button
+                  type="button"
                   (click)="disableAllProfiles()"
                   class="btn-guardian btn-guardian-secondary text-xs h-8 px-3 font-mono text-rose-300 hover:text-white"
                   title="Desativar todos os perfis de arquitetura"
@@ -4046,33 +4058,48 @@
               <div
                 *ngFor="let prof of architectureProfiles()"
                 [class]="'card-guardian p-5 space-y-3 transition-all ' + (prof.enabled !== false ? 'border-cyan-500/30 bg-[#0B0F19]' : 'border-slate-800/80 bg-[#080B12]/80 opacity-75')"
+                [attr.data-testid]="'profile-card-' + prof.id"
               >
                 <!-- Profile Header -->
                 <div class="flex items-start justify-between gap-3">
-                  <div class="space-y-1">
+                  <div class="space-y-1 min-w-0 flex-1">
                     <div class="flex items-center gap-2 flex-wrap">
                       <h3 class="text-sm font-bold text-slate-100 font-mono">{{ prof.name }}</h3>
                       <span class="text-[10px] px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20 font-mono">
                         {{ prof.category }}
                       </span>
                     </div>
-                    <p class="text-xs text-slate-300">{{ prof.description }}</p>
+                    <p class="text-xs text-slate-300 leading-relaxed">{{ prof.description }}</p>
                   </div>
 
-                  <!-- Profile Active Toggle Switch / Button -->
+                  <!-- Profile Action Buttons & Switch -->
                   <div class="flex flex-col items-end gap-1.5 shrink-0">
                     <span [class]="'badge-tech text-[10px] ' + (prof.enabled !== false ? 'badge-pass' : 'badge-fail')">
                       {{ prof.enabled !== false ? '● ATIVO' : '○ DESATIVADO' }}
                     </span>
-                    <button
-                      (click)="toggleArchitectureProfile(prof.id)"
-                      [class]="'px-2.5 py-1 rounded text-xs font-mono font-semibold transition-all border ' + 
-                        (prof.enabled !== false 
-                          ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border-rose-500/30 hover:border-rose-500/50' 
-                          : 'bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border-cyan-500/30 hover:border-cyan-500/50')"
-                    >
-                      {{ prof.enabled !== false ? 'Desativar' : 'Ativar' }}
-                    </button>
+                    <div class="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        (click)="openEditArchitectureProfileModal(prof)"
+                        class="px-2.5 py-1 rounded text-xs font-mono font-semibold transition-all border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/20 flex items-center gap-1"
+                        [attr.data-testid]="'edit-profile-btn-' + prof.id"
+                        title="Editar detalhes, camadas e dependências deste perfil de arquitetura"
+                      >
+                        <span>✏️</span>
+                        <span>Editar</span>
+                      </button>
+                      <button
+                        type="button"
+                        (click)="toggleArchitectureProfile(prof.id)"
+                        [class]="'px-2.5 py-1 rounded text-xs font-mono font-semibold transition-all border ' + 
+                          (prof.enabled !== false 
+                            ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border-rose-500/30 hover:border-rose-500/50' 
+                            : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:border-emerald-500/50')"
+                        [attr.data-testid]="'toggle-profile-btn-' + prof.id"
+                      >
+                        {{ prof.enabled !== false ? 'Desativar' : 'Ativar' }}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -5603,6 +5630,212 @@
             >
               <span>💾</span>
               <span>Salvar Sequência</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- ARCHITECTURE PROFILE EDIT & CREATE MODAL -->
+  @if (isEditingArchitectureProfile()) {
+    <div class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200" data-testid="architecture-profile-modal">
+      <div class="card-guardian max-w-3xl w-full p-6 space-y-4 border-cyan-500/50 shadow-2xl bg-[#0D131F] font-mono text-xs max-h-[90vh] flex flex-col justify-between">
+        
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+          <div class="flex items-center gap-2.5">
+            <div class="h-9 w-9 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-300 font-bold text-lg">
+              🏛️
+            </div>
+            <div>
+              <h3 class="text-base font-bold text-white font-mono">
+                Editar Perfil de Arquitetura: {{ editingProfileForm().name }}
+              </h3>
+              <p class="text-[11px] text-slate-400 font-mono mt-0.5">
+                Defina as camadas (tiers), permissões e restrições de dependências analisadas pelo motor Bend HVM
+              </p>
+            </div>
+          </div>
+          <button (click)="closeEditArchitectureProfileModal()" class="text-slate-400 hover:text-white text-lg font-mono">&times;</button>
+        </div>
+
+        <!-- Form Body with Scrolling -->
+        <div class="flex-1 overflow-y-auto space-y-4 pr-1">
+          
+          <!-- Row 1: Profile Name, Category & ID -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="space-y-1 sm:col-span-2">
+              <label class="text-[11px] font-bold text-slate-300 block">Nome do Perfil *</label>
+              <input
+                type="text"
+                [(ngModel)]="editingProfileForm().name"
+                class="w-full bg-[#080B12] border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none"
+                placeholder="Ex: Clean Architecture (Strict Domain)"
+                data-testid="profile-name-input"
+              />
+            </div>
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold text-slate-300 block">Identificador (ID) *</label>
+              <input
+                type="text"
+                [(ngModel)]="editingProfileForm().id"
+                class="w-full bg-[#080B12] border border-slate-800 rounded-lg px-3 py-2 text-xs text-purple-300 focus:border-cyan-400 focus:outline-none"
+                placeholder="clean_architecture"
+                data-testid="profile-id-input"
+              />
+            </div>
+          </div>
+
+          <!-- Row 2: Category & Description -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="space-y-1">
+              <label class="text-[11px] font-bold text-slate-300 block">Categoria Arquitetural</label>
+              <input
+                type="text"
+                [(ngModel)]="editingProfileForm().category"
+                class="w-full bg-[#080B12] border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none"
+                placeholder="Enterprise Architectural Pattern"
+              />
+            </div>
+            <div class="space-y-1 sm:col-span-2">
+              <label class="text-[11px] font-bold text-slate-300 block">Descrição do Padrão</label>
+              <input
+                type="text"
+                [(ngModel)]="editingProfileForm().description"
+                class="w-full bg-[#080B12] border border-slate-800 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none"
+                placeholder="Descreva as diretrizes e fronteiras impostas por este perfil"
+              />
+            </div>
+          </div>
+
+          <!-- Section: Tiers & Dependencies Configuration -->
+          <div class="space-y-3 pt-2 border-t border-slate-800">
+            <div class="flex items-center justify-between">
+              <div class="space-y-0.5">
+                <h4 class="text-xs font-bold text-cyan-300 font-mono flex items-center gap-1.5">
+                  <span>🧬</span>
+                  <span>Camadas &amp; Regras de Dependência ({{ editingProfileForm().tiers.length }} Tiers)</span>
+                </h4>
+                <p class="text-[10px] text-slate-400">
+                  Configure a ordem de isolamento e quais camadas podem ou não ser referenciadas
+                </p>
+              </div>
+              <button
+                type="button"
+                (click)="addTierToProfileForm()"
+                class="btn-guardian btn-guardian-secondary h-7 px-2.5 text-[11px] font-bold text-cyan-300 border-cyan-500/40 hover:bg-cyan-500/10 flex items-center gap-1"
+                data-testid="add-tier-btn"
+              >
+                <span>➕</span>
+                <span>Adicionar Camada</span>
+              </button>
+            </div>
+
+            <!-- Tiers List -->
+            <div class="space-y-3">
+              @for (tier of editingProfileForm().tiers; track $index; let tIdx = $index) {
+                <div class="p-3.5 rounded-xl bg-[#080B12] border border-slate-800 space-y-2.5" [attr.data-testid]="'tier-card-' + tIdx">
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center gap-2 flex-1">
+                      <span class="h-6 w-6 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 text-xs font-bold flex items-center justify-center font-mono shrink-0">
+                        {{ tIdx + 1 }}
+                      </span>
+                      <input
+                        type="text"
+                        [(ngModel)]="tier.name"
+                        class="bg-slate-900 border border-slate-800 rounded px-2.5 py-1 text-xs text-white font-bold flex-1 focus:border-cyan-400 focus:outline-none"
+                        placeholder="Nome da Camada (ex: Domain (Core Entities))"
+                        [attr.data-testid]="'tier-name-input-' + tIdx"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      (click)="removeTierFromProfileForm(tIdx)"
+                      class="h-7 w-7 rounded bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 hover:text-white border border-rose-500/30 flex items-center justify-center text-xs"
+                      title="Remover esta camada"
+                      [attr.data-testid]="'remove-tier-btn-' + tIdx"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+
+                  <input
+                    type="text"
+                    [(ngModel)]="tier.description"
+                    class="w-full bg-slate-900/60 border border-slate-800 rounded px-2.5 py-1 text-[11px] text-slate-300 focus:border-cyan-400 focus:outline-none"
+                    placeholder="Descrição do papel arquitetural desta camada"
+                  />
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <!-- Allowed Dependencies Input -->
+                    <div class="space-y-1">
+                      <label class="text-[10px] font-bold text-emerald-400 block flex items-center gap-1">
+                        <span>✓</span>
+                        <span>Dependências Permitidas (separadas por vírgula):</span>
+                      </label>
+                      <input
+                        type="text"
+                        [ngModel]="tier.allowedDependencies.join(', ')"
+                        (ngModelChange)="updateTierAllowedDeps(tIdx, $event)"
+                        class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1 text-[11px] text-emerald-300 font-mono focus:border-emerald-400 focus:outline-none"
+                        placeholder="Ex: Domain, Core"
+                        [attr.data-testid]="'tier-allowed-input-' + tIdx"
+                      />
+                    </div>
+
+                    <!-- Forbidden Dependencies Input -->
+                    <div class="space-y-1">
+                      <label class="text-[10px] font-bold text-rose-400 block flex items-center gap-1">
+                        <span>✕</span>
+                        <span>Dependências Proibidas (separadas por vírgula):</span>
+                      </label>
+                      <input
+                        type="text"
+                        [ngModel]="tier.forbiddenDependencies.join(', ')"
+                        (ngModelChange)="updateTierForbiddenDeps(tIdx, $event)"
+                        class="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1 text-[11px] text-rose-300 font-mono focus:border-rose-400 focus:outline-none"
+                        placeholder="Ex: Infrastructure, Presentation, Database"
+                        [attr.data-testid]="'tier-forbidden-input-' + tIdx"
+                      />
+                    </div>
+                  </div>
+                </div>
+              }
+              @if (editingProfileForm().tiers.length === 0) {
+                <div class="p-4 rounded-xl bg-[#080B12] border border-slate-800 text-center text-slate-500">
+                  Nenhuma camada definida. Clique em "➕ Adicionar Camada" para criar as fronteiras de isolamento.
+                </div>
+              }
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="pt-3 border-t border-slate-800 flex items-center justify-between gap-3">
+          <span class="text-[11px] text-slate-500">
+            * As regras de camadas são avaliadas em tempo real durante as varreduras de PR e pipelines CI/CD.
+          </span>
+          <div class="flex items-center gap-2.5">
+            <button
+              type="button"
+              (click)="closeEditArchitectureProfileModal()"
+              class="btn-guardian btn-guardian-secondary h-9 px-4 text-xs font-semibold"
+              data-testid="cancel-profile-btn"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              (click)="saveArchitectureProfileForm()"
+              [disabled]="!editingProfileForm().name || !editingProfileForm().id"
+              class="btn-guardian btn-guardian-primary h-9 px-5 text-xs font-bold flex items-center gap-1.5"
+              data-testid="save-architecture-profile-btn"
+            >
+              <span>💾</span>
+              <span>Salvar Perfil</span>
             </button>
           </div>
         </div>

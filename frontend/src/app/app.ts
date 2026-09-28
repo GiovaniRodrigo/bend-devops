@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CultureGuardianService } from './services/culture-guardian.service';
 import {
   AnalysisRun,
+  ArchitectureProfile,
   ArchitectureProfileId,
   AuditReport,
   BranchPolicy,
@@ -1017,6 +1018,17 @@ export class App {
   readonly engineSettings = this.guardianService.engineSettings;
   readonly history = this.guardianService.history;
   readonly codePresets = this.guardianService.codePresets;
+
+  // Architecture Profile Editing State
+  readonly isEditingArchitectureProfile = signal<boolean>(false);
+  readonly editingProfileForm = signal<ArchitectureProfile>({
+    id: 'clean_architecture',
+    name: '',
+    category: '',
+    description: '',
+    enabled: true,
+    tiers: []
+  });
 
   // Settings & Branch Policy Sub-tab and Form State
   readonly settingsSubTab = signal<'policies' | 'engine' | 'framework' | 'raw_json'>('policies');
@@ -2512,6 +2524,89 @@ export class App {
 
   disableAllProfiles(): void {
     this.architectureProfiles().forEach(p => this.guardianService.setArchitectureProfileStatus(p.id, false));
+  }
+
+  openEditArchitectureProfileModal(profile: ArchitectureProfile): void {
+    this.editingProfileForm.set(JSON.parse(JSON.stringify(profile)));
+    this.isEditingArchitectureProfile.set(true);
+  }
+
+  openCreateArchitectureProfileModal(): void {
+    const newId = `profile_custom_${Date.now().toString(36).substring(4)}`;
+    this.editingProfileForm.set({
+      id: newId as any,
+      name: 'Novo Perfil de Arquitetura',
+      category: 'Custom Architecture',
+      description: 'Definição personalizada de camadas e barreiras de isolamento arquitetural.',
+      enabled: true,
+      tiers: [
+        {
+          name: 'Core Domain',
+          description: 'Regras de negócio puras e entidades corporativas',
+          allowedDependencies: [],
+          forbiddenDependencies: ['Infrastructure', 'Presentation', 'Web', 'Http']
+        },
+        {
+          name: 'Application / Adapters',
+          description: 'Casos de uso, orquestradores e portas de interface',
+          allowedDependencies: ['Core Domain'],
+          forbiddenDependencies: ['Frameworks']
+        }
+      ]
+    });
+    this.isEditingArchitectureProfile.set(true);
+  }
+
+  closeEditArchitectureProfileModal(): void {
+    this.isEditingArchitectureProfile.set(false);
+  }
+
+  addTierToProfileForm(): void {
+    this.editingProfileForm.update(form => ({
+      ...form,
+      tiers: [
+        ...form.tiers,
+        {
+          name: `Nova Camada ${form.tiers.length + 1}`,
+          description: 'Definição de regras de isolamento e fronteiras da camada',
+          allowedDependencies: [],
+          forbiddenDependencies: []
+        }
+      ]
+    }));
+  }
+
+  removeTierFromProfileForm(tierIndex: number): void {
+    this.editingProfileForm.update(form => ({
+      ...form,
+      tiers: form.tiers.filter((_: any, idx: number) => idx !== tierIndex)
+    }));
+  }
+
+  updateTierForbiddenDeps(tierIndex: number, rawInput: string): void {
+    const list = rawInput.split(',').map((s: string) => s.trim()).filter(Boolean);
+    this.editingProfileForm.update(form => ({
+      ...form,
+      tiers: form.tiers.map((t: any, idx: number) => idx === tierIndex ? { ...t, forbiddenDependencies: list } : t)
+    }));
+  }
+
+  updateTierAllowedDeps(tierIndex: number, rawInput: string): void {
+    const list = rawInput.split(',').map((s: string) => s.trim()).filter(Boolean);
+    this.editingProfileForm.update(form => ({
+      ...form,
+      tiers: form.tiers.map((t: any, idx: number) => idx === tierIndex ? { ...t, allowedDependencies: list } : t)
+    }));
+  }
+
+  saveArchitectureProfileForm(): void {
+    const form = this.editingProfileForm();
+    if (!form.name || !form.id) return;
+
+    this.guardianService.updateArchitectureProfile(form);
+    this.isEditingArchitectureProfile.set(false);
+    this.frameworkToastMessage.set(`Perfil de arquitetura "${form.name}" salvo com sucesso!`);
+    setTimeout(() => this.frameworkToastMessage.set(null), 4000);
   }
 
   openExport(format: 'sarif' | 'gitlab' | 'bitbucket' | 'markdown'): void {
