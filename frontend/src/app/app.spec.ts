@@ -1291,6 +1291,13 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     app.setArchitectureProfileStatus(originalProfile.id, true);
     expect(app.architectureProfiles().find(p => p.id === originalProfile.id)?.enabled).toBe(true);
 
+    // Test direct flip to opposite status
+    app.toggleArchitectureProfile(originalProfile.id);
+    expect(app.architectureProfiles().find(p => p.id === originalProfile.id)?.enabled).toBe(false);
+
+    app.toggleArchitectureProfile(originalProfile.id);
+    expect(app.architectureProfiles().find(p => p.id === originalProfile.id)?.enabled).toBe(true);
+
     // Bulk enable / disable
     app.disableAllProfiles();
     expect(app.activeArchitectureProfilesCount()).toBe(0);

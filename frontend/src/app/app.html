@@ -533,33 +533,36 @@
                 <div *ngFor="let prof of architectureProfiles().slice(0, 3)" class="p-3 rounded-lg bg-[#0B0F19] border border-slate-800 flex items-center justify-between gap-2">
                   <span class="text-xs text-slate-200 font-medium truncate" [title]="prof.name">{{ prof.name.split(' (')[0] }}</span>
                   <div class="flex items-center gap-1.5 shrink-0">
-                    <!-- Turnover Switch -->
-                    <div class="inline-flex rounded-lg p-0.5 bg-[#080B12] border border-slate-800 font-mono text-[10px]">
-                      <button
-                        type="button"
-                        (click)="setArchitectureProfileStatus(prof.id, true)"
+                    <!-- Turnover Switch (Flips to opposite status on click) -->
+                    <button
+                      type="button"
+                      (click)="toggleArchitectureProfile(prof.id)"
+                      [class]="'group inline-flex items-center rounded-lg p-0.5 bg-[#080B12] border transition-all duration-200 cursor-pointer select-none font-mono text-[10px] ' + 
+                        (prof.enabled !== false 
+                          ? 'border-emerald-500/40 hover:border-emerald-400/80 shadow-[0_0_8px_rgba(16,185,129,0.2)]' 
+                          : 'border-rose-500/40 hover:border-rose-400/80 shadow-[0_0_8px_rgba(244,63,94,0.2)]')"
+                      [title]="prof.enabled !== false ? 'Status: ATIVO. Clique para mudar para INATIVO.' : 'Status: INATIVO. Clique para mudar para ATIVO.'"
+                      [attr.data-testid]="'dashboard-turnover-switch-' + prof.id"
+                    >
+                      <span
                         [class]="'px-2 py-0.5 rounded font-bold transition-all flex items-center gap-1 ' + 
                           (prof.enabled !== false 
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.3)]' 
-                            : 'text-slate-500 hover:text-slate-300 border border-transparent')"
-                        title="Ativo"
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' 
+                            : 'text-slate-500 opacity-40 group-hover:opacity-70 border border-transparent')"
                       >
                         <span>●</span>
                         <span>Ativo</span>
-                      </button>
-                      <button
-                        type="button"
-                        (click)="setArchitectureProfileStatus(prof.id, false)"
+                      </span>
+                      <span
                         [class]="'px-2 py-0.5 rounded font-bold transition-all flex items-center gap-1 ' + 
                           (prof.enabled === false 
-                            ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-[0_0_8px_rgba(244,63,94,0.3)]' 
-                            : 'text-slate-500 hover:text-slate-300 border border-transparent')"
-                        title="Inativo"
+                            ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' 
+                            : 'text-slate-500 opacity-40 group-hover:opacity-70 border border-transparent')"
                       >
                         <span>○</span>
                         <span>Inativo</span>
-                      </button>
-                    </div>
+                      </span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -4094,38 +4097,36 @@
                   <!-- Profile Action Controls & Turnover Switch -->
                   <div class="flex flex-col items-end gap-2 shrink-0">
                     <div class="flex items-center gap-2">
-                      <!-- Turnover Switch between Ativo and Inativo -->
-                      <div
-                        class="inline-flex rounded-lg p-0.5 bg-[#080B12] border border-slate-800 font-mono text-[11px] shadow-inner"
+                      <!-- Turnover Switch (Flips to opposite status on click) -->
+                      <button
+                        type="button"
+                        (click)="toggleArchitectureProfile(prof.id)"
+                        [class]="'group relative inline-flex items-center rounded-lg p-0.5 bg-[#080B12] border transition-all duration-200 cursor-pointer select-none font-mono text-[11px] shadow-inner ' + 
+                          (prof.enabled !== false 
+                            ? 'border-emerald-500/40 hover:border-emerald-400/80 shadow-[0_0_12px_rgba(16,185,129,0.25)]' 
+                            : 'border-rose-500/40 hover:border-rose-400/80 shadow-[0_0_12px_rgba(244,63,94,0.25)]')"
+                        [title]="prof.enabled !== false ? 'Status atual: ATIVO. Clique para mudar para INATIVO.' : 'Status atual: INATIVO. Clique para mudar para ATIVO.'"
                         [attr.data-testid]="'turnover-switch-' + prof.id"
                       >
-                        <button
-                          type="button"
-                          (click)="setArchitectureProfileStatus(prof.id, true)"
-                          [class]="'px-2.5 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 ' + 
+                        <span
+                          [class]="'px-2.5 py-1 rounded-md font-bold transition-all duration-200 flex items-center gap-1.5 ' + 
                             (prof.enabled !== false 
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.3)]' 
-                              : 'text-slate-500 hover:text-slate-300 border border-transparent')"
-                          [attr.data-testid]="'turnover-active-btn-' + prof.id"
-                          title="Marcar como Ativo"
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50 shadow-[0_0_8px_rgba(16,185,129,0.3)]' 
+                              : 'text-slate-500 opacity-40 group-hover:opacity-70 border border-transparent')"
                         >
                           <span class="text-[9px]">●</span>
                           <span>Ativo</span>
-                        </button>
-                        <button
-                          type="button"
-                          (click)="setArchitectureProfileStatus(prof.id, false)"
-                          [class]="'px-2.5 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 ' + 
+                        </span>
+                        <span
+                          [class]="'px-2.5 py-1 rounded-md font-bold transition-all duration-200 flex items-center gap-1.5 ' + 
                             (prof.enabled === false 
-                              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-[0_0_8px_rgba(244,63,94,0.3)]' 
-                              : 'text-slate-500 hover:text-slate-300 border border-transparent')"
-                          [attr.data-testid]="'turnover-inactive-btn-' + prof.id"
-                          title="Marcar como Inativo"
+                              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/50 shadow-[0_0_8px_rgba(244,63,94,0.3)]' 
+                              : 'text-slate-500 opacity-40 group-hover:opacity-70 border border-transparent')"
                         >
                           <span class="text-[9px]">○</span>
                           <span>Inativo</span>
-                        </button>
-                      </div>
+                        </span>
+                      </button>
 
                       <!-- Edit Profile Button -->
                       <button
