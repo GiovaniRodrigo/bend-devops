@@ -533,16 +533,33 @@
                 <div *ngFor="let prof of architectureProfiles().slice(0, 3)" class="p-3 rounded-lg bg-[#0B0F19] border border-slate-800 flex items-center justify-between gap-2">
                   <span class="text-xs text-slate-200 font-medium truncate" [title]="prof.name">{{ prof.name.split(' (')[0] }}</span>
                   <div class="flex items-center gap-1.5 shrink-0">
-                    <span [class]="'text-xs font-bold ' + (prof.enabled !== false ? 'text-emerald-400' : 'text-slate-500')">
-                      {{ prof.enabled !== false ? '✓ Ativo' : '○ Inativo' }}
-                    </span>
-                    <button
-                      (click)="toggleArchitectureProfile(prof.id)"
-                      [class]="'p-1 rounded text-[10px] font-mono transition-colors ' + (prof.enabled !== false ? 'text-slate-400 hover:text-rose-300 hover:bg-rose-950/40' : 'text-cyan-400 hover:text-cyan-200 hover:bg-cyan-950/40')"
-                      [title]="prof.enabled !== false ? 'Desativar este perfil' : 'Ativar este perfil'"
-                    >
-                      {{ prof.enabled !== false ? 'Desativar' : 'Ativar' }}
-                    </button>
+                    <!-- Turnover Switch -->
+                    <div class="inline-flex rounded-lg p-0.5 bg-[#080B12] border border-slate-800 font-mono text-[10px]">
+                      <button
+                        type="button"
+                        (click)="setArchitectureProfileStatus(prof.id, true)"
+                        [class]="'px-2 py-0.5 rounded font-bold transition-all flex items-center gap-1 ' + 
+                          (prof.enabled !== false 
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.3)]' 
+                            : 'text-slate-500 hover:text-slate-300 border border-transparent')"
+                        title="Ativo"
+                      >
+                        <span>●</span>
+                        <span>Ativo</span>
+                      </button>
+                      <button
+                        type="button"
+                        (click)="setArchitectureProfileStatus(prof.id, false)"
+                        [class]="'px-2 py-0.5 rounded font-bold transition-all flex items-center gap-1 ' + 
+                          (prof.enabled === false 
+                            ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-[0_0_8px_rgba(244,63,94,0.3)]' 
+                            : 'text-slate-500 hover:text-slate-300 border border-transparent')"
+                        title="Inativo"
+                      >
+                        <span>○</span>
+                        <span>Inativo</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -4037,8 +4054,9 @@
                 <button
                   type="button"
                   (click)="enableAllProfiles()"
-                  class="btn-guardian btn-guardian-secondary text-xs h-8 px-3 font-mono"
+                  class="btn-guardian btn-guardian-secondary text-xs h-8 px-3 font-mono text-emerald-300 hover:text-white"
                   title="Ativar todos os perfis de arquitetura"
+                  data-testid="enable-all-profiles-btn"
                 >
                   ✓ Ativar Todos
                 </button>
@@ -4046,9 +4064,10 @@
                   type="button"
                   (click)="disableAllProfiles()"
                   class="btn-guardian btn-guardian-secondary text-xs h-8 px-3 font-mono text-rose-300 hover:text-white"
-                  title="Desativar todos os perfis de arquitetura"
+                  title="Inativar todos os perfis de arquitetura"
+                  data-testid="disable-all-profiles-btn"
                 >
-                  ✕ Desativar Todos
+                  ✕ Inativar Todos
                 </button>
               </div>
             </div>
@@ -4072,32 +4091,52 @@
                     <p class="text-xs text-slate-300 leading-relaxed">{{ prof.description }}</p>
                   </div>
 
-                  <!-- Profile Action Buttons & Switch -->
-                  <div class="flex flex-col items-end gap-1.5 shrink-0">
-                    <span [class]="'badge-tech text-[10px] ' + (prof.enabled !== false ? 'badge-pass' : 'badge-fail')">
-                      {{ prof.enabled !== false ? '● ATIVO' : '○ DESATIVADO' }}
-                    </span>
-                    <div class="flex items-center gap-1.5">
+                  <!-- Profile Action Controls & Turnover Switch -->
+                  <div class="flex flex-col items-end gap-2 shrink-0">
+                    <div class="flex items-center gap-2">
+                      <!-- Turnover Switch between Ativo and Inativo -->
+                      <div
+                        class="inline-flex rounded-lg p-0.5 bg-[#080B12] border border-slate-800 font-mono text-[11px] shadow-inner"
+                        [attr.data-testid]="'turnover-switch-' + prof.id"
+                      >
+                        <button
+                          type="button"
+                          (click)="setArchitectureProfileStatus(prof.id, true)"
+                          [class]="'px-2.5 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 ' + 
+                            (prof.enabled !== false 
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-[0_0_8px_rgba(16,185,129,0.3)]' 
+                              : 'text-slate-500 hover:text-slate-300 border border-transparent')"
+                          [attr.data-testid]="'turnover-active-btn-' + prof.id"
+                          title="Marcar como Ativo"
+                        >
+                          <span class="text-[9px]">●</span>
+                          <span>Ativo</span>
+                        </button>
+                        <button
+                          type="button"
+                          (click)="setArchitectureProfileStatus(prof.id, false)"
+                          [class]="'px-2.5 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 ' + 
+                            (prof.enabled === false 
+                              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-[0_0_8px_rgba(244,63,94,0.3)]' 
+                              : 'text-slate-500 hover:text-slate-300 border border-transparent')"
+                          [attr.data-testid]="'turnover-inactive-btn-' + prof.id"
+                          title="Marcar como Inativo"
+                        >
+                          <span class="text-[9px]">○</span>
+                          <span>Inativo</span>
+                        </button>
+                      </div>
+
+                      <!-- Edit Profile Button -->
                       <button
                         type="button"
                         (click)="openEditArchitectureProfileModal(prof)"
-                        class="px-2.5 py-1 rounded text-xs font-mono font-semibold transition-all border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/20 flex items-center gap-1"
+                        class="h-7 px-2.5 rounded-lg text-xs font-mono font-semibold transition-all border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/20 flex items-center gap-1 bg-cyan-950/20"
                         [attr.data-testid]="'edit-profile-btn-' + prof.id"
                         title="Editar detalhes, camadas e dependências deste perfil de arquitetura"
                       >
                         <span>✏️</span>
                         <span>Editar</span>
-                      </button>
-                      <button
-                        type="button"
-                        (click)="toggleArchitectureProfile(prof.id)"
-                        [class]="'px-2.5 py-1 rounded text-xs font-mono font-semibold transition-all border ' + 
-                          (prof.enabled !== false 
-                            ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border-rose-500/30 hover:border-rose-500/50' 
-                            : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:border-emerald-500/50')"
-                        [attr.data-testid]="'toggle-profile-btn-' + prof.id"
-                      >
-                        {{ prof.enabled !== false ? 'Desativar' : 'Ativar' }}
                       </button>
                     </div>
                   </div>

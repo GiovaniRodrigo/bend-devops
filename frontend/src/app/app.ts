@@ -2518,6 +2518,10 @@ export class App {
     this.guardianService.toggleArchitectureProfile(profileId);
   }
 
+  setArchitectureProfileStatus(profileId: ArchitectureProfileId, enabled: boolean): void {
+    this.guardianService.setArchitectureProfileStatus(profileId, enabled);
+  }
+
   enableAllProfiles(): void {
     this.architectureProfiles().forEach(p => this.guardianService.setArchitectureProfileStatus(p.id, true));
   }

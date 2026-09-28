@@ -1283,6 +1283,20 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     expect(app.editingProfileForm().id).toContain('profile_custom_');
     app.closeEditArchitectureProfileModal();
     expect(app.isEditingArchitectureProfile()).toBe(false);
+
+    // Test turnover between Ativo and Inativo
+    app.setArchitectureProfileStatus(originalProfile.id, false);
+    expect(app.architectureProfiles().find(p => p.id === originalProfile.id)?.enabled).toBe(false);
+
+    app.setArchitectureProfileStatus(originalProfile.id, true);
+    expect(app.architectureProfiles().find(p => p.id === originalProfile.id)?.enabled).toBe(true);
+
+    // Bulk enable / disable
+    app.disableAllProfiles();
+    expect(app.activeArchitectureProfilesCount()).toBe(0);
+
+    app.enableAllProfiles();
+    expect(app.activeArchitectureProfilesCount()).toBe(app.architectureProfiles().length);
   });
 });
 
