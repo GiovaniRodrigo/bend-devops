@@ -9,6 +9,9 @@
     "test": "./scripts/validate.sh",
     "test:e2e": "python3 -m unittest tests/e2e/test_playwright_e2e.py",
     "screenshots": "python3 tests/e2e/capture_screenshots.py",
+    "coverage": "coverage run --source=scripts -m unittest discover -s tests -p 'test_*.py' && coverage run -a --source=scripts -m unittest discover -s tests/vcs -p 'test_*.py' && coverage report -m && coverage html",
+    "coverage:report": "coverage report -m",
+    "coverage:html": "coverage html",
     "validate": "./scripts/validate.sh",
     "audit": "python3 scripts/culture_guard.py"
   },

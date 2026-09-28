@@ -1,0 +1,33 @@
+# .coveragerc - Coverage.py 7.16.x configuration for Bend DevOps Guardian
+# Reference: https://coverage.readthedocs.io/en/7.16.1/config.html
+
+[run]
+source =
+    scripts
+branch = True
+omit =
+    */__pycache__/*
+    scripts/guardian_mock.py
+
+[report]
+show_missing = True
+precision = 2
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    if self\.debug:
+    if __name__ == .__main__.:
+    raise AssertionError
+    raise NotImplementedError
+    if 0:
+    if TYPE_CHECKING:
+
+[html]
+directory = htmlcov
+title = Bend DevOps Guardian - Python Test Coverage Report
+
+[xml]
+output = coverage.xml
+
+[json]
+output = coverage.json

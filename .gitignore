@@ -9,8 +9,17 @@ target/
 *.hvm
 /tmp/_culture_guard*
 
+# Python Coverage
+.coverage
+.coverage.*
+htmlcov/
+coverage_html_report/
+coverage.xml
+coverage.json
+
 # IDEs
 .vscode/
 .idea/
 *.swp
 tests/screenshots/
+

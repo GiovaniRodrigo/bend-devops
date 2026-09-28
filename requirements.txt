@@ -1,0 +1,4 @@
+# Python Dependencies for Bend DevOps Guardian
+# Core & Testing
+coverage>=7.16.1
+playwright>=1.40.0

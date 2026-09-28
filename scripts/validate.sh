@@ -45,13 +45,26 @@ bend run-rs backend/src/guardian.bend
 echo "✅ Bend engine executed successfully."
 
 echo ""
-echo "🛡️  [6/8] Running False-Positive & Token Filter Tests..."
-python3 -m unittest discover -s tests -p "test_*.py"
+echo "🛡️  [6/8] Running False-Positive & Token Filter Tests with Coverage (coverage.py)..."
+if python3 -m coverage --version >/dev/null 2>&1; then
+  python3 -m coverage erase
+  python3 -m coverage run -a --source=scripts -m unittest discover -s tests -p "test_*.py"
+else
+  python3 -m unittest discover -s tests -p "test_*.py"
+fi
 echo "✅ Token filter and false-positive prevention tests passed."
 
 echo ""
 echo "🛡️  [7/8] Running Multi-Platform VCS Adapter Tests (GitHub, GitLab, Bitbucket)..."
-python3 -m unittest discover -s tests/vcs -p "test_*.py"
+if python3 -m coverage --version >/dev/null 2>&1; then
+  python3 -m coverage run -a --source=scripts -m unittest discover -s tests/vcs -p "test_*.py"
+  echo ""
+  echo "📊 Python Code Coverage Summary (https://coverage.readthedocs.io/):"
+  python3 -m coverage report
+  python3 -m coverage html
+else
+  python3 -m unittest discover -s tests/vcs -p "test_*.py"
+fi
 echo "✅ VCS platform integration tests passed."
 
 echo ""
