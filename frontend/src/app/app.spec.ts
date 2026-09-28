@@ -894,5 +894,48 @@ describe('App (Bend DevOps Guardian Dashboard)', () => {
     expect(app.selectedProfile()).toBe('frontend_clean');
     expect(app.rules().find(r => r.id === 'ARCH-FE-01')?.status).toBe('active');
   });
+
+  it('should render and maintain always-visible applied rules panel on Live Auditor screen with search and severity filters', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+    await fixture.whenStable();
+
+    app.navigateToTab('analyze');
+    expect(app.activeTab()).toBe('analyze');
+
+    // Default: panel is expanded and lists all active applied rules
+    expect(app.isAppliedRulesPanelCollapsed()).toBe(false);
+    expect(app.appliedRulesList().length).toBeGreaterThan(0);
+    expect(app.appliedP0Count()).toBeGreaterThan(0);
+
+    // Filter by text search
+    app.appliedRulesFilter.set('DOTNET');
+    const filtered = app.appliedRulesList();
+    expect(filtered.length).toBeGreaterThan(0);
+    expect(filtered.every(r => r.id.includes('DOTNET') || r.name.includes('DOTNET') || (r.category || '').includes('DOTNET') || (r.languages || []).includes('C#'))).toBe(true);
+
+    // Clear text filter
+    app.appliedRulesFilter.set('');
+
+    // Filter by severity P0
+    app.setAppliedRulesSeverityFilter('P0');
+    expect(app.appliedRulesSeverityFilter()).toBe('P0');
+    expect(app.appliedRulesList().every(r => r.severity.startsWith('P0'))).toBe(true);
+
+    // Filter by severity P1
+    app.setAppliedRulesSeverityFilter('P1');
+    expect(app.appliedRulesSeverityFilter()).toBe('P1');
+    expect(app.appliedRulesList().every(r => r.severity.startsWith('P1'))).toBe(true);
+
+    // Reset severity filter
+    app.setAppliedRulesSeverityFilter('ALL');
+    expect(app.appliedRulesSeverityFilter()).toBe('ALL');
+
+    // Toggle collapse
+    app.toggleAppliedRulesPanel();
+    expect(app.isAppliedRulesPanelCollapsed()).toBe(true);
+    app.toggleAppliedRulesPanel();
+    expect(app.isAppliedRulesPanelCollapsed()).toBe(false);
+  });
 });
 

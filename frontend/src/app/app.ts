@@ -973,6 +973,59 @@ export class App {
     );
   });
 
+  // Always-Visible Applied Rules State on Live Auditor Screen
+  readonly appliedRulesFilter = signal<string>('');
+  readonly appliedRulesSeverityFilter = signal<'ALL' | 'P0' | 'P1' | 'P2'>('ALL');
+  readonly isAppliedRulesPanelCollapsed = signal<boolean>(false);
+
+  readonly appliedRulesList = computed<CultureRule[]>(() => {
+    const all = this.rules();
+    const mode = this.validationScopeMode();
+    const customIds = this.selectedCustomRuleIds();
+    const filterText = this.appliedRulesFilter().toLowerCase().trim();
+    const sevFilter = this.appliedRulesSeverityFilter();
+
+    let list: CultureRule[];
+    if (mode === 'custom') {
+      list = all.filter(r => customIds.has(r.id));
+    } else {
+      list = all.filter(r => (r.status || '').toLowerCase() === 'active' || (r.enabled !== false && (r.status || '').toLowerCase() !== 'inactive'));
+    }
+
+    if (sevFilter !== 'ALL') {
+      list = list.filter(r => (r.severity || '').toUpperCase().startsWith(sevFilter));
+    }
+
+    if (filterText) {
+      list = list.filter(r =>
+        r.id.toLowerCase().includes(filterText) ||
+        r.name.toLowerCase().includes(filterText) ||
+        (r.category || '').toLowerCase().includes(filterText) ||
+        (r.description || '').toLowerCase().includes(filterText) ||
+        (r.layer || '').toLowerCase().includes(filterText) ||
+        (r.languages || []).some(l => l.toLowerCase().includes(filterText))
+      );
+    }
+
+    return list;
+  });
+
+  readonly appliedP0Count = computed<number>(() => {
+    return this.appliedRulesList().filter(r => (r.severity || '').toUpperCase().startsWith('P0')).length;
+  });
+
+  readonly appliedP1Count = computed<number>(() => {
+    return this.appliedRulesList().filter(r => (r.severity || '').toUpperCase().startsWith('P1')).length;
+  });
+
+  toggleAppliedRulesPanel(): void {
+    this.isAppliedRulesPanelCollapsed.update(v => !v);
+  }
+
+  setAppliedRulesSeverityFilter(filter: 'ALL' | 'P0' | 'P1' | 'P2'): void {
+    this.appliedRulesSeverityFilter.set(filter);
+  }
+
   readonly ctaButtonText = computed(() => {
     const count = this.effectiveRulesCount();
     const mode = this.validationScopeMode();

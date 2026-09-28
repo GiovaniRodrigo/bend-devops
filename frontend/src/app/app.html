@@ -580,22 +580,58 @@
         <!-- VIEW 2: LIVE CODE & DIFF AUDITOR (Developer-Tool First)               -->
         <!-- ===================================================================== -->
         @if (activeTab() === 'analyze') {
-          <div class="space-y-5">
+          <div class="space-y-4">
             
-            <!-- Page Header -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <!-- Page Header & Quick Context -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
               <div>
-                <h2 class="text-2xl font-bold tracking-tight text-white">Live Code &amp; Diff Auditor</h2>
+                <h2 class="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                  <span>Live Code &amp; Diff Auditor</span>
+                  <span class="text-xs font-mono font-normal px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                    AST &bull; O(log N)
+                  </span>
+                </h2>
                 <p class="text-xs text-slate-400 font-mono mt-0.5">
-                  {{ activeRepoName() }} &bull; {{ sourceBranch() }} &rarr; {{ compareBranch() }}
+                  Auditoria de conformidade arquitetural em tempo real com redução massiva em paralelo
                 </p>
               </div>
               <div class="flex items-center gap-2">
                 <span class="badge-tech text-[10px] badge-cyan">
-                  Bend HVM 64-Thread Engine
+                  Bend HVM 64T
                 </span>
                 <span class="badge-tech text-[10px] badge-pass">
                   Gate: {{ compareBranch() }} (Strict)
+                </span>
+              </div>
+            </div>
+
+            <!-- Hero Context Summary Strip (Low Cognitive Load at a Glance) -->
+            <div class="p-3 rounded-xl bg-[#0A0E18] border border-cyan-500/20 shadow-md flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                <div class="flex items-center gap-1.5 text-slate-300">
+                  <span class="text-cyan-400 font-bold">📂</span>
+                  <span class="text-slate-400">Repo:</span>
+                  <strong class="text-white">{{ activeRepoName() }}</strong>
+                </div>
+                <div class="flex items-center gap-1.5 text-slate-300">
+                  <span class="text-cyan-400 font-bold">🌿</span>
+                  <span class="text-slate-400">Branch:</span>
+                  <strong class="text-cyan-300">{{ sourceBranch() }}</strong>
+                  <span class="text-slate-500">&rarr;</span>
+                  <span class="text-slate-300">{{ compareBranch() }}</span>
+                </div>
+                <div class="flex items-center gap-1.5 text-slate-300">
+                  <span class="text-cyan-400 font-bold">🛡️</span>
+                  <span class="text-slate-400">Perfil:</span>
+                  <strong class="text-slate-200">{{ selectedProfileName() }}</strong>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold">
+                  {{ effectiveRulesCount() }} Regras Ativas
+                </span>
+                <span class="px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-[11px] font-bold">
+                  Bend HVM 64T
                 </span>
               </div>
             </div>
@@ -1209,21 +1245,159 @@
             </div>
 
             <!-- ================================================================= -->
+            <!-- ALWAYS-VISIBLE APPLIED GOVERNANCE RULES PANEL                     -->
+            <!-- (Ultra-Clean, Low Cognitive Load, Progressive Disclosure)         -->
+            <!-- ================================================================= -->
+            <div class="card-guardian p-4 space-y-3 font-mono text-xs bg-[#0B101D] border-cyan-500/30 shadow-lg" data-testid="applied-rules-panel">
+              
+              <!-- Panel Header -->
+              <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+                <div class="flex flex-wrap items-center gap-2">
+                  <div class="flex items-center gap-2">
+                    <span class="flex items-center justify-center w-5 h-5 rounded-full bg-cyan-500/20 text-cyan-400 text-xs font-bold">🛡️</span>
+                    <h3 class="text-xs uppercase tracking-wider text-white font-bold">Regras Aplicadas na Análise</h3>
+                  </div>
+                  <span class="px-2 py-0.5 rounded bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 text-[10px] font-bold">
+                    {{ selectedProfileName() }}
+                  </span>
+                  <span class="px-2 py-0.5 rounded bg-slate-800/90 text-slate-300 text-[10px] font-bold">
+                    {{ appliedRulesList().length }} regras ativas
+                  </span>
+                  <span class="px-1.5 py-0.2 rounded bg-rose-500/15 border border-rose-500/30 text-rose-300 text-[10px] font-bold">
+                    {{ appliedP0Count() }} P0 Bloqueantes
+                  </span>
+                  <span class="px-1.5 py-0.2 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-bold">
+                    {{ appliedP1Count() }} P1 Avisos
+                  </span>
+                </div>
+
+                <!-- Controls: Search, Severity Filter & Collapse -->
+                <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                  <!-- Search Filter -->
+                  <div class="relative flex-1 sm:w-44">
+                    <input
+                      type="text"
+                      [ngModel]="appliedRulesFilter()"
+                      (ngModelChange)="appliedRulesFilter.set($event)"
+                      placeholder="Filtrar regras..."
+                      class="w-full bg-[#080B12] border border-slate-800 rounded px-2 py-1 text-[11px] text-cyan-300 placeholder:text-slate-500 focus:border-cyan-500 focus:outline-none"
+                      data-testid="applied-rules-search-input"
+                    />
+                  </div>
+
+                  <!-- Severity Filter Toggle -->
+                  <div class="inline-flex rounded bg-[#080B12] p-0.5 border border-slate-800 text-[10px]">
+                    <button
+                      type="button"
+                      (click)="setAppliedRulesSeverityFilter('ALL')"
+                      [class]="'px-2 py-0.5 rounded font-bold transition-colors ' + (appliedRulesSeverityFilter() === 'ALL' ? 'bg-cyan-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-slate-200')"
+                      data-testid="applied-rules-filter-all"
+                    >
+                      Todas
+                    </button>
+                    <button
+                      type="button"
+                      (click)="setAppliedRulesSeverityFilter('P0')"
+                      [class]="'px-2 py-0.5 rounded font-bold transition-colors ' + (appliedRulesSeverityFilter() === 'P0' ? 'bg-rose-500 text-white shadow-sm' : 'text-slate-400 hover:text-rose-400')"
+                      data-testid="applied-rules-filter-p0"
+                    >
+                      P0
+                    </button>
+                    <button
+                      type="button"
+                      (click)="setAppliedRulesSeverityFilter('P1')"
+                      [class]="'px-2 py-0.5 rounded font-bold transition-colors ' + (appliedRulesSeverityFilter() === 'P1' ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-amber-400')"
+                      data-testid="applied-rules-filter-p1"
+                    >
+                      P1
+                    </button>
+                  </div>
+
+                  <!-- Collapse Button -->
+                  <button
+                    type="button"
+                    (click)="toggleAppliedRulesPanel()"
+                    class="p-1 px-2.5 rounded bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition text-[11px] font-bold flex items-center gap-1"
+                    title="Expandir/Recolher painel de regras"
+                    data-testid="toggle-applied-rules-panel-btn"
+                  >
+                    <span>{{ isAppliedRulesPanelCollapsed() ? '▾' : '▴' }}</span>
+                    <span>{{ isAppliedRulesPanelCollapsed() ? 'Expandir' : 'Recolher' }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Rules Grid (Always rendered by default) -->
+              @if (!isAppliedRulesPanelCollapsed()) {
+                <div class="space-y-2.5" data-testid="applied-rules-content">
+                  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 max-h-56 overflow-y-auto p-1.5 bg-[#080B12] rounded-lg border border-slate-800/80">
+                    @for (rule of appliedRulesList(); track rule.id) {
+                      <div class="p-2.5 rounded-lg bg-[#0E1524] border border-slate-800/80 hover:border-cyan-500/50 hover:bg-[#121B2F] transition-all space-y-1.5 flex flex-col justify-between group cursor-default shadow-sm" [attr.data-testid]="'applied-rule-card-' + rule.id">
+                        
+                        <div>
+                          <div class="flex items-center justify-between gap-1">
+                            <div class="flex items-center gap-1.5 min-w-0">
+                              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                              <strong class="text-cyan-300 font-bold text-[11px] truncate font-mono">{{ rule.id }}</strong>
+                            </div>
+                            <span [class]="'text-[9px] px-1.5 py-0.2 rounded font-bold shrink-0 ' + (rule.severity.startsWith('P0') ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30')">
+                              {{ rule.severity.startsWith('P0') ? 'P0' : 'P1' }} ({{ rule.penaltyPoints || 30 }} pts)
+                            </span>
+                          </div>
+
+                          <p class="text-[11px] text-slate-200 font-medium line-clamp-2 mt-1 leading-snug group-hover:text-white">
+                            {{ rule.name }}
+                          </p>
+                        </div>
+
+                        <div class="pt-1.5 border-t border-slate-800/60 flex items-center justify-between text-[9px] text-slate-400">
+                          <span class="truncate max-w-[120px] text-slate-400 font-medium">{{ rule.category || 'Architecture' }}</span>
+                          <div class="flex items-center gap-1">
+                            @for (lang of (rule.languages || []).slice(0, 2); track lang) {
+                              <span class="px-1 py-0.2 rounded bg-slate-800/90 text-slate-300 font-mono">{{ lang }}</span>
+                            }
+                          </div>
+                        </div>
+
+                      </div>
+                    } @empty {
+                      <div class="col-span-full p-4 text-center text-slate-400 text-xs">
+                        Nenhuma regra encontrada com o filtro atual.
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Footer Summary Strip -->
+                  <div class="pt-1 flex flex-wrap items-center justify-between text-[10px] text-slate-400">
+                    <span class="flex items-center gap-1.5">
+                      <span class="text-emerald-400 font-bold">✓</span>
+                      <span>Executadas via Bend HVM Parallel AST Reduction</span>
+                    </span>
+                    <span class="text-slate-400">
+                      Supressão com <code class="text-cyan-400">@guardian-ignore</code> ativa &bull; Strict Quality Gate
+                    </span>
+                  </div>
+                </div>
+              }
+
+            </div>
+
+            <!-- ================================================================= -->
             <!-- STAGE 4: EXECUTION & SCOPE BAR                                    -->
             <!-- ================================================================= -->
-            <div class="card-guardian p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="card-guardian p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#0A0E18] border-cyan-500/30 shadow-md">
               <!-- Scope Switcher (Branch vs Single File) -->
               <div class="flex flex-wrap items-center gap-3">
-                <div class="inline-flex rounded-lg bg-[#0B0F19] p-1 border border-slate-800 text-xs font-medium">
+                <div class="inline-flex rounded-lg bg-[#080B12] p-1 border border-slate-800 text-xs font-medium">
                   <button
                     (click)="setAuditScope('branch_analysis')"
-                    [class]="'px-3 py-1.5 rounded-md font-semibold transition-all ' + (auditScope() === 'branch_analysis' ? 'bg-cyan-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-slate-200')"
+                    [class]="'px-3 py-1.5 rounded-md font-semibold transition-all cursor-pointer ' + (auditScope() === 'branch_analysis' ? 'bg-cyan-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-slate-200')"
                   >
                     Branch Analysis
                   </button>
                   <button
                     (click)="setAuditScope('single_file')"
-                    [class]="'px-3 py-1.5 rounded-md font-semibold transition-all ' + (auditScope() === 'single_file' ? 'bg-cyan-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-slate-200')"
+                    [class]="'px-3 py-1.5 rounded-md font-semibold transition-all cursor-pointer ' + (auditScope() === 'single_file' ? 'bg-cyan-500 text-slate-950 shadow-sm' : 'text-slate-400 hover:text-slate-200')"
                   >
                     Single File Review
                   </button>
@@ -1231,19 +1405,19 @@
 
                 @if (auditScope() === 'single_file') {
                   <div class="text-xs font-mono text-slate-300 flex items-center gap-2">
-                    <span class="text-slate-500">File:</span>
+                    <span class="text-slate-400">Arquivo:</span>
                     <select
                       data-testid="file-preset-select"
                       [ngModel]="selectedPresetIndex()"
                       (ngModelChange)="selectPreset($event)"
-                      class="rounded-md bg-[#0B0F19] border border-slate-800 px-2 py-1 text-slate-200 text-xs font-mono"
+                      class="rounded-md bg-[#080B12] border border-slate-800 px-2 py-1 text-slate-200 text-xs font-mono focus:border-cyan-500 focus:outline-none"
                     >
                       <option *ngFor="let p of codePresets; let i = index" [value]="i">{{ p.name }} ({{ p.fileName }})</option>
                     </select>
                   </div>
                 } @else {
                   <div class="text-xs font-mono text-slate-300 flex items-center gap-2">
-                    <span class="text-slate-500">Target:</span>
+                    <span class="text-slate-400">Alvo:</span>
                     <strong class="text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">
                       {{ sourceBranch() }} &rarr; {{ compareBranch() }}
                     </strong>
@@ -1256,7 +1430,7 @@
                 <button
                   (click)="analyzeCurrentScope()"
                   [disabled]="isAnalyzing()"
-                  class="btn-guardian btn-guardian-primary h-10 px-5 text-xs font-bold shadow-lg shadow-cyan-500/10 flex items-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed"
+                  class="btn-guardian btn-guardian-primary h-10 px-6 text-xs font-bold shadow-lg shadow-cyan-500/15 flex items-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer transition-transform active:scale-95"
                   data-testid="analyze-button"
                 >
                   <svg *ngIf="!isAnalyzing()" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
