@@ -221,6 +221,7 @@ html.light .bg-hvm-glow {
 }
 
 /* Base Body & App Canvas */
+html.light .bg-\[\#070A10\],
 html.light .bg-\[\#080B12\],
 html.light .bg-\[\#080B12\]\/80,
 html.light .bg-\[\#080B12\]\/90 {
@@ -228,6 +229,8 @@ html.light .bg-\[\#080B12\]\/90 {
 }
 
 /* Nested Surfaces & Dark Slate Container Replacement */
+html.light .bg-\[\#0A0E16\],
+html.light .bg-\[\#0A0E16\]\/90,
 html.light .bg-\[\#0B0F19\],
 html.light .bg-\[\#0B0F19\]\/90,
 html.light .bg-\[\#0B0F19\]\/40,
