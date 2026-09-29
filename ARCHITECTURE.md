@@ -1,181 +1,43 @@
-# 🏛️ Architecture & System Design: Bend DevOps Guardian
+# 🏛️ Architecture & System Design
 
-This document defines the **Clean Architecture**, runtime characteristics, parallel reduction model, and component topology of the **Bend DevOps Guardian** (`bend-devops`).
-
----
-
-## 🎯 Architectural Vision & Core Principles
-
-The Bend DevOps Guardian is engineered around four core tenets:
-1. **Clean Architecture & Separation of Concerns**: Independent of frameworks, databases, or UI. Business rules and architectural invariants reside in the innermost core.
-2. **Massive Parallelism via Interaction Combinators**: Purely functional tree reduction executed on the **Bend / HVM** (Higher-Order Virtual Machine) runtime, scaling concurrently across CPU cores and GPU threads.
-3. **Spec-Driven Development (SDD) & Traceability**: Bidirectional linking between formal specifications in [`specs/`](./specs/) and implementation artifacts via `@spec RFxx` annotations.
-4. **Deterministic Quality Gating**: Side-effect-free audit evaluations producing deterministic scores (0-100) and actionable machine-readable reports.
+Clean Architecture structure, parallel HVM reduction model, and component topology for **Bend DevOps Guardian** (`bend-devops`).
 
 ---
 
 ## 🧅 Clean Architecture Layers
 
-The system strictly adheres to Clean Architecture principles organized in concentric rings where dependencies point exclusively inwards:
+Dependencies point strictly inwards:
 
 ```mermaid
 flowchart TD
-    subgraph Ring4 ["Layer 4: Frameworks & Drivers (External)"]
-        CLI["scripts/culture_guard.py (CLI Tool)"]
-        CI["GitHub Actions / GitLab CI / Bitbucket Pipelines"]
-        UI["🅰️ Angular 19 Web Dashboard (frontend/)"]
-        HVM["HVM Virtual Machine Runtime (bend / hvm)"]
-    end
-
-    subgraph Ring3 ["Layer 3: Interface Adapters"]
-        VCS_Adapters["scripts/vcs_adapters/ (GitHub, GitLab, Bitbucket)"]
-        Diff_Parser["scripts/vcs_adapters/diff_parser.py (Git Diff Engine)"]
-        Token_Filter["scripts/token_filter.py (Word Boundary & Pragma Parser)"]
-        Exporters["SARIF & CodeQuality JSON Exporters"]
-    end
-
-    subgraph Ring2 ["Layer 2: Application / Use Cases"]
-        HarnessGen["Dynamic Bend Harness Generator"]
-        TreeReducer["Parallel Binary Tree Reducer"]
-        ReportAggregator["Audit Report & Score Aggregator"]
-        PolicyEngine["Branch Policy & Gate Evaluator"]
-    end
-
-    subgraph Ring1 ["Layer 1: Enterprise Core / Domain Entities"]
-        DomainEntities["TargetFile, Violation, CultureReport, FileTree"]
-        PureRules["Pure Functional Rules (CULT01..05, ARCH-LAYER-01..04)"]
-        Taxonomy["Layer Vocabulary & Token Taxonomy (layer_vocabulary.json)"]
-    end
-
-    Ring4 --> Ring3
-    Ring3 --> Ring2
-    Ring2 --> Ring1
+    L4["Layer 4: Frameworks & Drivers\n(CLI: scripts/culture_guard.py, Angular 19 UI, HVM Virtual Machine)"]
+    L3["Layer 3: Interface Adapters\n(scripts/vcs_adapters/, scripts/token_filter.py, SARIF Exporters)"]
+    L2["Layer 2: Application / Use Cases\n(Bend Harness Generator, Binary Tree Reducer, Score Aggregator)"]
+    L1["Layer 1: Enterprise Core\n(backend/src/guardian.bend pure types, layer_vocabulary.json)"]
+    L4 --> L3 --> L2 --> L1
 ```
 
----
+### Layer Responsibilities
 
-### Layer 1: Enterprise Core & Domain Entities
-- **Location**: [`backend/src/guardian.bend`](./backend/src/guardian.bend), [`backend/rules/layer_vocabulary.json`](./backend/rules/layer_vocabulary.json)
-- **Responsibilities**:
-  - Defines pure algebraic data types (`TargetFile`, `Violation`, `ViolationStats`, `CultureReport`, `FileTree`).
-  - Implements inviolable culture and boundary evaluation functions (`check_cult01_lazy_code`, `check_cult02_spec_traceability`, `check_cult03_test_coverage`, `check_cult04_secrets`, `check_cult05_strict_typing`).
-  - Completely decoupled from file I/O, network protocols, and external libraries.
-
-### Layer 2: Application / Use Cases
-- **Location**: Application workflows within [`backend/src/guardian.bend`](./backend/src/guardian.bend) and [`scripts/culture_guard.py`](./scripts/culture_guard.py)
-- **Responsibilities**:
-  - `evaluate_tree_parallel(tree)`: Divides the file tree recursively and reduces violation sets concurrently.
-  - `generate_audit_report(files_count, violations)`: Calculates penalties, computes normalized quality scores (0-100), and determines gate verdict (`APPROVED` vs `BLOCKED`).
-  - `generate_bend_harness(files)`: Synthesizes dynamic evaluation ASTs for execution on HVM.
-
-### Layer 3: Interface Adapters
-- **Location**: [`scripts/vcs_adapters/`](./scripts/vcs_adapters/), [`scripts/token_filter.py`](./scripts/token_filter.py)
-- **Responsibilities**:
-  - **VCS Adapters** ([`BaseVcsAdapter`](./scripts/vcs_adapters/base_adapter.py), [`GitHubAdapter`](./scripts/vcs_adapters/github_adapter.py), [`GitLabAdapter`](./scripts/vcs_adapters/gitlab_adapter.py), [`BitbucketAdapter`](./scripts/vcs_adapters/bitbucket_adapter.py)): Converts external VCS webhook payloads and REST API responses into domain models.
-  - **Git Diff Engine** ([`diff_parser.py`](./scripts/vcs_adapters/diff_parser.py)): Extracts modified file lists and altered line numbers from Git patches.
-  - **Token & Pragma Filter** ([`token_filter.py`](./scripts/token_filter.py)): Enforces syntactic word boundary fences, comment scoping, and `@guardian-ignore` suppressions.
-  - **Presenters & Exporters**: Emits standardized SARIF v2.1.0 documents, GitLab Code Quality JSON, and rich Markdown PR discussion summaries.
-
-### Layer 4: Frameworks & Drivers (Infrastructure)
-- **Location**: [`scripts/culture_guard.py`](./scripts/culture_guard.py), [`scripts/validate.sh`](./scripts/validate.sh), [`frontend/`](./frontend/), CI workflows ([`.github/workflows/`](./.github/workflows/), [`.gitlab-ci.yml`](./.gitlab-ci.yml), [`bitbucket-pipelines.yml`](./bitbucket-pipelines.yml))
-- **Responsibilities**:
-  - CLI argument parsing, environment variable ingestion, and file system traversal.
-  - Invoking the Rust-based Bend compiler and HVM runtime.
-  - Rendering the Angular 19 reactive Web Dashboard with Tailwind CSS and standalone components.
+| Layer | Path | Responsibilities |
+| :--- | :--- | :--- |
+| **Layer 1: Core** | `backend/src/guardian.bend`, `backend/rules/` | Pure algebraic data types (`TargetFile`, `Violation`, `CultureReport`), rules logic, layer taxonomy. |
+| **Layer 2: Use Cases** | `backend/src/guardian.bend`, `scripts/culture_guard.py` | Parallel binary tree reduction (`evaluate_tree_parallel`), score calculation, verdict evaluation. |
+| **Layer 3: Adapters** | `scripts/vcs_adapters/`, `scripts/token_filter.py` | GitHub/GitLab/Bitbucket adapters, exact token boundary filter, pragma parser, SARIF/JSON exporters. |
+| **Layer 4: Drivers** | `scripts/culture_guard.py`, `frontend/`, CI workflows | CLI entrypoint, Angular 19 Web Dashboard, CI/CD pipeline automation. |
 
 ---
 
-## ⚡ Massively Parallel Reduction Model (Bend & HVM)
+## ⚡ Bend / HVM Parallel Reduction
 
-The core evaluation uses **Interaction Combinators** in Bend, transforming the codebase audit into a binary tree reduction:
+Files are mapped into a balanced binary tree evaluated concurrently via interaction combinators on HVM:
 
-```mermaid
-flowchart TD
-    Root["FileTree/Node"]
-    L1["FileTree/Node (Left Subtree)"]
-    R1["FileTree/Node (Right Subtree)"]
-    F1["Leaf: Domain/Order.cs"]
-    F2["Leaf: Services/PaymentService.cs"]
-    F3["Leaf: Controllers/ApiController.cs"]
-    F4["Leaf: Views/Index.cshtml"]
-
-    Root --> L1 & R1
-    L1 --> F1 & F2
-    R1 --> F3 & F4
-
-    subgraph ParallelExecution ["Concurrently Evaluated on HVM (O(log N) Depth)"]
-        F1 --> V1["Violations: []"]
-        F2 --> V2["Violations: []"]
-        F3 --> V3["Violations: [ARCH-LAYER-01]"]
-        F4 --> V4["Violations: []"]
-    end
-
-    V1 & V2 --> RL["Left Violations: []"]
-    V3 & V4 --> RR["Right Violations: [ARCH-LAYER-01]"]
-    RL & RR --> FinalReport["CultureReport: Score 60, BLOCKED"]
+```
+                  Node (Reduces L + R)
+                 /                    \
+       Node (L1 + L2)             Node (L3 + L4)
+       /            \             /            \
+  Leaf(File 1)  Leaf(File 2)  Leaf(File 3)  Leaf(File 4)
 ```
 
-Because Bend execution is purely functional and free of side effects, interaction nodes reduce with **zero lock contention** and **zero Global Interpreter Lock (GIL)** bottlenecks.
-
----
-
-## 🔄 Multi-Platform VCS Execution Sequence
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Dev as Developer / Contributor
-    participant VCS as VCS Hosting (GitHub / GitLab / Bitbucket)
-    participant CI as CI Runner Pipeline
-    participant CLI as culture_guard.py (Adapter Layer)
-    participant Filter as token_filter.py (Lexical Filter)
-    participant Bend as guardian.bend (Parallel HVM)
-
-    Dev->>VCS: Push commit or open PR / MR
-    VCS->>CI: Trigger Quality Gate Workflow
-    CI->>CLI: Execute `python3 scripts/culture_guard.py --vcs <platform>`
-    CLI->>CLI: Parse Git diff (extract changed files & hunks)
-    CLI->>Filter: Filter comments & check @guardian-ignore pragmas
-    Filter-->>CLI: Clean token stream & active exemptions
-    CLI->>Bend: Dispatch parallel FileTree reduction to HVM
-    Bend-->>CLI: Return evaluated violations, stats & score
-    CLI->>VCS: Set Commit Status (Success / Failure)
-    CLI->>VCS: Post / Update Markdown PR Summary Comment
-    CLI->>VCS: Publish Inline Annotations & SARIF Report
-    CLI-->>CI: Exit code 0 (Pass) or 1 (Block)
-```
-
----
-
-## 🏛️ Multi-Tier Declarative Catalog & Extensible Rule Engine
-
-The audit rules are organized into decoupled, multi-tiered catalogs resolved with deterministic precedence:
-1. **Built-in Tier** ([`backend/rules/builtin/`](./backend/rules/builtin/) & [`2_rules/`](./backend/rules/2_rules/)): Out-of-the-box Clean Architecture and Culture rules.
-2. **Organization Tier** ([`backend/rules/organization/`](./backend/rules/organization/)): Enterprise-wide engineering compliance policies.
-3. **Project Tier** ([`backend/rules/projects/`](./backend/rules/projects/)): Team and repository-specific standards.
-4. **Custom Tier** ([`backend/rules/custom/`](./backend/rules/custom/)): Ad-hoc or overridden rules (highest priority).
-
-```mermaid
-flowchart TD
-    Builtin["Tier 1: Built-in"] --> Org["Tier 2: Organization"]
-    Org --> Proj["Tier 3: Project"]
-    Proj --> Custom["Tier 4: Custom"]
-    Custom --> Norm["Rule Normalizer & Schema Validator"]
-    Norm --> Safety["Regex Safety Validator (ReDoS Protected)"]
-    Safety --> TestEngine["Isolated Rule Test Engine"]
-    TestEngine --> EffectiveSet["Effective Rule Set"]
-    EffectiveSet --> Synthesizer["Bend Harness Synthesizer"]
-    Synthesizer --> HVM["Bend HVM Parallel Reduction"]
-```
-
----
-
-## 🔗 Related Documentation
-- [Quickstart & CLI Usage](./QUICKSTART.md)
-- [4-Tier Pipeline Specification](./PIPELINE.md)
-- [Extensible Custom Rules Guide](./CUSTOM-RULES.md)
-- [Rule Authoring & Schema Reference](./RULE-AUTHORING.md)
-- [Rule REST API Reference](./RULE-API.md)
-- [Multi-Platform VCS Integrations](./INTEGRATIONS.md)
-- [Engineering Standards & Rules Catalog](./RULES.md)
-- [Contributor Guidelines](./CONTRIBUTING.md)
+Time complexity scales logarithmically $O(\log N)$ on multi-threaded CPU/GPU runtimes.

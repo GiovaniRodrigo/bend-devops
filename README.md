@@ -1,115 +1,82 @@
 # 🛡️ Bend DevOps Guardian (`bend-devops`)
 
-> **High-Performance Architecture & Engineering Standards Quality Gate for DevOps CI/CD Pipelines.**
-> Built with the purely functional and massively parallel **[Bend](https://github.com/HigherOrderCO/Bend)** (HVM) engine and an interactive **Angular 19** web dashboard.
+Quality gate and architecture compliance engine for CI/CD pipelines. Evaluates code standards and layer boundaries using parallel reduction on **[Bend](https://github.com/HigherOrderCO/Bend)** (HVM) with an **Angular 19** web dashboard.
 
 ---
 
-## 🧭 Documentation Portal & Sitemap
+## 🧭 Documentation Index
 
-The documentation for **Bend DevOps Guardian** is organized into specialized modular guides:
-
-| Document | Description |
+| Guide | Description |
 | :--- | :--- |
-| 🏛️ **[`ARCHITECTURE.md`](./ARCHITECTURE.md)** | **Clean Architecture**, runtime characteristics, parallel HVM reduction model, and C4/Mermaid topology diagrams. |
-| ⚡ **[`QUICKSTART.md`](./QUICKSTART.md)** | Step-by-step installation, prerequisites, CLI usage examples, and dashboard execution. |
-| 🔬 **[`PIPELINE.md`](./PIPELINE.md)** | 4-Tier Declarative Pipeline (`1_architectures`, `2_rules`, `3_languages`, `4_scanner`) and Token Taxonomy matrix. |
-| 🛡️ **[`CUSTOM-RULES.md`](./CUSTOM-RULES.md)** | Extensible custom rule engine, multi-tier precedence model, and lifecycle governance. |
-| ✍️ **[`RULE-AUTHORING.md`](./RULE-AUTHORING.md)** | Authoring guide, JSON schemas, ReDoS safety validation, and test fixture authoring. |
-| 🔌 **[`RULE-API.md`](./RULE-API.md)** | Full REST API reference for rule management, testing, cloning, import/export, and audit trails. |
-| 🌐 **[`INTEGRATIONS.md`](./INTEGRATIONS.md)** | Multi-platform VCS setup for **GitHub Actions**, **GitLab CI/CD**, and **Bitbucket Pipelines**. |
-| 📜 **[`RULES.md`](./RULES.md)** | Complete rules catalog (`CULT01..05`, `ARCH-LAYER-01..04`), severities, and inline suppression pragmas (`@guardian-ignore`). |
-| 🤝 **[`CONTRIBUTING.md`](./CONTRIBUTING.md)** | Spec-Driven Development (SDD), Test-Driven Development (TDD) workflow, and commit standards. |
+| 📖 **[`USAGE.md`](./USAGE.md)** | Complete CLI flags, rule operations, UI walkthrough, CI/CD setup, and recipes. |
+| 🏛️ **[`ARCHITECTURE.md`](./ARCHITECTURE.md)** | Clean Architecture layers, Bend parallel HVM reduction, and system topology. |
+| 📜 **[`RULES.md`](./RULES.md)** | Complete rules catalog (`CULT01..05`, `ARCH-*`), severities, and `@guardian-ignore` pragmas. |
+| 🛡️ **[`CUSTOM-RULES.md`](./CUSTOM-RULES.md)** | Multi-tier precedence, custom rule JSON schema, ReDoS safety, and test fixtures. |
+| 🔌 **[`RULE-API.md`](./RULE-API.md)** | REST API endpoints for rule CRUD, testing, cloning, and audit trails. |
+| 🌐 **[`INTEGRATIONS.md`](./INTEGRATIONS.md)** | CI/CD configurations for GitHub Actions, GitLab CI/CD, and Bitbucket Pipelines. |
+| 🔬 **[`PIPELINE.md`](./PIPELINE.md)** | 4-Tier Declarative Pipeline and layer vocabulary taxonomy. |
+| 🤝 **[`CONTRIBUTING.md`](./CONTRIBUTING.md)** | Spec-Driven Development (SDD), TDD testing, and commit conventions. |
 
 ---
 
-## 🎯 Overview & Philosophy
+## ⚡ Core Features
 
-In modern high-velocity continuous integration and delivery (CI/CD) environments, rapid code modifications, architectural drift, incomplete stubs, missing automated tests, accidental credential leaks, and cross-tier boundary violations can silently compromise software reliability.
-
-The **Bend DevOps Guardian** acts as an uncompromising automated quality gate embedded directly into DevOps workflows:
-- **Massively Parallel Reduction**: Analyzes dozens of files and hundreds of rules simultaneously using functional binary tree reductions on the Bend High-Order Virtual Machine (HVM).
-- **Multi-Platform CI/CD Gate**: Operates natively in **GitHub Actions**, **GitLab CI/CD**, and **Bitbucket Pipelines**, posting PR/MR comments, inline diff annotations, SARIF reports, and commit status checks.
-- **Universal Architecture Taxonomy**: Enforces declarative architectural profiles (Layered MVC, Clean Architecture, Microservices, CQRS, REST APIs, Frontend Clean Architecture) across any tech stack (.NET, Python, TypeScript, PHP, Go, Java, Rust).
-- **False-Positive Elimination**: Syntactic word boundary fencing, comment scoping, and inline documented suppression pragmas (`@guardian-ignore`).
-- **Interactive DevOps Dashboard**: Visualizes pipeline compliance metrics, rules catalog, and real-time pull request diff simulations.
+- **Massively Parallel Engine**: Evaluates files and rules concurrently via functional binary tree reductions on Bend HVM.
+- **Architecture Enforcement**: Validates layer boundaries for Clean Architecture, Layered MVC, Microservices, CQRS, and Frontend.
+- **Zero False-Positives**: Exact token boundary fences, comment scoping, and documented inline pragmas (`@guardian-ignore`).
+- **CI/CD Quality Gate**: Enforces branch policies, posts PR comments, generates SARIF v2.1.0 and Code Quality JSON.
+- **Interactive Dashboard**: Angular 19 SPA with live diff viewer, rule sandbox, and architecture visualizer.
 
 ---
 
-## 🧅 Clean Architecture Summary
+## 🧅 System Architecture
 
-The system strictly adheres to Clean Architecture with concentric layer isolation:
-- **Layer 1 (Enterprise Core)**: Pure algebraic data types and functional rule evaluators in [`backend/src/guardian.bend`](./backend/src/guardian.bend) and [`backend/rules/layer_vocabulary.json`](./backend/rules/layer_vocabulary.json).
-- **Layer 2 (Application Use Cases)**: Parallel binary tree reduction, harness synthesis, and quality score calculation.
-- **Layer 3 (Interface Adapters)**: Multi-platform VCS adapters in [`scripts/vcs_adapters/`](./scripts/vcs_adapters/), syntactic token boundary filter in [`scripts/token_filter.py`](./scripts/token_filter.py), and SARIF exporters.
-- **Layer 4 (Frameworks & Drivers)**: CLI gate runner [`scripts/culture_guard.py`](./scripts/culture_guard.py), CI/CD pipelines, and Angular 19 dashboard in [`frontend/`](./frontend/).
-
-*For detailed architectural flowcharts and interaction sequence diagrams, see [`ARCHITECTURE.md`](./ARCHITECTURE.md).*
+```mermaid
+flowchart TD
+    L4["Layer 4: Frameworks & Drivers\n(CLI, CI/CD, Angular 19 Dashboard, HVM Runtime)"]
+    L3["Layer 3: Interface Adapters\n(VCS Adapters, Diff Parser, Token Filter, SARIF Exporter)"]
+    L2["Layer 2: Application Use Cases\n(Harness Generator, Tree Reducer, Report Aggregator)"]
+    L1["Layer 1: Enterprise Core\n(Pure Data Types, Functional Rule Evaluators, Layer Vocabulary)"]
+    L4 --> L3 --> L2 --> L1
+```
 
 ---
 
 ## 📁 Repository Structure
 
-```
+```text
 bend-devops/
 ├── backend/
-│   ├── rules/                         # 🏛️ 4-Tier Declarative Catalog & Vocabulary
-│   │   ├── 1_architectures/           # Architecture Profiles (MVC, Clean, Microservices, CQRS)
-│   │   ├── 2_rules/                   # Abstract Boundary & Culture Rules
-│   │   ├── 3_languages/               # Language Syntax & AST Adapters (C#, Py, TS, PHP, Go, Java, Rust)
-│   │   ├── 4_scanner/                 # Scanner & Engine Configurations
-│   │   ├── layer_vocabulary.json      # Complete Word, Tag & Token Taxonomy
-│   │   ├── layer_vocabulary.md        # Comprehensive Layer Taxonomy Guide
-│   │   └── rules_schema.json          # JSON Schema validating all manifests
-│   ├── src/
-│   │   └── guardian.bend              # Pure functional parallel AST tree evaluator
-│   └── tests/
-│       ├── test_rules.bend            # Rule engine functional unit tests
-│       └── test_engine.bend           # Parallel tree reduction integration tests
-├── scripts/
-│   ├── culture_guard.py               # Universal CLI auditor & CI/CD gate orchestrator
-│   ├── token_filter.py                # Syntactic boundary filter & pragma parser
-│   ├── validate.sh                    # 8-stage end-to-end quality gate script
-│   └── vcs_adapters/                  # GitHub, GitLab, and Bitbucket platform adapters
-├── specs/                             # 📋 Spec-Driven Development (SDD) Specifications
-│   ├── 001-devops-standards-validator/# Core Parallel HVM Engine Spec
-│   ├── 002-layered-architecture-auditor/# 4-Tier Pipeline & Layer Vocabulary Spec
-│   ├── 003-vcs-git-platforms-integration/# GitHub, GitLab, Bitbucket Integration Spec
-│   ├── 004-false-positive-suppression-engine/# False-Positive Elimination & Pragmas Spec
-│   ├── 005-live-code-diff-auditor/    # Interactive Live Code & Unified/Split Diff Auditor
-│   ├── 006-extensible-rule-management/# Extensible 4-Tier Rule Catalog & Custom Rule Wizard
-│   └── 007-escopo-e-regras-arquiteturais-do-usuario/# User-Scoped Architectural Rules & Workflow Spec
-├── tests/                             # 🧪 Automated Python TDD Test Suite
-│   ├── test_token_filter.py           # Token boundary tests
-│   ├── test_suppressions.py           # Inline pragma tests
-│   ├── test_false_positives.py        # False-positive scenario integration tests
-│   └── vcs/                           # Multi-platform VCS adapter unit tests
-├── frontend/                          # 🅰️ Angular 19 DevOps Quality Dashboard
-│   ├── src/app/                       # Standalone Components, Models & Reactive Signals
-│   └── package.json                   # Angular and Tailwind CSS dependencies
-├── .github/workflows/guardian.yml     # GitHub Actions Quality Gate Workflow
-├── .gitlab-ci.yml                     # GitLab CI/CD Quality Gate Pipeline
-└── bitbucket-pipelines.yml            # Bitbucket Pipelines Quality Gate Configuration
+│   ├── rules/            # Declarative architecture profiles, rules, languages, vocabularies
+│   ├── src/              # Pure functional AST evaluator (guardian.bend)
+│   └── tests/            # Bend unit and integration tests
+├── frontend/             # Angular 19 Web Dashboard (Standalone, Signals, Vitest)
+├── scripts/              # CLI runner (culture_guard.py), server (guardian_server.py), VCS adapters
+├── specs/                # Spec-Driven Development (SDD) specifications
+└── tests/                # Python TDD test suites (VCS, token filters, suppressions)
 ```
 
 ---
 
-## ⚡ Quickstart Commands
+## 🚀 Quick Start
 
+### Prerequisites
+- **Rust & Bend**: `cargo install bend-lang hvm`
+- **Python**: `3.10+`
+- **Node.js**: `20+`
+
+### Commands
 ```bash
 # 1. Run complete 8-stage validation suite
 ./scripts/validate.sh
 
 # 2. Audit codebase via CLI
-python3 scripts/culture_guard.py src/
+python3 scripts/culture_guard.py src/ --architecture clean_architecture
 
-# 4. Manage, validate, and test custom rules via CLI
-python3 scripts/culture_guard.py rules list
+# 3. Manage rules via CLI
+python3 scripts/culture_guard.py rules list --active-only
 python3 scripts/culture_guard.py rules test CULT01 --code "def fn(): pass"
-python3 scripts/culture_guard.py rules validate backend/rules/custom/my_rule.json
 
-# 5. Launch Angular 19 Dashboard
-cd frontend && npm install && npm start
+# 4. Start Unified Server & Dashboard UI
+python3 scripts/guardian_server.py --port 4200
 ```
-
-*For more details on CLI options and environment variables, refer to [`QUICKSTART.md`](./QUICKSTART.md).*
