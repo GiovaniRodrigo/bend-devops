@@ -59,11 +59,15 @@
   }
 
   body {
-    background-color: #080B12;
+    background-color: #0B1020;
     color: #F8FAFC;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     letter-spacing: -0.01em;
     transition: background-color 0.2s ease, color 0.2s ease;
+    background-image:
+      radial-gradient(circle at 8% 8%, rgba(14, 165, 233, 0.12), transparent 28rem),
+      radial-gradient(circle at 92% 12%, rgba(139, 92, 246, 0.11), transparent 30rem),
+      radial-gradient(circle at 72% 92%, rgba(16, 185, 129, 0.07), transparent 24rem);
   }
 
   html.light body {
@@ -143,13 +147,29 @@
 }
 
 /* Cards */
-.card-guardian {
+  .card-guardian {
   @apply rounded-xl border border-slate-800/80 bg-[#111722]/80 backdrop-blur-sm transition-all duration-200;
+  box-shadow: 0 14px 35px rgba(2, 6, 23, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.025);
 }
 
 .card-guardian-interactive {
   @apply rounded-xl border border-slate-800/80 bg-[#111722]/80 backdrop-blur-sm hover:border-cyan-500/30 hover:shadow-[0_0_20px_rgba(56,189,248,0.06)] transition-all duration-200;
+  box-shadow: 0 14px 35px rgba(2, 6, 23, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.025);
 }
+
+/* Color accents for the main shell: blue for navigation, violet for strategy,
+   emerald for healthy systems, amber and rose for attention states. */
+.bg-guardian-canvas {
+  background-color: #0B1020;
+  background-image:
+    linear-gradient(135deg, rgba(14, 165, 233, 0.06), transparent 36%),
+    linear-gradient(315deg, rgba(139, 92, 246, 0.06), transparent 34%);
+}
+
+html:not(.light) .text-slate-400 { color: #94A3B8; }
+html:not(.light) .text-slate-500 { color: #7182A0; }
+html:not(.light) .bg-slate-800\/40:hover { background-color: rgba(30, 41, 59, 0.72); }
+html:not(.light) .border-slate-800\/80 { border-color: rgba(51, 65, 85, 0.78); }
 
 /* Badges */
 .badge-tech {
