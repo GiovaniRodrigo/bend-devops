@@ -1,4 +1,4 @@
-<div class="h-screen h-dvh bg-[#080B12] text-[#F8FAFC] flex flex-col overflow-hidden antialiased selection:bg-cyan-500/30 selection:text-cyan-200">
+<div class="h-screen h-dvh bg-[#070A10] text-slate-100 flex flex-col overflow-hidden antialiased selection:bg-cyan-400/30 selection:text-cyan-100">
   
   <!-- Top App Shell -->
   <div class="flex flex-1 h-full overflow-hidden">
@@ -10,7 +10,7 @@
 
     <!-- 1. LEFT SIDEBAR (Clean DevOps Navigation) -->
     @if (!isMobile() || isMobileMenuOpen()) {
-      <aside [class]="'shrink-0 border-r border-slate-800/80 bg-[#0B0F19] transition-all duration-300 z-40 flex flex-col justify-between h-full overflow-hidden fixed inset-y-0 left-0 md:static ' + (isMobileMenuOpen() ? 'translate-x-0 shadow-2xl ' : '-translate-x-full md:translate-x-0 ') + (isSidebarCollapsed() ? 'w-20' : 'w-64 lg:w-72')">
+      <aside [class]="'shrink-0 border-r border-white/[0.07] bg-[#0A0E16] transition-all duration-300 z-40 flex flex-col justify-between h-full overflow-hidden fixed inset-y-0 left-0 md:static ' + (isMobileMenuOpen() ? 'translate-x-0 shadow-2xl ' : '-translate-x-full md:translate-x-0 ') + (isSidebarCollapsed() ? 'w-20' : 'w-64 lg:w-72')">
       
       <!-- Brand Header -->
       <div class="p-4 border-b border-slate-800/80 shrink-0">
@@ -189,7 +189,7 @@
     }
 
     <!-- 2. MAIN APPLICATION WORKSPACE -->
-    <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[#080B12] bg-tech-grid">
+    <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-[#070A10] bg-tech-grid">
       
       <!-- EXPLICIT MOCK MODE BANNER (Visible only when mock scenario is requested) -->
       @if (isMockMode()) {
@@ -215,7 +215,7 @@
       }
 
       <!-- Top Sticky Header -->
-      <header class="shrink-0 border-b border-slate-800/80 bg-[#0B0F19]/90 backdrop-blur z-20 px-4 lg:px-8 py-2.5">
+      <header class="shrink-0 border-b border-white/[0.07] bg-[#0A0E16]/90 backdrop-blur-xl z-20 px-4 lg:px-8 py-3">
         <div class="flex items-center justify-between gap-4">
           
           <!-- Left: Navigation Controls & Breadcrumb Context -->
@@ -344,7 +344,7 @@
       <!-- Independent Scrollable Central Workspace -->
       <div class="flex-1 overflow-y-auto min-h-0 relative" id="main-scroll-container">
         <!-- Main Content Area -->
-        <main class="p-4 lg:p-8 max-w-[1440px] w-full mx-auto space-y-6">
+        <main class="p-4 sm:p-6 lg:p-10 max-w-[1520px] w-full mx-auto space-y-8">
 
         <!-- ===================================================================== -->
         <!-- VIEW 1: DASHBOARD (Decision-Oriented & Low Cognitive Load)            -->
